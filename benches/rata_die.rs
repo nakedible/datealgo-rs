@@ -261,7 +261,7 @@ fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
 
 fn days_from_civil((y, m, d): (i16, u8, u8)) -> i32 {
     let y = y as i32 - (m <= 2) as i32;
-    let era = if y >= 0 { y } else { y-399 } / 400;
+    let era = y.div_euclid(400);
     let yoe = (y - era * 400) as u32;
     let doy = (153 * if m > 2 { (m - 3) as u32 } else { (m + 9) as u32 } + 2) / 5 + d as u32 - 1;
     let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
@@ -270,7 +270,7 @@ fn days_from_civil((y, m, d): (i16, u8, u8)) -> i32 {
 
 fn civil_from_days(n: u32) -> (i16, u8, u8) {
     let z = n + 719468;
-    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let era = z.div_euclid(146097);
     let doe = (z - era * 146097) as u32;
     let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
     let y = yoe + era * 400;
