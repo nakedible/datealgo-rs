@@ -1,0 +1,20 @@
+[package]
+name = "gmtime"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+bench = false
+
+[[bench]]
+name = "rata_die"
+harness = false
+
+[dependencies]
+chrono = "0.4.24"
+criterion = "0.4.0"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+strength_reduce = "0.2.4"
