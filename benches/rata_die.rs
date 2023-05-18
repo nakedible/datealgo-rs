@@ -1,5 +1,5 @@
 use chrono::{Datelike, Timelike};
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -259,7 +259,7 @@ fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
     )
 }
 
-fn days_from_civil((y, m, d): (i16, u8, u8)) -> i32 {
+fn days_from_civil((y, m, d): (i32, u32, u32)) -> i32 {
     let y = y as i32 - (m <= 2) as i32;
     let era = y.div_euclid(400);
     let yoe = y.rem_euclid(400) as u32;
@@ -268,17 +268,17 @@ fn days_from_civil((y, m, d): (i16, u8, u8)) -> i32 {
     era * 146097 + doe as i32 - 719468
 }
 
-fn civil_from_days(n: u32) -> (i16, u8, u8) {
+fn civil_from_days(n: i32) -> (i32, u32, u32) {
     let z = n + 719468;
     let era = z.div_euclid(146097);
     let doe = z.rem_euclid(146097) as u32;
     let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let y = yoe + era * 400;
+    let y = (yoe as i32) + era * 400;
     let doy = doe - (365 * yoe  + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let d = doy - (153 * mp + 2) / 5 + 1;
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (y as i16 + (m <= 2) as i16, m as u8, d as u8) 
+    (y + (m <= 2) as i32, m as u32, d as u32) 
 }
 
 fn build_secs() -> [u64; 1000] {
@@ -308,13 +308,13 @@ fn build_datetimes() -> [(i16, u8, u8, u8, u8, u8); 1000] {
     arr
 }
 
-fn build_rata_die() -> [u32; 1000] {
+fn build_rata_die() -> [i32; 1000] {
     let mut rng = ChaChaRng::seed_from_u64(1970);
     let arr = [(); 1000].map(|_| UNIX_EPOCH_RATA_DIE + rng.gen_range(0..36525));
     arr
 }
 
-fn build_gregorian_dates() -> [(i16, u8, u8); 1000] {
+fn build_gregorian_dates() -> [(i32, u32, u32); 1000] {
     let mut rng = ChaChaRng::seed_from_u64(1970);
     let arr = [(); 1000].map(|_| (rng.gen_range(1970..=2069), rng.gen_range(1..=12), rng.gen_range(1..=28)));
     arr
@@ -376,33 +376,35 @@ fn bench_secs_to_dhms(c: &mut Criterion) {
 
 fn bench_rata_die_to_gregorian_date(c: &mut Criterion) {
     let mut group = c.benchmark_group("rata_die_to_gregorian_date");
-    let arr = build_rata_die();
-    group.bench_with_input(
-        BenchmarkId::new("rata_die_to_gregorian_date", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(rata_die_to_gregorian_date)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("civil_from_days", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(civil_from_days)),
-    );
+    for rd in [-719468, -1000, 0, 1000, 36524] {
+        group.bench_with_input(
+            BenchmarkId::new("rata_die_to_gregorian_date", rd),
+            &rd,
+            |b, i| b.iter(|| black_box(rata_die_to_gregorian_date(black_box(*i))))
+        );
+        group.bench_with_input(
+            BenchmarkId::new("civil_from_days", rd),
+            &rd,
+            |b, i| b.iter(|| black_box(civil_from_days(black_box(*i)))),
+        );
+    }
     group.finish();
 }
 
 fn bench_gregorian_date_to_rata_die(c: &mut Criterion) {
     let mut group = c.benchmark_group("gregorian_date_to_rata_die");
-    let arr = build_gregorian_dates();
-    group.bench_with_input(
-        BenchmarkId::new("gregorian_date_to_rata_die", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(gregorian_date_to_rata_die)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("days_from_civil", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(days_from_civil)),
-    );
+    for d in [(-1970, 1, 1), (0, 3, 1), (1960, 1, 1), (1970, 1, 1), (2023, 5, 12), (2069, 12, 31)] {        
+        group.bench_with_input(
+            BenchmarkId::new("gregorian_date_to_rata_die", format!("{:?}", d)),
+            &d,
+            |b, i| b.iter(|| black_box(gregorian_date_to_rata_die(black_box(*i)))),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("days_from_civil", format!("{:?}", d)),
+            &d,
+            |b, i| b.iter(|| black_box(days_from_civil(black_box(*i)))),
+        );
+    }
     group.finish();
 }
 
