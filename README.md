@@ -1,5 +1,64 @@
-# gmtime-rs
-Mimimal gmtime-like functionality for Rust
+![Maintenance](https://img.shields.io/badge/maintenance-unknow-black.svg)
+
+# datealgo
+
+Low-level date algorithms for libraries
+
+This library aims to provide the **highest performance algorithms** for date
+manipulation in an unopinionated way. It is meant to be used by the various
+date and time libraries which can then provide ergonomic and opinionated
+interfaces for their users.
+
+## Usage
+
+xxx
+
+## Background
+
+There are many date and time libraries for Rust for varying use cases as the
+standard library doesn't include any utilities for dealing with dates. Most
+of these libraries contain their own copies of date algorithms, most
+prominently the conversion from days since an epoch to a Gregorian calendar
+date (year, month, day). These algorithms have been sourced from various
+places with various licenses, often translated either by machine or by hand
+from C algorithms found in different libc variants. The algorithms are
+usually somewhat optimized for performance, but fall short of fastest
+algorithms available.
+
+## Notes
+
+The library does not expose any kind of `Date` or `DateTime` structures, but
+simply tuples for the necessary values. There is bounds checking via
+`debug_assert`, which means that it is not present in release builds.
+Callers are required to do their own bounds checking where ever input
+require it. Datatypes are selected for performance and utility, rather than
+what is most natural for the value.
+
+Currently the library implements algorithms for the [Proleptic Gregorian
+Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
+is our current calendar extended backwards indefinitely. The Gregorian
+calendar defines the average year to be 365.2425 days long by defining every
+fourth year to be a leap year, unless the year is divisible by 100 and not
+by 400.
+
+The algorithms do not account for leap seconds, as is customary for [Unix
+time](https://en.wikipedia.org/wiki/Unix_time). Every day is exactly 86400
+in length, and the calculated times do not adjust for leap seconds between
+timestamps.
+
+We define [Rata Die](https://en.wikipedia.org/wiki/Rata_Die) to be integral
+day numbers counted from 1st of January, 1979, which is the Unix epoch. We
+use the abbreviation `rd` to concisely refer to such values. This differs
+from the epoch originally chosen by Howard Jacobson, but is more convenient
+for usage.
+
+The Rata Die values are represented as `i32` for performance reasons. The
+needed calculations reduce that to roughly an effective `i30` integer range,
+which means a usable range of roughly -1,460,000 to 1,460,000 years.
+
+## Releases
+
+Current version: 0.0.1
 
 ## License
 
