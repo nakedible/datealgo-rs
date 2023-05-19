@@ -51,6 +51,12 @@
 //! The Rata Die values are represented as `i32` for performance reasons. The
 //! needed calculations reduce that to roughly an effective `i30` integer range,
 //! which means a usable range of roughly -1,460,000 to 1,460,000 years. 
+#![no_std]
+
+#[cfg(feature = "std")]
+extern crate std;
+
+#[cfg(feature = "std")]
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Adjustment from UNIX epoch to make calculations use positive integers
@@ -72,6 +78,8 @@ const YEAR_OFFSET: i32 = ERA_OFFSET * YEARS_IN_ERA;
 /// Seconds in a single 24 hour calendar day
 const SECS_IN_DAY: i64 = 86400;
 const SECS_OFFSET: i64 = DAY_OFFSET as i64 * SECS_IN_DAY;
+
+#[cfg(feature = "std")]
 const SECS_OFFSET_DURATION: Duration = Duration::from_secs(SECS_OFFSET as u64);
 
 /// Minimum supported year for conversion
@@ -218,6 +226,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
     (days, hh as u8, mm as u8, ss as u8)
 }
 
+#[cfg(feature = "std")]
 #[inline]
 pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
     match st.duration_since(UNIX_EPOCH) {
@@ -241,6 +250,7 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
     }
 }
 
+#[cfg(feature = "std")]
 #[inline]
 pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
     let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
@@ -252,6 +262,7 @@ pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
     Some((secs as i64 - SECS_OFFSET, nsecs))
 }
 
+#[cfg(feature = "std")]
 #[inline]
 pub fn from_systemtime(st: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
     let (secs, _nsecs) = systemtime_to_secs(st).unwrap();
@@ -261,6 +272,7 @@ pub fn from_systemtime(st: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
     (year as i16, month as u8, day as u8, hh, mm, ss, wday as u8)
 }
 
+#[cfg(feature = "std")]
 #[inline]
 pub fn to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
     let days = date_to_rd((y as i32, m as u32, d as u32));

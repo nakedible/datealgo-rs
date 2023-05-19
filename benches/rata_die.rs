@@ -4,265 +4,271 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use datealgo::*;
-
-#[inline]
-pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
-    let secs = secs as u64;
-    let ss = secs % 60;
-    let secs = secs / 60;
-    let mm = secs % 60;
-    let secs = secs / 60;
-    let hh = secs % 24;
-    let secs = secs / 24;
-    (secs as i32, hh as u8, mm as u8, ss as u8)
+mod datealgo_alt {
+    #[inline]
+    pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
+        let secs = secs as u64;
+        let ss = secs % 60;
+        let secs = secs / 60;
+        let mm = secs % 60;
+        let secs = secs / 60;
+        let hh = secs % 24;
+        let secs = secs / 24;
+        (secs as i32, hh as u8, mm as u8, ss as u8)
+    }
 }
 
-fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
-    let dur = v
-        .duration_since(UNIX_EPOCH)
-        .expect("all times should be after the epoch");
-    let secs_since_epoch = dur.as_secs();
-
-    if secs_since_epoch >= 253402300800 {
-        // year 9999
-        panic!("date must be before year 9999");
-    }
-
-    /* 2000-03-01 (mod 400 year, immediately after feb29 */
-    const LEAPOCH: i64 = 11017;
-    const DAYS_PER_400Y: i64 = 365 * 400 + 97;
-    const DAYS_PER_100Y: i64 = 365 * 100 + 24;
-    const DAYS_PER_4Y: i64 = 365 * 4 + 1;
-
-    let days = (secs_since_epoch / 86400) as i64 - LEAPOCH;
-    let secs_of_day = secs_since_epoch % 86400;
-
-    let mut qc_cycles = days / DAYS_PER_400Y;
-    let mut remdays = days % DAYS_PER_400Y;
-
-    if remdays < 0 {
-        remdays += DAYS_PER_400Y;
-        qc_cycles -= 1;
-    }
-
-    let mut c_cycles = remdays / DAYS_PER_100Y;
-    if c_cycles == 4 {
-        c_cycles -= 1;
-    }
-    remdays -= c_cycles * DAYS_PER_100Y;
-
-    let mut q_cycles = remdays / DAYS_PER_4Y;
-    if q_cycles == 25 {
-        q_cycles -= 1;
-    }
-    remdays -= q_cycles * DAYS_PER_4Y;
-
-    let mut remyears = remdays / 365;
-    if remyears == 4 {
-        remyears -= 1;
-    }
-    remdays -= remyears * 365;
-
-    let mut year = 2000 + remyears + 4 * q_cycles + 100 * c_cycles + 400 * qc_cycles;
-
-    let months = [31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29];
-    let mut mon = 0;
-    for mon_len in months.iter() {
-        mon += 1;
-        if remdays < *mon_len {
-            break;
+mod httpdate {
+    fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+        let dur = v
+            .duration_since(UNIX_EPOCH)
+            .expect("all times should be after the epoch");
+        let secs_since_epoch = dur.as_secs();
+    
+        if secs_since_epoch >= 253402300800 {
+            // year 9999
+            panic!("date must be before year 9999");
         }
-        remdays -= *mon_len;
-    }
-    let mday = remdays + 1;
-    let mon = if mon + 2 > 12 {
-        year += 1;
-        mon - 10
-    } else {
-        mon + 2
-    };
-
-    let mut wday = (3 + days) % 7;
-    if wday <= 0 {
-        wday += 7
-    };
-    (
-        year as i16,
-        mon as u8,
-        mday as u8,
-        (secs_of_day / 3600) as u8,
-        ((secs_of_day % 3600) / 60) as u8,
-        (secs_of_day % 60) as u8,
-        wday as u8,
-    )
-}
-
-fn httpdate_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
-    fn is_leap_year(y: i16) -> bool {
-        y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
-    }
-
-    let leap_years = ((y - 1) - 1968) / 4 - ((y - 1) - 1900) / 100 + ((y - 1) - 1600) / 400;
-    let mut ydays = match m {
-        1 => 0,
-        2 => 31,
-        3 => 59,
-        4 => 90,
-        5 => 120,
-        6 => 151,
-        7 => 181,
-        8 => 212,
-        9 => 243,
-        10 => 273,
-        11 => 304,
-        12 => 334,
-        _ => unreachable!(),
-    } + d as u64
-        - 1;
-    if is_leap_year(y) && m > 2 {
-        ydays += 1;
-    }
-    let days = (y as u64 - 1970) * 365 + leap_years as u64 + ydays;
-    UNIX_EPOCH + Duration::from_secs(ss as u64 + mm as u64 * 60 + hh as u64 * 3600 + days * 86400)
-}
-
-fn chrono_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
-    chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
-        .unwrap()
-        .and_hms_opt(hh as u32, mm as u32, ss as u32)
-        .unwrap()
-        .and_local_timezone(chrono::Utc)
-        .unwrap()
-        .into()
-}
-
-fn chrono_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
-    let d: chrono::DateTime<chrono::Utc> = v.into();
-    (
-        d.year() as i16,
-        d.month() as u8,
-        d.day() as u8,
-        d.hour() as u8,
-        d.minute() as u8,
-        d.second() as u8,
-        d.weekday().number_from_monday() as u8,
-    )
-}
-
-fn humantime_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
-    fn is_leap_year(y: u64) -> bool {
-        y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
-    }
-    let year = y as u64;
-    let month = m as u64;
-    let day = d as u64;
-    let hour = hh as u64;
-    let minute = mm as u64;
-    let second = ss as u64;
-    let leap = is_leap_year(year);
-    let (mut ydays, _mdays) = match month {
-        1 => (0, 31),
-        2 if leap => (31, 29),
-        2 => (31, 28),
-        3 => (59, 31),
-        4 => (90, 30),
-        5 => (120, 31),
-        6 => (151, 30),
-        7 => (181, 31),
-        8 => (212, 31),
-        9 => (243, 30),
-        10 => (273, 31),
-        11 => (304, 30),
-        12 => (334, 31),
-        _ => panic!(),
-    };
-    // if day > mdays || day == 0 {
-    //     panic!();
-    // }
-    ydays += day - 1;
-    if leap && month > 2 {
-        ydays += 1;
-    }
-
-    let leap_years = ((year - 1) - 1968) / 4 - ((year - 1) - 1900) / 100 + ((year - 1) - 1600) / 400;
-    let days = (year - 1970) * 365 + leap_years + ydays;
-
-    let time = second + minute * 60 + hour * 3600;
-
-    let total_seconds = time + days * 86400;
-    UNIX_EPOCH + Duration::from_secs(total_seconds)
-}
-
-fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
-    let dur = v
-        .duration_since(UNIX_EPOCH)
-        .expect("all times should be after the epoch");
-    let secs_since_epoch = dur.as_secs();
-
-    /* 2000-03-01 (mod 400 year, immediately after feb29 */
-    const LEAPOCH: i64 = 11017;
-    const DAYS_PER_400Y: i64 = 365 * 400 + 97;
-    const DAYS_PER_100Y: i64 = 365 * 100 + 24;
-    const DAYS_PER_4Y: i64 = 365 * 4 + 1;
-
-    let days = (secs_since_epoch / 86400) as i64 - LEAPOCH;
-    let secs_of_day = secs_since_epoch % 86400;
-
-    let mut qc_cycles = days / DAYS_PER_400Y;
-    let mut remdays = days % DAYS_PER_400Y;
-
-    if remdays < 0 {
-        remdays += DAYS_PER_400Y;
-        qc_cycles -= 1;
-    }
-
-    let mut c_cycles = remdays / DAYS_PER_100Y;
-    if c_cycles == 4 {
-        c_cycles -= 1;
-    }
-    remdays -= c_cycles * DAYS_PER_100Y;
-
-    let mut q_cycles = remdays / DAYS_PER_4Y;
-    if q_cycles == 25 {
-        q_cycles -= 1;
-    }
-    remdays -= q_cycles * DAYS_PER_4Y;
-
-    let mut remyears = remdays / 365;
-    if remyears == 4 {
-        remyears -= 1;
-    }
-    remdays -= remyears * 365;
-
-    let mut year = 2000 + remyears + 4 * q_cycles + 100 * c_cycles + 400 * qc_cycles;
-
-    let months = [31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29];
-    let mut mon = 0;
-    for mon_len in months.iter() {
-        mon += 1;
-        if remdays < *mon_len {
-            break;
+    
+        /* 2000-03-01 (mod 400 year, immediately after feb29 */
+        const LEAPOCH: i64 = 11017;
+        const DAYS_PER_400Y: i64 = 365 * 400 + 97;
+        const DAYS_PER_100Y: i64 = 365 * 100 + 24;
+        const DAYS_PER_4Y: i64 = 365 * 4 + 1;
+    
+        let days = (secs_since_epoch / 86400) as i64 - LEAPOCH;
+        let secs_of_day = secs_since_epoch % 86400;
+    
+        let mut qc_cycles = days / DAYS_PER_400Y;
+        let mut remdays = days % DAYS_PER_400Y;
+    
+        if remdays < 0 {
+            remdays += DAYS_PER_400Y;
+            qc_cycles -= 1;
         }
-        remdays -= *mon_len;
+    
+        let mut c_cycles = remdays / DAYS_PER_100Y;
+        if c_cycles == 4 {
+            c_cycles -= 1;
+        }
+        remdays -= c_cycles * DAYS_PER_100Y;
+    
+        let mut q_cycles = remdays / DAYS_PER_4Y;
+        if q_cycles == 25 {
+            q_cycles -= 1;
+        }
+        remdays -= q_cycles * DAYS_PER_4Y;
+    
+        let mut remyears = remdays / 365;
+        if remyears == 4 {
+            remyears -= 1;
+        }
+        remdays -= remyears * 365;
+    
+        let mut year = 2000 + remyears + 4 * q_cycles + 100 * c_cycles + 400 * qc_cycles;
+    
+        let months = [31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29];
+        let mut mon = 0;
+        for mon_len in months.iter() {
+            mon += 1;
+            if remdays < *mon_len {
+                break;
+            }
+            remdays -= *mon_len;
+        }
+        let mday = remdays + 1;
+        let mon = if mon + 2 > 12 {
+            year += 1;
+            mon - 10
+        } else {
+            mon + 2
+        };
+    
+        let mut wday = (3 + days) % 7;
+        if wday <= 0 {
+            wday += 7
+        };
+        (
+            year as i16,
+            mon as u8,
+            mday as u8,
+            (secs_of_day / 3600) as u8,
+            ((secs_of_day % 3600) / 60) as u8,
+            (secs_of_day % 60) as u8,
+            wday as u8,
+        )
     }
-    let mday = remdays + 1;
-    let mon = if mon + 2 > 12 {
-        year += 1;
-        mon - 10
-    } else {
-        mon + 2
-    };
+    
+    fn httpdate_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+        fn is_leap_year(y: i16) -> bool {
+            y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
+        }
+    
+        let leap_years = ((y - 1) - 1968) / 4 - ((y - 1) - 1900) / 100 + ((y - 1) - 1600) / 400;
+        let mut ydays = match m {
+            1 => 0,
+            2 => 31,
+            3 => 59,
+            4 => 90,
+            5 => 120,
+            6 => 151,
+            7 => 181,
+            8 => 212,
+            9 => 243,
+            10 => 273,
+            11 => 304,
+            12 => 334,
+            _ => unreachable!(),
+        } + d as u64
+            - 1;
+        if is_leap_year(y) && m > 2 {
+            ydays += 1;
+        }
+        let days = (y as u64 - 1970) * 365 + leap_years as u64 + ydays;
+        UNIX_EPOCH + Duration::from_secs(ss as u64 + mm as u64 * 60 + hh as u64 * 3600 + days * 86400)
+    }    
+}
 
-    (
-        year as i16,
-        mon,
-        mday as u8,
-        (secs_of_day / 3600) as u8,
-        (secs_of_day / 60 % 60) as u8,
-        (secs_of_day % 60) as u8,
-        1,
-    )
+mod humantime {
+    fn humantime_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+        fn is_leap_year(y: u64) -> bool {
+            y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
+        }
+        let year = y as u64;
+        let month = m as u64;
+        let day = d as u64;
+        let hour = hh as u64;
+        let minute = mm as u64;
+        let second = ss as u64;
+        let leap = is_leap_year(year);
+        let (mut ydays, _mdays) = match month {
+            1 => (0, 31),
+            2 if leap => (31, 29),
+            2 => (31, 28),
+            3 => (59, 31),
+            4 => (90, 30),
+            5 => (120, 31),
+            6 => (151, 30),
+            7 => (181, 31),
+            8 => (212, 31),
+            9 => (243, 30),
+            10 => (273, 31),
+            11 => (304, 30),
+            12 => (334, 31),
+            _ => panic!(),
+        };
+        // if day > mdays || day == 0 {
+        //     panic!();
+        // }
+        ydays += day - 1;
+        if leap && month > 2 {
+            ydays += 1;
+        }
+    
+        let leap_years = ((year - 1) - 1968) / 4 - ((year - 1) - 1900) / 100 + ((year - 1) - 1600) / 400;
+        let days = (year - 1970) * 365 + leap_years + ydays;
+    
+        let time = second + minute * 60 + hour * 3600;
+    
+        let total_seconds = time + days * 86400;
+        UNIX_EPOCH + Duration::from_secs(total_seconds)
+    }
+    
+    fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+        let dur = v
+            .duration_since(UNIX_EPOCH)
+            .expect("all times should be after the epoch");
+        let secs_since_epoch = dur.as_secs();
+    
+        /* 2000-03-01 (mod 400 year, immediately after feb29 */
+        const LEAPOCH: i64 = 11017;
+        const DAYS_PER_400Y: i64 = 365 * 400 + 97;
+        const DAYS_PER_100Y: i64 = 365 * 100 + 24;
+        const DAYS_PER_4Y: i64 = 365 * 4 + 1;
+    
+        let days = (secs_since_epoch / 86400) as i64 - LEAPOCH;
+        let secs_of_day = secs_since_epoch % 86400;
+    
+        let mut qc_cycles = days / DAYS_PER_400Y;
+        let mut remdays = days % DAYS_PER_400Y;
+    
+        if remdays < 0 {
+            remdays += DAYS_PER_400Y;
+            qc_cycles -= 1;
+        }
+    
+        let mut c_cycles = remdays / DAYS_PER_100Y;
+        if c_cycles == 4 {
+            c_cycles -= 1;
+        }
+        remdays -= c_cycles * DAYS_PER_100Y;
+    
+        let mut q_cycles = remdays / DAYS_PER_4Y;
+        if q_cycles == 25 {
+            q_cycles -= 1;
+        }
+        remdays -= q_cycles * DAYS_PER_4Y;
+    
+        let mut remyears = remdays / 365;
+        if remyears == 4 {
+            remyears -= 1;
+        }
+        remdays -= remyears * 365;
+    
+        let mut year = 2000 + remyears + 4 * q_cycles + 100 * c_cycles + 400 * qc_cycles;
+    
+        let months = [31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29];
+        let mut mon = 0;
+        for mon_len in months.iter() {
+            mon += 1;
+            if remdays < *mon_len {
+                break;
+            }
+            remdays -= *mon_len;
+        }
+        let mday = remdays + 1;
+        let mon = if mon + 2 > 12 {
+            year += 1;
+            mon - 10
+        } else {
+            mon + 2
+        };
+    
+        (
+            year as i16,
+            mon,
+            mday as u8,
+            (secs_of_day / 3600) as u8,
+            (secs_of_day / 60 % 60) as u8,
+            (secs_of_day % 60) as u8,
+            1,
+        )
+    }        
+}
+
+mod chrono {
+    fn chrono_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+        chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
+            .unwrap()
+            .and_hms_opt(hh as u32, mm as u32, ss as u32)
+            .unwrap()
+            .and_local_timezone(chrono::Utc)
+            .unwrap()
+            .into()
+    }
+    
+    fn chrono_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+        let d: chrono::DateTime<chrono::Utc> = v.into();
+        (
+            d.year() as i16,
+            d.month() as u8,
+            d.day() as u8,
+            d.hour() as u8,
+            d.minute() as u8,
+            d.second() as u8,
+            d.weekday().number_from_monday() as u8,
+        )
+    }    
 }
 
 fn days_from_civil((y, m, d): (i32, u32, u32)) -> i32 {

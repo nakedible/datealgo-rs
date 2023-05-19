@@ -5,9 +5,14 @@ edition = "2021"
 authors = ["Nuutti Kotivuori <naked@iki.fi>"]
 description = "Low-level date algorithms for libraries"
 keywords = ["calendar", "date", "gregorian", "algorithm"]
+categories = ["algorithms", "date-and-time", "no-std", "no-std::no-alloc"]
 homepage = "https://github.com/nakedible/datealgo-rs"
 repository = "https://github.com/nakedible/datealgo-rs"
 license = "MIT OR Apache-2.0"
+
+[features]
+default = ["std"]
+std = []
 
 [lib]
 path = "src/lib.rs"
