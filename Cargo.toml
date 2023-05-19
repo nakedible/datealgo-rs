@@ -11,6 +11,7 @@ license = "MIT OR Apache-2.0"
 
 [badges]
 maintenance = { status = "experimental "}
+github = { repository = "nakedible/datealgo" }
 
 [lib]
 path = "src/lib.rs"
