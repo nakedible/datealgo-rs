@@ -1,4 +1,4 @@
-[![Workflow Status](https://github.com/nakedible/datealgo/workflows/ci/badge.svg)](https://github.com/nakedible/datealgo/actions?query=workflow%3A%ci%22)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/nakedible/datealgo/ci.yml)
 ![Maintenance](https://img.shields.io/badge/maintenance-unknow-black.svg)
 
 # datealgo
