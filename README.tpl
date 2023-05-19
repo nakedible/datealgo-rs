@@ -1,4 +1,5 @@
-{{badges}}
+[![Workflow Status](https://github.com/nakedible/datealgo/workflows/ci/badge.svg)](https://github.com/nakedible/datealgo/actions?query=workflow%3A%ci%22)
+![Maintenance](https://img.shields.io/badge/maintenance-unknow-black.svg)
 
 # {{crate}}
 

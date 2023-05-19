@@ -9,10 +9,6 @@ homepage = "https://github.com/nakedible/datealgo-rs"
 repository = "https://github.com/nakedible/datealgo-rs"
 license = "MIT OR Apache-2.0"
 
-[badges]
-maintenance = { status = "experimental "}
-github = { repository = "nakedible/datealgo" }
-
 [lib]
 path = "src/lib.rs"
 bench = false
