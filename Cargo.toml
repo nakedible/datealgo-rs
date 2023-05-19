@@ -3,12 +3,17 @@ name = "datealgo"
 version = "0.0.1"
 edition = "2021"
 authors = ["Nuutti Kotivuori <naked@iki.fi>"]
-license = "MIT OR Apache-2.0"
+description = "Low-level date algorithms for libraries"
 keywords = ["calendar", "date", "gregorian", "algorithm"]
+homepage = "https://github.com/nakedible/datealgo-rs"
+repository = "https://github.com/nakedible/datealgo-rs"
+license = "MIT OR Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+maintenance = { status = "experimental "}
 
 [lib]
+path = "src/lib.rs"
 bench = false
 
 [[bench]]
