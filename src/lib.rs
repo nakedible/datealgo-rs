@@ -119,7 +119,7 @@ pub const SECS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// # Examples
 /// 
 /// ```
-/// use gmtime::rd_to_date;
+/// use datealgo::rd_to_date;
 /// 
 /// assert_eq!(rd_to_date(-719528), (0, 1, 1));
 /// assert_eq!(rd_to_date(0), (1970, 1, 1));
@@ -171,7 +171,7 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 /// # Examples
 /// 
 /// ```
-/// use gmtime::date_to_rd;
+/// use datealgo::date_to_rd;
 /// 
 /// assert_eq!(date_to_rd((2023, 5, 12)), 19489);
 /// assert_eq!(date_to_rd((1970, 1, 1)), 0);
