@@ -1,16 +1,16 @@
 //! Low-level date algorithms for libraries
-//! 
+//!
 //! This library aims to provide the **highest performance algorithms** for date
 //! manipulation in an unopinionated way. It is meant to be used by the various
 //! date and time libraries which can then provide ergonomic and opinionated
 //! interfaces for their users.
 //!
 //! # Usage
-//! 
+//!
 //! xxx
-//! 
+//!
 //! # Background
-//! 
+//!
 //! There are many date and time libraries for Rust for varying use cases as the
 //! standard library doesn't include any utilities for dealing with dates. Most
 //! of these libraries contain their own copies of date algorithms, most
@@ -20,37 +20,37 @@
 //! from C algorithms found in different libc variants. The algorithms are
 //! usually somewhat optimized for performance, but fall short of fastest
 //! algorithms available.
-//! 
+//!
 //! # Notes
-//! 
+//!
 //! The library does not expose any kind of `Date` or `DateTime` structures, but
 //! simply tuples for the necessary values. There is bounds checking via
 //! `debug_assert`, which means that it is not present in release builds.
 //! Callers are required to do their own bounds checking where ever input
 //! require it. Datatypes are selected for performance and utility, rather than
 //! what is most natural for the value.
-//! 
+//!
 //! Currently the library implements algorithms for the [Proleptic Gregorian
 //! Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
 //! is our current calendar extended backwards indefinitely. The Gregorian
 //! calendar defines the average year to be 365.2425 days long by defining every
 //! fourth year to be a leap year, unless the year is divisible by 100 and not
 //! by 400.
-//! 
+//!
 //! The algorithms do not account for leap seconds, as is customary for [Unix
 //! time](https://en.wikipedia.org/wiki/Unix_time). Every day is exactly 86400
 //! in length, and the calculated times do not adjust for leap seconds between
 //! timestamps.
-//! 
+//!
 //! We define [Rata Die](https://en.wikipedia.org/wiki/Rata_Die) to be integral
 //! day numbers counted from 1st of January, 1979, which is the Unix epoch. We
 //! use the abbreviation `rd` to concisely refer to such values. This differs
 //! from the epoch originally chosen by Howard Jacobson, but is more convenient
 //! for usage.
-//! 
+//!
 //! The Rata Die values are represented as `i32` for performance reasons. The
 //! needed calculations reduce that to roughly an effective `i30` integer range,
-//! which means a usable range of roughly -1,460,000 to 1,460,000 years. 
+//! which means a usable range of roughly -1,460,000 to 1,460,000 years.
 #![no_std]
 
 #[cfg(feature = "std")]
@@ -60,7 +60,7 @@ extern crate std;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Adjustment from UNIX epoch to make calculations use positive integers
-/// 
+///
 /// Unit is eras, which is defined to be 400 years, as that is the period of the
 /// proleptic Gregorian calendar. Selected to place unix epoch roughly in the
 /// center of the value space, can be arbitrary within type limits.
@@ -83,24 +83,24 @@ const SECS_OFFSET: i64 = DAY_OFFSET as i64 * SECS_IN_DAY;
 const SECS_OFFSET_DURATION: Duration = Duration::from_secs(SECS_OFFSET as u64);
 
 /// Minimum supported year for conversion
-/// 
+///
 /// Years earlier than this are not supported and will likely produce incorrect
 /// results.
 pub const YEAR_MIN: i32 = -1467999;
 
 /// Maximum supported year for conversion
-/// 
+///
 /// Years later than this are not supported and will likely produce incorrect
 /// results.
 pub const YEAR_MAX: i32 = 1471744;
 
 /// Minimum Rata Die for conversion
-/// 
+///
 /// Rata die days earlier than this are not supported and will likely produce incorrect
 /// results.
 pub const RD_MIN: i32 = date_to_rd((YEAR_MIN, 1, 1));
 /// Maximum Rata Die for conversion
-/// 
+///
 /// Rata die days later than this are not supported and will likely produce incorrect
 /// results.
 pub const RD_MAX: i32 = date_to_rd((YEAR_MAX, 12, 31));
@@ -118,17 +118,17 @@ pub const SECS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 //   semantics give us the correct results even if the sum is larger than i32::MAX
 
 /// Convert Rata Die to Gregorian date
-/// 
+///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns a `(year,
 /// month, day)` tuple. Argument must be between `RD_MIN` and `RD_MAX`
 /// inclusive. Bounds are checked using `debug_assert` only, so that the checks
 /// are not present in release builds, similar to integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::rd_to_date;
-/// 
+///
 /// assert_eq!(rd_to_date(-719528), (0, 1, 1));
 /// assert_eq!(rd_to_date(0), (1970, 1, 1));
 /// assert_eq!(rd_to_date(19489), (2023, 5, 12));
@@ -136,12 +136,12 @@ pub const SECS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// assert_eq!(rd_to_date(46761996), (129999, 12, 31));
 /// assert_eq!(rd_to_date(-48200687), (-129999, 1, 1));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
 /// Affine Functions:
-/// 
+///
 /// > Neri C, Schneider L. "*Euclidean affine functions and their application to
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
@@ -168,19 +168,19 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 }
 
 /// Convert Gregorian date to Rata Die
-/// 
+///
 /// Given a `(year, month, day)` tuple returns the days since Unix epoch
 /// (January 1st, 1970). Dates before the epoch produce negative values. Year
 /// must be between `YEAR_MIN` and `YEAR_MAX`, month must be between `1` and
 /// `12` and day must be between `1` and the number of days in the month in
 /// question. Bounds are checked using `debug_assert` only, so that the checks
 /// are not present in release builds, similar to integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::date_to_rd;
-/// 
+///
 /// assert_eq!(date_to_rd((2023, 5, 12)), 19489);
 /// assert_eq!(date_to_rd((1970, 1, 1)), 0);
 /// assert_eq!(date_to_rd((0, 1, 1)), -719528);
@@ -190,10 +190,10 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 /// ```
 ///
 /// # Algorithm
-/// 
+///
 /// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
 /// Affine Functions:
-/// 
+///
 /// > Neri C, Schneider L. "*Euclidean affine functions and their application to
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
@@ -235,7 +235,7 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
             let nsecs = dur.subsec_nanos();
             //if secs > SECS_MAX as u64 { return None; }
             Some((secs as i64, nsecs))
-        },
+        }
         Err(err) => {
             let dur = err.duration();
             let mut secs = dur.as_secs();
@@ -246,7 +246,7 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
             }
             //if secs > -SECS_MIN as u64 { return None; }
             Some((-(secs as i64), nsecs))
-        },
+        }
     }
 }
 
