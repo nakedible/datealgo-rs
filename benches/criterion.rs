@@ -1,8 +1,4 @@
-use chrono::{Datelike, Timelike};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaChaRng;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 mod datealgo_alt {
     #[inline]
@@ -19,7 +15,9 @@ mod datealgo_alt {
 }
 
 mod httpdate {
-    fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+    pub fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
         let dur = v
             .duration_since(UNIX_EPOCH)
             .expect("all times should be after the epoch");
@@ -99,7 +97,7 @@ mod httpdate {
         )
     }
     
-    fn httpdate_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+    pub fn httpdate_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
         fn is_leap_year(y: i16) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -130,7 +128,9 @@ mod httpdate {
 }
 
 mod humantime {
-    fn humantime_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+    pub fn humantime_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -174,7 +174,7 @@ mod humantime {
         UNIX_EPOCH + Duration::from_secs(total_seconds)
     }
     
-    fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    pub fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
         let dur = v
             .duration_since(UNIX_EPOCH)
             .expect("all times should be after the epoch");
@@ -247,7 +247,10 @@ mod humantime {
 }
 
 mod chrono {
-    fn chrono_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use chrono::{Datelike, Timelike};
+
+    pub fn chrono_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
         chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
             .unwrap()
             .and_hms_opt(hh as u32, mm as u32, ss as u32)
@@ -257,7 +260,7 @@ mod chrono {
             .into()
     }
     
-    fn chrono_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    pub fn chrono_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
         let d: chrono::DateTime<chrono::Utc> = v.into();
         (
             d.year() as i16,
@@ -271,150 +274,113 @@ mod chrono {
     }    
 }
 
-fn days_from_civil((y, m, d): (i32, u32, u32)) -> i32 {
-    let y = y as i32 - (m <= 2) as i32;
-    let era = y.div_euclid(400);
-    let yoe = y.rem_euclid(400) as u32;
-    let doy = (153 * if m > 2 { (m - 3) as u32 } else { (m + 9) as u32 } + 2) / 5 + d as u32 - 1;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    era * 146097 + doe as i32 - 719468
+mod hinnant {
+    pub fn days_from_civil((y, m, d): (i32, u32, u32)) -> i32 {
+        let y = y as i32 - (m <= 2) as i32;
+        let era = y.div_euclid(400);
+        let yoe = y.rem_euclid(400) as u32;
+        let doy = (153 * if m > 2 { (m - 3) as u32 } else { (m + 9) as u32 } + 2) / 5 + d as u32 - 1;
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+        era * 146097 + doe as i32 - 719468
+    }
+
+    pub fn civil_from_days(n: i32) -> (i32, u32, u32) {
+        let z = n + 719468;
+        let era = z.div_euclid(146097);
+        let doe = z.rem_euclid(146097) as u32;
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        let y = (yoe as i32) + era * 400;
+        let doy = doe - (365 * yoe  + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = doy - (153 * mp + 2) / 5 + 1;
+        let m = if mp < 10 { mp + 3 } else { mp - 9 };
+        (y + (m <= 2) as i32, m as u32, d as u32) 
+    }
 }
 
-fn civil_from_days(n: i32) -> (i32, u32, u32) {
-    let z = n + 719468;
-    let era = z.div_euclid(146097);
-    let doe = z.rem_euclid(146097) as u32;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let y = (yoe as i32) + era * 400;
-    let doy = doe - (365 * yoe  + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (y + (m <= 2) as i32, m as u32, d as u32) 
-}
+// fn bench_datetime_to_systemtime(c: &mut Criterion) {
+//     let mut group = c.benchmark_group("datetime_to_systemtime");
+//     let arr = build_datetimes();
+//     group.bench_with_input(BenchmarkId::new("to_systemtime", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(to_systemtime))
+//     });
+//     group.bench_with_input(BenchmarkId::new("httpdate_to_systemtime", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(httpdate_to_systemtime))
+//     });
+//     group.bench_with_input(
+//         BenchmarkId::new("humantime_to_systemtime", "epoch+100"),
+//         &arr,
+//         |b, i| b.iter(|| i.map(humantime_to_systemtime)),
+//     );
+//     group.bench_with_input(BenchmarkId::new("chrono_to_systemtime", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(chrono_to_systemtime))
+//     });
+//     group.finish();
+// }
 
-fn build_secs() -> [i64; 1000] {
-    let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| rng.gen_range(0..(36525 * 86400)));
-    arr
-}
+// fn bench_systemtime_to_datetime(c: &mut Criterion) {
+//     let mut group = c.benchmark_group("systemtime_to_datetime");
+//     let arr = build_systemtimes();
+//     group.bench_with_input(BenchmarkId::new("from_systemtime", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(from_systemtime))
+//     });
+//     group.bench_with_input(
+//         BenchmarkId::new("httpdate_from_systemtime", "epoch+100"),
+//         &arr,
+//         |b, i| b.iter(|| i.map(httpdate_from_systemtime)),
+//     );
+//     group.bench_with_input(
+//         BenchmarkId::new("humantime_from_systemtime", "epoch+100"),
+//         &arr,
+//         |b, i| b.iter(|| i.map(humantime_from_systemtime)),
+//     );
+//     group.bench_with_input(BenchmarkId::new("chrono_from_systemtime", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(chrono_from_systemtime))
+//     });
+//     group.finish();
+// }
 
-fn build_systemtimes() -> [SystemTime; 1000] {
-    let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| UNIX_EPOCH + Duration::from_secs(rng.gen_range(0..(36525 * 86400))));
-    arr
-}
+// fn bench_secs_to_dhms(c: &mut Criterion) {
+//     let mut group = c.benchmark_group("secs_to_dhms");
+//     let arr = build_secs();
+//     group.bench_with_input(BenchmarkId::new("secs_to_dhms", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(secs_to_dhms))
+//     });
+//     group.bench_with_input(BenchmarkId::new("secs_to_dhms2", "epoch+100"), &arr, |b, i| {
+//         b.iter(|| i.map(secs_to_dhms2))
+//     });
+//     group.finish();
+// }
 
-fn build_datetimes() -> [(i16, u8, u8, u8, u8, u8); 1000] {
-    let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| {
-        (
-            rng.gen_range(1970..=2069),
-            rng.gen_range(1..=12),
-            rng.gen_range(1..=28),
-            rng.gen_range(0..=23),
-            rng.gen_range(0..=59),
-            rng.gen_range(0..=59),
-        )
-    });
-    arr
-}
-
-fn build_rata_die() -> [i32; 1000] {
-    let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| rng.gen_range(0..36525));
-    arr
-}
-
-fn build_gregorian_dates() -> [(i32, u32, u32); 1000] {
-    let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| (rng.gen_range(1970..=2069), rng.gen_range(1..=12), rng.gen_range(1..=28)));
-    arr
-}
-
-fn bench_datetime_to_systemtime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("datetime_to_systemtime");
-    let arr = build_datetimes();
-    group.bench_with_input(BenchmarkId::new("to_systemtime", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(to_systemtime))
-    });
-    group.bench_with_input(BenchmarkId::new("httpdate_to_systemtime", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(httpdate_to_systemtime))
-    });
-    group.bench_with_input(
-        BenchmarkId::new("humantime_to_systemtime", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(humantime_to_systemtime)),
-    );
-    group.bench_with_input(BenchmarkId::new("chrono_to_systemtime", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(chrono_to_systemtime))
-    });
-    group.finish();
-}
-
-fn bench_systemtime_to_datetime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("systemtime_to_datetime");
-    let arr = build_systemtimes();
-    group.bench_with_input(BenchmarkId::new("from_systemtime", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(from_systemtime))
-    });
-    group.bench_with_input(
-        BenchmarkId::new("httpdate_from_systemtime", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(httpdate_from_systemtime)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("humantime_from_systemtime", "epoch+100"),
-        &arr,
-        |b, i| b.iter(|| i.map(humantime_from_systemtime)),
-    );
-    group.bench_with_input(BenchmarkId::new("chrono_from_systemtime", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(chrono_from_systemtime))
-    });
-    group.finish();
-}
-
-fn bench_secs_to_dhms(c: &mut Criterion) {
-    let mut group = c.benchmark_group("secs_to_dhms");
-    let arr = build_secs();
-    group.bench_with_input(BenchmarkId::new("secs_to_dhms", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(secs_to_dhms))
-    });
-    group.bench_with_input(BenchmarkId::new("secs_to_dhms2", "epoch+100"), &arr, |b, i| {
-        b.iter(|| i.map(secs_to_dhms2))
-    });
-    group.finish();
-}
-
-fn bench_rata_die_to_gregorian_date(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rata_die_to_gregorian_date");
+fn bench_rd_to_date(c: &mut Criterion) {
+    let mut group = c.benchmark_group("rd_to_date");
     for rd in [-719468, -1000, 0, 1000, 36524] {
         group.bench_with_input(
-            BenchmarkId::new("rata_die_to_gregorian_date", rd),
+            BenchmarkId::new("datealgo::rd_to_date", rd),
             &rd,
-            |b, i| b.iter(|| black_box(rd_to_date(black_box(*i))))
+            |b, i| b.iter(|| black_box(datealgo::rd_to_date(black_box(*i))))
         );
         group.bench_with_input(
-            BenchmarkId::new("civil_from_days", rd),
+            BenchmarkId::new("hinnant::civil_from_days", rd),
             &rd,
-            |b, i| b.iter(|| black_box(civil_from_days(black_box(*i)))),
+            |b, i| b.iter(|| black_box(hinnant::civil_from_days(black_box(*i)))),
         );
     }
     group.finish();
 }
 
-fn bench_gregorian_date_to_rata_die(c: &mut Criterion) {
-    let mut group = c.benchmark_group("gregorian_date_to_rata_die");
+fn bench_date_to_rd(c: &mut Criterion) {
+    let mut group = c.benchmark_group("date_to_rd");
     for d in [(-1970, 1, 1), (0, 3, 1), (1960, 1, 1), (1970, 1, 1), (2023, 5, 12), (2069, 12, 31)] {        
         group.bench_with_input(
-            BenchmarkId::new("gregorian_date_to_rata_die", format!("{:?}", d)),
+            BenchmarkId::new("datealgo::date_to_rd", format!("{:?}", d)),
             &d,
-            |b, i| b.iter(|| black_box(date_to_rd(black_box(*i)))),
+            |b, i| b.iter(|| black_box(datealgo::date_to_rd(black_box(*i)))),
         );
         group.bench_with_input(
-            BenchmarkId::new("days_from_civil", format!("{:?}", d)),
+            BenchmarkId::new("hinnant::days_from_civil", format!("{:?}", d)),
             &d,
-            |b, i| b.iter(|| black_box(days_from_civil(black_box(*i)))),
+            |b, i| b.iter(|| black_box(hinnant::days_from_civil(black_box(*i)))),
         );
     }
     group.finish();
@@ -422,10 +388,10 @@ fn bench_gregorian_date_to_rata_die(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_datetime_to_systemtime,
-    bench_systemtime_to_datetime,
-    bench_secs_to_dhms,
-    bench_rata_die_to_gregorian_date,
-    bench_gregorian_date_to_rata_die,
+    // bench_datetime_to_systemtime,
+    // bench_systemtime_to_datetime,
+    // bench_secs_to_dhms,
+    bench_rd_to_date,
+    bench_date_to_rd,
 );
 criterion_main!(benches);

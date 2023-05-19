@@ -19,7 +19,7 @@ path = "src/lib.rs"
 bench = false
 
 [[bench]]
-name = "rata_die"
+name = "criterion"
 harness = false
 
 [dependencies]
