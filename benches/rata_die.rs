@@ -4,7 +4,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use gmtime::*;
+use datealgo::*;
 
 #[inline]
 pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {

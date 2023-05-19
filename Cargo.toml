@@ -1,6 +1,6 @@
 [package]
-name = "gmtime"
-version = "0.1.0"
+name = "datealgo"
+version = "0.0.1"
 edition = "2021"
 authors = ["Nuutti Kotivuori <naked@iki.fi>"]
 license = "MIT OR Apache-2.0"
