@@ -1,5 +1,9 @@
+![Crates.io](https://img.shields.io/crates/v/datealgo)
+![docs.rs](https://img.shields.io/docsrs/datealgo)
+![Crates.io](https://img.shields.io/crates/l/datealgo)
+![Crates.io](https://img.shields.io/crates/d/datealgo)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/nakedible/datealgo/ci.yml)](https://github.com/nakedible/datealgo-rs/actions/workflows/ci.yml)
-![Maintenance](https://img.shields.io/badge/maintenance-unknow-black.svg)
+![Maintenance](https://img.shields.io/maintenance/yes/2023)
 
 # {{crate}}
 
