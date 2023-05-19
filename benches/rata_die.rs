@@ -6,11 +6,17 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use gmtime::*;
 
-// fn test_chrono((y, m, d): (u16, u8, u8)) -> std::time::Duration {
-//     const b = chrono::NaiveDate::from_ymd_opt(0, 3, 1).unwrap();
-//     let d = chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap();
-
-// }
+#[inline]
+pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
+    let secs = secs as u64;
+    let ss = secs % 60;
+    let secs = secs / 60;
+    let mm = secs % 60;
+    let secs = secs / 60;
+    let hh = secs % 24;
+    let secs = secs / 24;
+    (secs as i32, hh as u8, mm as u8, ss as u8)
+}
 
 fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
     let dur = v
@@ -281,7 +287,7 @@ fn civil_from_days(n: i32) -> (i32, u32, u32) {
     (y + (m <= 2) as i32, m as u32, d as u32) 
 }
 
-fn build_secs() -> [u64; 1000] {
+fn build_secs() -> [i64; 1000] {
     let mut rng = ChaChaRng::seed_from_u64(1970);
     let arr = [(); 1000].map(|_| rng.gen_range(0..(36525 * 86400)));
     arr
@@ -310,7 +316,7 @@ fn build_datetimes() -> [(i16, u8, u8, u8, u8, u8); 1000] {
 
 fn build_rata_die() -> [i32; 1000] {
     let mut rng = ChaChaRng::seed_from_u64(1970);
-    let arr = [(); 1000].map(|_| UNIX_EPOCH_RATA_DIE + rng.gen_range(0..36525));
+    let arr = [(); 1000].map(|_| rng.gen_range(0..36525));
     arr
 }
 
@@ -380,7 +386,7 @@ fn bench_rata_die_to_gregorian_date(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("rata_die_to_gregorian_date", rd),
             &rd,
-            |b, i| b.iter(|| black_box(rata_die_to_gregorian_date(black_box(*i))))
+            |b, i| b.iter(|| black_box(rd_to_date(black_box(*i))))
         );
         group.bench_with_input(
             BenchmarkId::new("civil_from_days", rd),
@@ -397,7 +403,7 @@ fn bench_gregorian_date_to_rata_die(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("gregorian_date_to_rata_die", format!("{:?}", d)),
             &d,
-            |b, i| b.iter(|| black_box(gregorian_date_to_rata_die(black_box(*i)))),
+            |b, i| b.iter(|| black_box(date_to_rd(black_box(*i)))),
         );
         group.bench_with_input(
             BenchmarkId::new("days_from_civil", format!("{:?}", d)),
