@@ -689,9 +689,9 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
         Ok(dur) => {
             let secs = dur.as_secs();
             let nsecs = dur.subsec_nanos();
-            if secs > RD_SECONDS_MAX as u64 {
-                return None;
-            }
+            //if secs > RD_SECONDS_MAX as u64 {
+            //    return None;
+            //}
             Some((secs as i64, nsecs))
         }
         Err(err) => {
@@ -702,9 +702,9 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
                 secs += 1;
                 nsecs = 1_000_000_000 - nsecs;
             }
-            if secs > -RD_SECONDS_MIN as u64 {
-                return None;
-            }
+            //if secs > -RD_SECONDS_MIN as u64 {
+            //    return None;
+            //}
             Some((-(secs as i64), nsecs))
         }
     }
