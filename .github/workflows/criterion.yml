@@ -1,5 +1,7 @@
-on: [pull_request]
 name: Benchmark pull requests
+permissions:
+  pull-requests: write
+on: [pull_request]
 jobs:
   runBenchmark:
     name: run benchmark
