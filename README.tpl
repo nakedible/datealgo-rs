@@ -11,7 +11,7 @@
 
 ## Releases
 
-See [CHANGELOG.md]()
+See [CHANGELOG](CHANGELOG.md)
 
 ## License
 

@@ -142,7 +142,7 @@ I do not claim original research on anything that is in this crate.
 
 ## Releases
 
-See [CHANGELOG.md]()
+See [CHANGELOG](CHANGELOG.md)
 
 ## License
 
