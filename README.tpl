@@ -11,7 +11,7 @@
 
 ## Releases
 
-Current version: {{version}}
+See [CHANGELOG.md]()
 
 ## License
 

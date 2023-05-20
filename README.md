@@ -116,7 +116,7 @@ benchmarks.
 
 ## Releases
 
-Current version: 0.0.1
+See [CHANGELOG.md]()
 
 ## License
 
