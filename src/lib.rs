@@ -60,8 +60,11 @@
 //! | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
 //! | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
 //! | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
-//! | systemtime_to_datetime | **16.1 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
+//! | systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
 //! | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
+//! 
+//! Some code has been adapted from the libraries to produce comparable benchmarks.
+
 #![no_std]
 
 #[cfg(feature = "std")]
@@ -88,6 +91,7 @@ const DAY_OFFSET: i32 = ERA_OFFSET * DAYS_IN_ERA + DAYS_TO_UNIX_EPOCH;
 const YEAR_OFFSET: i32 = ERA_OFFSET * YEARS_IN_ERA;
 /// Seconds in a single 24 hour calendar day
 const SECS_IN_DAY: i64 = 86400;
+/// Offset to be added to given second values
 const SECS_OFFSET: i64 = DAY_OFFSET as i64 * SECS_IN_DAY;
 
 #[cfg(feature = "std")]
@@ -117,46 +121,92 @@ pub const RD_MIN: i32 = date_to_rd((YEAR_MIN, 1, 1));
 /// results.
 pub const RD_MAX: i32 = date_to_rd((YEAR_MAX, 12, 31));
 
-pub const SECONDS_MIN: i64 = RD_MIN as i64 * SECS_IN_DAY;
-pub const SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY;
+/// Minimum Rata Die in seconds for conversion
+/// 
+/// Rata die seconds earlier than this are not supported and will likely produce incorrect
+/// results.
+pub const RD_SECONDS_MIN: i64 = RD_MIN as i64 * SECS_IN_DAY;
 
-pub const MONTH_MIN: u32 = 1;
-pub const MONTH_MAX: u32 = 12;
-pub const JANUARY: u32 = 1;
-pub const FEBRUARY: u32 = 2;
-pub const MARCH: u32 = 3;
-pub const APRIL: u32 = 4;
-pub const MAY: u32 = 5;
-pub const JUNE: u32 = 6;
-pub const JULY: u32 = 7;
-pub const AUGUST: u32 = 8;
-pub const SEPTEMBER: u32 = 9;
-pub const OCTOBER: u32 = 10;
-pub const NOVEMBER: u32 = 11;
-pub const DECEMBER: u32 = 12;
-pub const DAY_MIN: u32 = 1;
-pub const DAY_MAX: u32 = 31;
-pub const WEEKDAY_MIN: u32 = 1;
-pub const WEEKDAY_MAX: u32 = 7;
-pub const MONDAY: u32 = 1;
-pub const TUESDAY: u32 = 2;
-pub const WEDNESDAY: u32 = 3;
-pub const THURSDAY: u32 = 4;
-pub const FRIDAY: u32 = 5;
-pub const SATURDAY: u32 = 6;
-pub const SUNDAY: u32 = 7;
+/// Maximum Rata die in seconds for conversion
+/// 
+/// Rata die seconds later than this are not supported and will likely produce incorrect
+/// results.
+pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 
-pub const RD_I16_MIN: i32 = date_to_rd((i16::MIN as i32, 1, 1));
-pub const RD_I16_MAX: i32 = date_to_rd((i16::MAX as i32, 12, 31));
-pub const SECS_MIN: i64 = RD_MIN as i64 * SECS_IN_DAY;
-pub const SECS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
+/// Convenience constants, mostly for input validation
+/// 
+/// The use of these constants is strictly optional, as this is a low level
+/// library and the values are wholly unremarkable.
+pub mod consts {
+    /// Minimum value for month
+    pub const MONTH_MIN: u32 = 1;
+    /// Maximum value for month
+    pub const MONTH_MAX: u32 = 12;
+    /// Minimum value for day of month
+    pub const DAY_MIN: u32 = 1;
+    /// Maximum value for day of month
+    pub const DAY_MAX: u32 = 31;
+    /// Minimum value for day of week
+    pub const WEEKDAY_MIN: u32 = 1;
+    /// Maximum value for day of week
+    pub const WEEKDAY_MAX: u32 = 7;
+    /// Minimum value for hours
+    pub const HOUR_MIN: u8 = 0;
+    /// Maximum value for hours
+    pub const HOUR_MAX: u8 = 23;
+    /// Minimum value for minutes
+    pub const MINUTE_MIN: u8 = 0;
+    /// Maximum value for minutes
+    pub const MINUTE_MAX: u8 = 59;
+    /// Minimum value for seconds
+    pub const SECOND_MIN: u8 = 0;
+    /// Maximum value for seconds
+    pub const SECOND_MAX: u8 = 59;
+    /// Minimum value for nanoseconds
+    pub const NANOSECOND_MIN: u32 = 0;
+    /// Maximum value for nanoseconds
+    pub const NANOSECOND_MAX: u32 = 999_999_999;
 
-pub const HOUR_MIN: u8 = 0;
-pub const HOUR_MAX: u8 = 23;
-pub const MINUTE_MIN: u8 = 0;
-pub const MINUTE_MAX: u8 = 59;
-pub const SECOND_MIN: u8 = 0;
-pub const SECOND_MAX: u8 = 59;
+    /// January month value
+    pub const JANUARY: u32 = 1;
+    /// February month value
+    pub const FEBRUARY: u32 = 2;
+    /// March month value
+    pub const MARCH: u32 = 3;
+    /// April month value
+    pub const APRIL: u32 = 4;
+    /// May month value
+    pub const MAY: u32 = 5;
+    /// June month value
+    pub const JUNE: u32 = 6;
+    /// July month value
+    pub const JULY: u32 = 7;
+    /// August month value
+    pub const AUGUST: u32 = 8;
+    /// September month value
+    pub const SEPTEMBER: u32 = 9;
+    /// October month value
+    pub const OCTOBER: u32 = 10;
+    /// November month value
+    pub const NOVEMBER: u32 = 11;
+    /// December month value
+    pub const DECEMBER: u32 = 12;
+
+    /// Monday day of week value
+    pub const MONDAY: u32 = 1;
+    /// Tuesday day of week value
+    pub const TUESDAY: u32 = 2;
+    /// Wednesday day of week value
+    pub const WEDNESDAY: u32 = 3;
+    /// Thursday day of week value
+    pub const THURSDAY: u32 = 4;
+    /// Friday day of week value
+    pub const FRIDAY: u32 = 5;
+    /// Saturday day of week value
+    pub const SATURDAY: u32 = 6;
+    /// Sunday day of week value
+    pub const SUNDAY: u32 = 7;
+}
 
 // OPTIMIZATION NOTES:
 // - addition and substraction is the same speed regardless of signed or unsigned
@@ -249,8 +299,8 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 #[inline]
 pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= MONTH_MIN && m <= MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
     let y = y.wrapping_add(YEAR_OFFSET) as u32;
     let jf = (m < 3) as u32;
     let y = y - jf;
@@ -338,8 +388,8 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 #[inline]
 pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= MONTH_MIN && m <= MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= DAY_MIN && d <= days_in_month(y, m), "given day is out of range"); // FIXME
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range"); // FIXME
     let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
     let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
     let mut idx = m.wrapping_sub(1) as usize;
@@ -350,10 +400,10 @@ pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
 /// Split total seconds to days, hours, minutes and seconds
 /// 
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(days,
-/// hours, minutes, seconds)` tuple. Argument must be between `SECONDS_MIN` and
-/// `SECONDS_MAX` inclusive. Bounds are checked using `debug_assert` only, so
-/// that the checks are not present in release builds, similar to integer
-/// overflow checks.
+/// hours, minutes, seconds)` tuple. Argument must be between `RD_SECONDS_MIN`
+/// and `RD_SECONDS_MAX` inclusive. Bounds are checked using `debug_assert`
+/// only, so that the checks are not present in release builds, similar to
+/// integer overflow checks.
 /// 
 /// # Examples
 /// 
@@ -372,7 +422,7 @@ pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
 /// Algorithm is simple modulus on unsigned values.
 #[inline]
 pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
-    debug_assert!(secs >= SECONDS_MIN && secs <= SECONDS_MAX, "given seconds value is out of range");
+    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds value is out of range");
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
     let secs = (secs % SECS_IN_DAY as u64) as u32;
@@ -384,31 +434,101 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 }
 
 /// Combine days, hours, minutes and seconds to total seconds
+/// 
+/// Given a `(days, hours, minutes, seconds)` tuple from Unix epoch (January
+/// 1st, 1970) returns the total seconds. Days must be between `RD_MIN` and
+/// `RD_MAX` inclusive. Bounds are checked using `debug_assert` only, so that
+/// the checks are not present in release builds, similar to integer overflow
+/// checks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::{dhms_to_secs, date_to_rd};
+/// 
+/// assert_eq!(dhms_to_secs((0, 0, 0, 0)), 0);
+/// assert_eq!(dhms_to_secs((1, 0, 0, 0)), 86400);
+/// assert_eq!(dhms_to_secs((0, 23, 59, 59)), 86399);
+/// assert_eq!(dhms_to_secs((-1, 0, 0, 0)), -86400);
+/// assert_eq!(dhms_to_secs((-1, 0, 0, 1)), -86399);
+/// assert_eq!(dhms_to_secs((date_to_rd((2023, 5, 20)), 9, 24, 38)), 1684574678)
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
 pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
     debug_assert!(d >= RD_MIN && d <= RD_MAX, "given rata die is out of range");
-    debug_assert!(h >= HOUR_MIN && h <= HOUR_MAX, "given hour is out of range");
-    debug_assert!(m >= MINUTE_MIN && m <= MINUTE_MAX, "given minute is out of range");
-    debug_assert!(s >= SECOND_MIN && s <= SECOND_MAX, "given second is out of range");
+    debug_assert!(h >= consts::HOUR_MIN && h <= consts::HOUR_MAX, "given hour is out of range");
+    debug_assert!(m >= consts::MINUTE_MIN && m <= consts::MINUTE_MAX, "given minute is out of range");
+    debug_assert!(s >= consts::SECOND_MIN && s <= consts::SECOND_MAX, "given second is out of range");
     d as i64 * SECS_IN_DAY + h as i64 * 3600 + m as i64 * 60 + s as i64
 }
 
+/// Convert total seconds to year, month, day, hours, minutes and seconds
+/// 
+/// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(year,
+/// month, day, hours, minutes, seconds)` tuple. Argument must be between
+/// `RD_SECONDS_MIN` and `RD_SECONDS_MAX` inclusive. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::secs_to_datetime;
+/// 
+/// assert_eq!(secs_to_datetime(0), (1970, 1, 1, 0, 0, 0));
+/// assert_eq!(secs_to_datetime(86400), (1970, 1, 2, 0, 0, 0));
+/// assert_eq!(secs_to_datetime(86399), (1970, 1, 1, 23, 59, 59));
+/// assert_eq!(secs_to_datetime(-1), (1969, 12, 31, 23, 59, 59));
+/// assert_eq!(secs_to_datetime(1684574678), (2023, 5, 20, 9, 24, 38));
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Combination of existing functions for convenience only.
 #[inline]
 pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
-    debug_assert!(secs >= SECS_MIN && secs <= SECS_MAX, "given seconds is out of range");
+    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (y, m, s) = rd_to_date(days);
     (y, m, s, hh, mm, ss)
 }
 
+/// Convert year, month, day, hours, minutes and seconds to total seconds
+/// 
+/// Given a `(year, month, day, hours, minutes, seconds)` tuple from Unix epoch
+/// (January 1st, 1970) returns the total seconds. Year must be between
+/// `YEAR_MIN` and `YEAR_MAX` inclusive. Bounds are checked using `debug_assert`
+/// only, so that the checks are not present in release builds, similar to
+/// integer overflow checks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::datetime_to_secs;
+/// 
+/// assert_eq!(datetime_to_secs((1970, 1, 1, 0, 0, 0)), 0);
+/// assert_eq!(datetime_to_secs((1970, 1, 2, 0, 0, 0)), 86400);
+/// assert_eq!(datetime_to_secs((1970, 1, 1, 23, 59, 59)), 86399);
+/// assert_eq!(datetime_to_secs((1969, 12, 31, 0, 0, 0)), -86400);
+/// assert_eq!(datetime_to_secs((1969, 12, 31, 0, 0, 1)), -86399);
+/// assert_eq!(datetime_to_secs((2023, 5, 20, 9, 24, 38)), 1684574678)
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
 pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u32, u32, u8, u8, u8)) -> i64 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= MONTH_MIN && m <= MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
-    debug_assert!(hh >= HOUR_MIN && hh <= HOUR_MAX, "given hour is out of range");
-    debug_assert!(mm >= MINUTE_MIN && mm <= MINUTE_MAX, "given minute is out of range");
-    debug_assert!(ss >= SECOND_MIN && ss <= SECOND_MAX, "given second is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    debug_assert!(hh >= consts::HOUR_MIN && hh <= consts::HOUR_MAX, "given hour is out of range");
+    debug_assert!(mm >= consts::MINUTE_MIN && mm <= consts::MINUTE_MAX, "given minute is out of range");
+    debug_assert!(ss >= consts::SECOND_MIN && ss <= consts::SECOND_MAX, "given second is out of range");
     let days = date_to_rd((y, m, d));
     dhms_to_secs((days, hh, mm, ss))
 }
@@ -457,7 +577,7 @@ pub const fn is_leap_year(y: i32) -> bool {
 #[inline]
 pub const fn days_in_month(y: i32, m: u32) -> u32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= MONTH_MIN && m <= MONTH_MAX, "given month is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     let mut idx = m.wrapping_sub(1) as usize;
     if idx > 11 { idx = 0; }
     if is_leap_year(y) {
@@ -467,6 +587,29 @@ pub const fn days_in_month(y: i32, m: u32) -> u32 {
     }
 }
 
+/// Convert `SystemTime` to seconds and nanoseconds
+/// 
+/// Given `SystemTime` returns an `Option` of `(seconds, nanoseconds)` tuple
+/// from Unix epoch (January 1st, 1970). Returns `None` if the time is before
+/// `RD_SECONDS_MIN` or after `RD_SECONDS_MAX`.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::systemtime_to_secs;
+/// use std::time::{Duration, UNIX_EPOCH};
+/// 
+/// assert_eq!(systemtime_to_secs(UNIX_EPOCH), Some((0, 0)));
+/// assert_eq!(systemtime_to_secs(UNIX_EPOCH + Duration::new(1, 0)), Some((1, 0)));
+/// assert_eq!(systemtime_to_secs(UNIX_EPOCH + Duration::new(0, 1)), Some((0, 1)));
+/// assert_eq!(systemtime_to_secs(UNIX_EPOCH - Duration::new(1, 0)), Some((-1, 0)));
+/// assert_eq!(systemtime_to_secs(UNIX_EPOCH - Duration::new(0, 1)), Some((-1, 999_999_999)));
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Uses `.duration_since(UNIX_EPOCH)` and handles both positive and negative
+/// result.
 #[cfg(feature = "std")]
 #[inline]
 pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
@@ -474,7 +617,7 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
         Ok(dur) => {
             let secs = dur.as_secs();
             let nsecs = dur.subsec_nanos();
-            //if secs > SECS_MAX as u64 { return None; }
+            if secs > RD_SECONDS_MAX as u64 { return None; }
             Some((secs as i64, nsecs))
         }
         Err(err) => {
@@ -485,27 +628,54 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
                 secs += 1;
                 nsecs = 1_000_000_000 - nsecs;
             }
-            //if secs > -SECS_MIN as u64 { return None; }
+            if secs > -RD_SECONDS_MIN as u64 { return None; }
             Some((-(secs as i64), nsecs))
         }
     }
 }
 
-#[cfg(feature = "std")]
-#[inline]
-pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
-    let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
-    let secs = dur.as_secs();
-    // if secs < (SECS_OFFSET + SECS_MIN) as u64 || secs > (SECS_OFFSET + SECS_MAX) as u64 {
-    //     return None;
-    // }
-    let nsecs = dur.subsec_nanos();
-    Some((secs as i64 - SECS_OFFSET, nsecs))
-}
+// #[cfg(feature = "std")]
+// #[inline]
+// pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
+//     let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
+//     let secs = dur.as_secs();
+//     // if secs < (SECS_OFFSET + SECS_MIN) as u64 || secs > (SECS_OFFSET + SECS_MAX) as u64 {
+//     //     return None;
+//     // }
+//     let nsecs = dur.subsec_nanos();
+//     Some((secs as i64 - SECS_OFFSET, nsecs))
+// }
 
+/// Convert `(seconds, nanoseconds)` to `SystemTime`
+/// 
+/// Given seconds and nanoseconds counting from Unix epoch (January 1st, 1970)
+/// returns `SystemTime`. Seconds must be between `RD_SECONDS_MIN` and
+/// `RD_SECONDS_MAX` inclusive. Bounds are checked using `debug_assert` only, so
+/// that the checks are not present in release builds, similar to integer
+/// overflow checks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::secs_to_systemtime;
+/// use std::time::{Duration, UNIX_EPOCH};
+/// 
+/// assert_eq!(secs_to_systemtime((0, 0)), UNIX_EPOCH);
+/// assert_eq!(secs_to_systemtime((0, 1)), UNIX_EPOCH + Duration::new(0, 1));
+/// assert_eq!(secs_to_systemtime((1, 0)), UNIX_EPOCH + Duration::new(1, 0));
+/// assert_eq!(secs_to_systemtime((-1, 999_999_999)), UNIX_EPOCH - Duration::new(0, 1));
+/// assert_eq!(secs_to_systemtime((-1, 0)), UNIX_EPOCH - Duration::new(1, 0));
+/// assert_eq!(secs_to_systemtime((-2, 999_999_999)), UNIX_EPOCH - Duration::new(1, 1));
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
 pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
+    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
+    debug_assert!(nsecs >= consts::NANOSECOND_MIN && nsecs <= consts::NANOSECOND_MAX, "given nanoseconds is out of range");
     if secs >= 0 {
         UNIX_EPOCH + Duration::new(secs as u64, nsecs)
     } else if nsecs > 0 {
@@ -515,15 +685,60 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
     }
 }
 
+/// Convert `SystemTime` to year, month, day, hours, minutes, seconds and
+/// nanoseconds
+/// 
+/// Given `SystemTime` returns an Option of `(year, month, day, hours, minutes,
+/// seconds, nanoseconds)` tuple. Returns `None` if the time is before
+/// `RD_SECONDS_MIN` or after `RD_SECONDS_MAX`.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::systemtime_to_datetime;
+/// use std::time::{Duration, UNIX_EPOCH};
+/// 
+/// assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
+/// assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
+/// assert_eq!(systemtime_to_datetime(UNIX_EPOCH - Duration::from_secs(1)), Some((1969, 12, 31, 23, 59, 59, 0)));
+/// assert_eq!(systemtime_to_datetime(UNIX_EPOCH - Duration::new(0, 1)), Some((1969, 12, 31, 23, 59, 59, 999_999_999)));
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn systemtime_to_datetime(st: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
-    let (secs, nsecs) = systemtime_to_secs(st).unwrap();
+pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, u8, u32)> {
+    let (secs, nsecs) = systemtime_to_secs(st)?;
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (year, month, day) = rd_to_date(days);
-    (year, month, day, hh, mm, ss, nsecs)
+    Some((year, month, day, hh, mm, ss, nsecs))
 }
 
+/// Convert year, month, day, hours, minutes, seconds and nanoseconds to
+/// `SystemTime`
+/// 
+/// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
+/// from Unix epoch (January 1st, 1970) returns `SystemTime`. Year must be
+/// between `YEAR_MIN` and `YEAR_MAX` inclusive. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use datealgo::datetime_to_systemtime;
+/// use std::time::{Duration, UNIX_EPOCH};
+/// 
+/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), UNIX_EPOCH);
+/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 1, 0)), UNIX_EPOCH + Duration::new(1, 0));
+/// assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+/// ```
+/// 
+/// # Algorithm
+/// 
+/// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
 pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
@@ -540,28 +755,30 @@ mod tests {
 
     #[test]
     fn test_consts() {
-        assert_eq!(RD_I16_MIN, -12687794);
-        assert_eq!(RD_I16_MAX, 11248737);
         assert_eq!(RD_MIN, -536895152);
         assert_eq!(RD_MAX, 536824295);
+        assert_eq!(RD_SECONDS_MIN, -46387741132800);
+        assert_eq!(RD_SECONDS_MAX, 46381619174399);
     }
 
     #[test]
     fn test_date_to_rd() {
         assert_eq!(date_to_rd((0, 3, 1)), -719468);
         assert_eq!(date_to_rd((1970, 1, 1)), 0);
-        assert_eq!(date_to_rd((i16::MIN as i32, 1, 1)), RD_I16_MIN);
-        assert_eq!(date_to_rd((i16::MAX as i32, 12, 31)), RD_I16_MAX);
+        assert_eq!(date_to_rd((i16::MIN as i32, 1, 1)), -12687794);
+        assert_eq!(date_to_rd((i16::MAX as i32, 12, 31)), 11248737);
+        assert_eq!(date_to_rd((i16::MIN as i32 - 1, 1, 1)), -12688159);
+        assert_eq!(date_to_rd((i16::MAX as i32 + 1, 12, 31)), 11249103);
     }
 
     #[test]
     fn test_rd_to_date() {
         assert_eq!(rd_to_date(-719468), (0, 3, 1));
         assert_eq!(rd_to_date(0), (1970, 1, 1));
-        assert_eq!(rd_to_date(RD_I16_MIN), (i16::MIN as i32, 1, 1));
-        assert_eq!(rd_to_date(RD_I16_MAX), (i16::MAX as i32, 12, 31));
-        assert_eq!(rd_to_date(RD_I16_MIN - 1), (i16::MIN as i32 - 1, 12, 31));
-        assert_eq!(rd_to_date(RD_I16_MAX + 1), (i16::MAX as i32 + 1, 1, 1));
+        assert_eq!(rd_to_date(-12687794), (i16::MIN as i32, 1, 1));
+        assert_eq!(rd_to_date(11248737), (i16::MAX as i32, 12, 31));
+        assert_eq!(rd_to_date(-12687795), (i16::MIN as i32 - 1, 12, 31));
+        assert_eq!(rd_to_date(11248738), (i16::MAX as i32 + 1, 1, 1));
     }
 
     #[test]
@@ -583,5 +800,29 @@ mod tests {
     fn test_date_to_weekday() {
         assert_eq!(date_to_weekday((1970, 1, 1)), 4);
         assert_eq!(date_to_weekday((2023, 1, 1)), 7);
+    }
+
+    #[test]
+    fn test_secs_to_dhms() {
+    }
+
+    #[test]
+    fn test_dhms_to_secs() {
+    }
+
+    #[test]
+    fn test_secs_to_datetime() {
+    }
+
+    #[test]
+    fn test_datetime_to_secs() {
+    }
+
+    #[test]
+    fn test_is_leap_year() {
+    }
+
+    #[test]
+    fn test_days_in_month() {
     }
 }

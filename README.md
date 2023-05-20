@@ -69,8 +69,10 @@ Results on GitHub Codespaces default VM:
 | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
 | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
 | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
-| systemtime_to_datetime | **16.1 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
+| systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
 | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
+
+Some code has been adapted from the libraries to produce comparable benchmarks.
 
 ## Releases
 
