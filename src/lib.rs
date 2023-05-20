@@ -50,7 +50,7 @@
 //! The crate works in `no_std` environments and has no allocations. Most of the
 //! functions also work in constant contexts.
 //!
-//! - `std` (default): Include [std::time::SystemTime] conversion
+//! - `std` (default): Include `SystemTime` conversions
 //!
 //! # Background
 //!
@@ -99,7 +99,7 @@
 //!
 //! Results on GitHub Codespaces default VM:
 //!
-//! | x                      | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
+//! | Function               | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 //! | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
 //! | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
 //! | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
@@ -137,9 +137,6 @@ const YEAR_OFFSET: i32 = ERA_OFFSET * YEARS_IN_ERA;
 const SECS_IN_DAY: i64 = 86400;
 /// Offset to be added to given second values
 const SECS_OFFSET: i64 = DAY_OFFSET as i64 * SECS_IN_DAY;
-
-#[cfg(feature = "std")]
-const SECS_OFFSET_DURATION: Duration = Duration::from_secs(SECS_OFFSET as u64);
 
 /// Minimum supported year for conversion
 ///
@@ -688,18 +685,6 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
         }
     }
 }
-
-// #[cfg(feature = "std")]
-// #[inline]
-// pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
-//     let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
-//     let secs = dur.as_secs();
-//     // if secs < (SECS_OFFSET + SECS_MIN) as u64 || secs > (SECS_OFFSET + SECS_MAX) as u64 {
-//     //     return None;
-//     // }
-//     let nsecs = dur.subsec_nanos();
-//     Some((secs as i64 - SECS_OFFSET, nsecs))
-// }
 
 /// Convert seconds and nanoseconds to `SystemTime`
 ///

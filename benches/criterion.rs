@@ -3,6 +3,10 @@ use std::time::{Duration, UNIX_EPOCH};
 
 mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
+    const DAY_OFFSET: i32 = 3670 * 146097 + 719468;
+    const SECS_OFFSET: i64 = DAY_OFFSET as i64 * 86400;
+
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
     pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
@@ -42,6 +46,20 @@ mod datealgo_alt {
         let mm = month + 12 * adjustment - 2;
         let yy = year - adjustment;
         (day + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1
+    }
+
+    #[cfg(feature = "std")]
+    const SECS_OFFSET_DURATION: Duration = Duration::from_secs(SECS_OFFSET as u64);
+
+    #[inline]
+    pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
+        let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
+        let secs = dur.as_secs();
+        // if secs < (SECS_OFFSET + SECS_MIN) as u64 || secs > (SECS_OFFSET + SECS_MAX) as u64 {
+        //     return None;
+        // }
+        let nsecs = dur.subsec_nanos();
+        Some((secs as i64 - SECS_OFFSET, nsecs))
     }
 }
 
@@ -784,6 +802,27 @@ fn bench_days_in_month(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_systemtime_to_secs(c: &mut Criterion) {
+    let mut group = c.benchmark_group("systemtime_to_secs");
+    let s = UNIX_EPOCH + Duration::from_secs(1684574678);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo::systemtime_to_secs(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo_alt::systemtime_to_secs2(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_secs_to_systemtime(c: &mut Criterion) {
+    let mut group = c.benchmark_group("secs_to_systemtime");
+    let s = (1684574678, 0);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo::secs_to_systemtime(black_box(*i))))
+    });
+    group.finish();
+}
+
 fn bench_systemtime_to_datetime(c: &mut Criterion) {
     let mut group = c.benchmark_group("systemtime_to_datetime");
     let s = UNIX_EPOCH + Duration::from_secs(1684574678);
@@ -840,6 +879,8 @@ criterion_group!(
     bench_datetime_to_secs,
     bench_is_leap_year,
     bench_days_in_month,
+    bench_systemtime_to_secs,
+    bench_secs_to_systemtime,
     bench_systemtime_to_datetime,
     bench_datetime_to_systemtime,
 );

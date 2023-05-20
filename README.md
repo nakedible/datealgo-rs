@@ -59,7 +59,7 @@ assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Dur
 The crate works in `no_std` environments and has no allocations. Most of the
 functions also work in constant contexts.
 
-- `std` (default): Include [std::time::SystemTime] conversion
+- `std` (default): Include `SystemTime` conversions
 
 ## Background
 
@@ -108,7 +108,7 @@ which means a usable range of roughly -1,460,000 to 1,460,000 years.
 
 Results on GitHub Codespaces default VM:
 
-| x                      | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
+| Function               | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
 | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
 | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
