@@ -19,7 +19,11 @@ path = "src/lib.rs"
 bench = false
 
 [[bench]]
-name = "criterion"
+name = "compare"
+harness = false
+
+[[bench]]
+name = "basic"
 harness = false
 
 [dev-dependencies]
