@@ -9,10 +9,6 @@
 
 Low-level date algorithms for libraries
 
-> **Warning**
-> This is a very preliminary release as I test the releasing
-> process. A proper release will follow soon.
-
 This library aims to provide the **highest performance algorithms** for date
 manipulation in an unopinionated way. It is meant to be used by the various
 date and time libraries which can then provide ergonomic and opinionated
