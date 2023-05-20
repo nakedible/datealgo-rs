@@ -117,7 +117,7 @@ extern crate std;
 #[cfg(feature = "std")]
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Adjustment from UNIX epoch to make calculations use positive integers
+/// Adjustment from Unix epoch to make calculations use positive integers
 ///
 /// Unit is eras, which is defined to be 400 years, as that is the period of the
 /// proleptic Gregorian calendar. Selected to place unix epoch roughly in the
@@ -127,7 +127,7 @@ const ERA_OFFSET: i32 = 3670;
 const DAYS_IN_ERA: i32 = 146097;
 /// Every era has 400 years
 const YEARS_IN_ERA: i32 = 400;
-/// Number of days from 0000-03-01 to UNIX epoch 1970-01-01
+/// Number of days from 0000-03-01 to Unix epoch 1970-01-01
 const DAYS_TO_UNIX_EPOCH: i32 = 719468;
 /// Offset to be added to given day values
 const DAY_OFFSET: i32 = ERA_OFFSET * DAYS_IN_ERA + DAYS_TO_UNIX_EPOCH;
@@ -423,9 +423,11 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is Sakamoto's method. It is very marginally faster
-/// than converting first to Rata Die and determining the day of week from that.
-/// If Rata Die value is available, always prefer converting from that.
+/// Algorithm currently used is [Sakamoto's
+/// method](https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week#Sakamoto's_methods).
+/// It is very marginally faster than converting first to Rata Die and
+/// determining the day of week from that. If Rata Die value is available,
+/// always prefer converting from that.
 #[inline]
 pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
@@ -686,13 +688,13 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
     }
 }
 
-/// Convert seconds and nanoseconds to `SystemTime`
+/// Convert seconds and nanoseconds to [`std::time::SystemTime`]
 ///
-/// Given a tuple of seconds and nanoseconds counting from Unix epoch (January 1st, 1970)
-/// returns `SystemTime`. Seconds must be between [RD_SECONDS_MIN] and
-/// [RD_SECONDS_MAX] inclusive. Bounds are checked using `debug_assert` only, so
-/// that the checks are not present in release builds, similar to integer
-/// overflow checks.
+/// Given a tuple of seconds and nanoseconds counting from Unix epoch (January
+/// 1st, 1970) returns [`std::time::SystemTime`]. Seconds must be between
+/// [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
 ///
 /// # Examples
 ///
@@ -728,12 +730,12 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
     }
 }
 
-/// Convert `SystemTime` to year, month, day, hours, minutes, seconds and
-/// nanoseconds
+/// Convert [`std::time::SystemTime`] to year, month, day, hours, minutes,
+/// seconds and nanoseconds
 ///
-/// Given `SystemTime` returns an Option of `(year, month, day, hours, minutes,
-/// seconds, nanoseconds)` tuple. Returns `None` if the time is before
-/// [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
+/// Given [`std::time::SystemTime`] returns an Option of `(year, month, day,
+/// hours, minutes, seconds, nanoseconds)` tuple. Returns `None` if the time is
+/// before [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
 ///
 /// # Examples
 ///
@@ -760,13 +762,13 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 }
 
 /// Convert year, month, day, hours, minutes, seconds and nanoseconds to
-/// `SystemTime`
+/// [`std::time::SystemTime`]
 ///
 /// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
-/// from Unix epoch (January 1st, 1970) returns `SystemTime`. Year must be
-/// between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked using
-/// `debug_assert` only, so that the checks are not present in release builds,
-/// similar to integer overflow checks.
+/// from Unix epoch (January 1st, 1970) returns [`std::time::SystemTime`]. Year
+/// must be between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked
+/// using `debug_assert` only, so that the checks are not present in release
+/// builds, similar to integer overflow checks.
 ///
 /// # Examples
 ///
