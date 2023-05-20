@@ -61,6 +61,17 @@ The Rata Die values are represented as `i32` for performance reasons. The
 needed calculations reduce that to roughly an effective `i30` integer range,
 which means a usable range of roughly -1,460,000 to 1,460,000 years.
 
+## Benchmarks
+
+Results on GitHub Codespaces default VM:
+
+| x                      | datealgo  | hinnant   | httpdate  | humantime | time      | chrono    |
+| ---------------------- | --------- | --------- | --------- | --------- | --------- | --------- |
+| rd_to_date             | 5.0 ns    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
+| date_to_rd             | 3.1 ns    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
+| systemtime_to_datetime | 16.1 ns   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
+| datetime_to_systemtime | 6.2 ns    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
+
 ## Releases
 
 Current version: 0.0.1

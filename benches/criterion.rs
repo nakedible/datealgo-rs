@@ -1,6 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::time::{UNIX_EPOCH, Duration};
 
 mod datealgo_alt {
+    const YEAR_OFFSET: i32 = 3670 * 400;
+
     #[inline]
     pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
         let secs = secs as u64;
@@ -12,6 +15,34 @@ mod datealgo_alt {
         let secs = secs / 24;
         (secs as i32, hh as u8, mm as u8, ss as u8)
     }
+
+    #[inline]
+    pub const fn rd_to_weekday2(n: i32) -> u32 {
+        (n + 4).rem_euclid(7) as u32
+    }
+
+    #[inline]
+    pub const fn rd_to_weekday3(n: i32) -> u32 {
+        if n >= -4 {
+            ((n + 4) % 7) as u32
+        } else {
+            ((n + 5) % 7 + 6) as u32
+        }
+    }
+
+    #[inline]
+    pub const fn date_to_weekday2((y, m, d): (i32, u32, u32)) -> u32 {
+        datealgo::rd_to_weekday(datealgo::date_to_rd((y, m, d)))
+    }
+
+    #[inline]
+    pub const fn date_to_weekday3((year, month, day): (i32, u32, u32)) -> u32 {
+        let year = year.wrapping_add(YEAR_OFFSET) as u32;
+        let adjustment = (14 - month) / 12;
+        let mm = month + 12 * adjustment - 2;
+        let yy = year - adjustment;
+        (day + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1
+    }    
 }
 
 mod httpdate {
@@ -106,7 +137,7 @@ mod httpdate {
         days as i32
     }
 
-    pub fn httpdate_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -169,23 +200,23 @@ mod httpdate {
             mon + 2
         };
 
-        let mut wday = (3 + days) % 7;
-        if wday <= 0 {
-            wday += 7
-        };
+        // let mut wday = (3 + days) % 7;
+        // if wday <= 0 {
+        //     wday += 7
+        // };
         (
-            year as i16,
-            mon as u8,
-            mday as u8,
+            year as i32,
+            mon as u32,
+            mday as u32,
             (secs_of_day / 3600) as u8,
             ((secs_of_day % 3600) / 60) as u8,
             (secs_of_day % 60) as u8,
-            wday as u8,
+            dur.subsec_nanos(),
         )
     }
 
-    pub fn httpdate_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
-        fn is_leap_year(y: i16) -> bool {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+        fn is_leap_year(y: i32) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
 
@@ -210,7 +241,7 @@ mod httpdate {
             ydays += 1;
         }
         let days = (y as u64 - 1970) * 365 + leap_years as u64 + ydays;
-        UNIX_EPOCH + Duration::from_secs(ss as u64 + mm as u64 * 60 + hh as u64 * 3600 + days * 86400)
+        UNIX_EPOCH + Duration::new(ss as u64 + mm as u64 * 60 + hh as u64 * 3600 + days * 86400, nsec)
     }
 }
 
@@ -310,7 +341,7 @@ mod humantime {
         days as i32
     }
 
-    pub fn humantime_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -351,10 +382,10 @@ mod humantime {
         let time = second + minute * 60 + hour * 3600;
 
         let total_seconds = time + days * 86400;
-        UNIX_EPOCH + Duration::from_secs(total_seconds)
+        UNIX_EPOCH + Duration::new(total_seconds, nsec)
     }
 
-    pub fn humantime_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -413,20 +444,20 @@ mod humantime {
         };
 
         (
-            year as i16,
+            year as i32,
             mon,
-            mday as u8,
+            mday as u32,
             (secs_of_day / 3600) as u8,
             (secs_of_day / 60 % 60) as u8,
             (secs_of_day % 60) as u8,
-            1,
+            dur.subsec_nanos(),
         )
     }
 }
 
 mod chrono {
     use chrono::{Datelike, Timelike};
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use std::time::SystemTime;
 
     #[inline]
     pub fn rd_to_date(n: i32) -> (i32, u32, u32) {
@@ -440,31 +471,35 @@ mod chrono {
         days - 719162
     }
 
-    pub fn chrono_to_systemtime((y, m, d, hh, mm, ss): (i16, u8, u8, u8, u8, u8)) -> SystemTime {
+    #[inline]
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
         chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
             .unwrap()
-            .and_hms_opt(hh as u32, mm as u32, ss as u32)
+            .and_hms_nano_opt(hh as u32, mm as u32, ss as u32, nsec)
             .unwrap()
             .and_local_timezone(chrono::Utc)
             .unwrap()
             .into()
     }
 
-    pub fn chrono_from_systemtime(v: SystemTime) -> (i16, u8, u8, u8, u8, u8, u8) {
+    #[inline]
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
         let d: chrono::DateTime<chrono::Utc> = v.into();
         (
-            d.year() as i16,
-            d.month() as u8,
-            d.day() as u8,
+            d.year() as i32,
+            d.month(),
+            d.day(),
             d.hour() as u8,
             d.minute() as u8,
             d.second() as u8,
-            d.weekday().number_from_monday() as u8,
+            d.nanosecond()
         )
     }
 }
 
 mod time {
+    use std::time::SystemTime;
+
     const UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
 
     #[inline]
@@ -479,6 +514,30 @@ mod time {
             .unwrap()
             .to_julian_day()
             - UNIX_EPOCH_JULIAN_DAY
+    }
+
+    #[inline]
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+        time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
+            .unwrap()
+            .with_hms_nano(hh, mm, ss, nsec)
+            .unwrap()
+            .assume_utc()
+            .into()
+    }
+
+    #[inline]
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
+        let d: time::OffsetDateTime = v.into();
+        (
+            d.year() as i32,
+            d.month() as u32,
+            d.day() as u32,
+            d.hour() as u8,
+            d.minute() as u8,
+            d.second() as u8,
+            d.nanosecond()
+        )
     }
 }
 
@@ -636,12 +695,152 @@ fn bench_date_to_rd(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_rd_to_weekday(c: &mut Criterion) {
+    let mut group = c.benchmark_group("rd_to_weekday");
+    let rd = datealgo::date_to_rd((2023, 5, 12));
+    group.bench_with_input(BenchmarkId::new("datealgo", rd), &rd, |b, i| {
+        b.iter(|| black_box(datealgo::rd_to_weekday(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt", rd), &rd, |b, i| {
+        b.iter(|| black_box(datealgo_alt::rd_to_weekday2(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt2", rd), &rd, |b, i| {
+        b.iter(|| black_box(datealgo_alt::rd_to_weekday3(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_date_to_weekday(c: &mut Criterion) {
+    let mut group = c.benchmark_group("date_to_weekday");
+    let d = (2023, 5, 12);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", d)), &d, |b, i| {
+        b.iter(|| black_box(datealgo::date_to_weekday(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", d)), &d, |b, i| {
+        b.iter(|| black_box(datealgo_alt::date_to_weekday2(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt2", format!("{:?}", d)), &d, |b, i| {
+        b.iter(|| black_box(datealgo_alt::date_to_weekday3(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_secs_to_dhms(c: &mut Criterion) {
+    let mut group = c.benchmark_group("secs_to_dhms");
+    let s = 1684574678i64;
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo::secs_to_dhms(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo_alt::secs_to_dhms2(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_dhms_to_secs(c: &mut Criterion) {
+    let mut group = c.benchmark_group("dhms_to_secs");
+    let dhms = (123123, 12, 34, 56);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dhms)), &dhms, |b, i| {
+        b.iter(|| black_box(datealgo::dhms_to_secs(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_secs_to_datetime(c: &mut Criterion) {
+    let mut group = c.benchmark_group("secs_to_datetime");
+    let s = 1684574678i64;
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo::secs_to_datetime(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_datetime_to_secs(c: &mut Criterion) {
+    let mut group = c.benchmark_group("datetime_to_secs");
+    let dt = (2023, 5, 20, 12, 34, 56);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(datealgo::datetime_to_secs(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_is_leap_year(c: &mut Criterion) {
+    let mut group = c.benchmark_group("is_leap_year");
+    for y in [1895, 1896, 1900, 2000] {
+        group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", y)), &y, |b, i| {
+            b.iter(|| black_box(datealgo::is_leap_year(black_box(*i))))
+        });
+    }
+    group.finish();
+}
+
+fn bench_days_in_month(c: &mut Criterion) {
+    let mut group = c.benchmark_group("days_in_month");
+    for m in [2, 3] {
+        group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", m)), &m, |b, i| {
+            b.iter(|| black_box(datealgo::days_in_month(2000, black_box(*i))))
+        });
+    }
+    group.finish();
+}
+
+fn bench_systemtime_to_datetime(c: &mut Criterion) {
+    let mut group = c.benchmark_group("systemtime_to_datetime");
+    let s = UNIX_EPOCH + Duration::from_secs(1684574678);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(datealgo::systemtime_to_datetime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("httpdate", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(httpdate::systemtime_to_datetime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("humantime", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(humantime::systemtime_to_datetime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("time", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(time::systemtime_to_datetime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("chrono", format!("{:?}", s)), &s, |b, i| {
+        b.iter(|| black_box(chrono::systemtime_to_datetime(black_box(*i))))
+    });
+    group.finish();
+}
+
+fn bench_datetime_to_systemtime(c: &mut Criterion) {
+    let mut group = c.benchmark_group("datetime_to_systemtime");
+    let dt = (2023, 5, 20, 12, 34, 56, 0);
+    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(datealgo::datetime_to_systemtime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("httpdate", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(httpdate::datetime_to_systemtime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("humantime", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(humantime::datetime_to_systemtime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("time", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(time::datetime_to_systemtime(black_box(*i))))
+    });
+    group.bench_with_input(BenchmarkId::new("chrono", format!("{:?}", dt)), &dt, |b, i| {
+        b.iter(|| black_box(chrono::datetime_to_systemtime(black_box(*i))))
+    });
+    group.finish();
+}
+
 criterion_group!(
     benches,
     // bench_datetime_to_systemtime,
     // bench_systemtime_to_datetime,
-    // bench_secs_to_dhms,
     bench_rd_to_date,
     bench_date_to_rd,
+    bench_rd_to_weekday,
+    bench_date_to_weekday,
+    bench_secs_to_dhms,
+    bench_dhms_to_secs,
+    bench_secs_to_datetime,
+    bench_datetime_to_secs,
+    bench_is_leap_year,
+    bench_days_in_month,
+    bench_systemtime_to_datetime,
+    bench_datetime_to_systemtime,
 );
 criterion_main!(benches);
