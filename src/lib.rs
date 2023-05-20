@@ -10,44 +10,44 @@
 //! The primary contribution of this crate for date libraries are the
 //! conversions between a day number from Unix epoch (January 1st, 1970) and a
 //! Gregorian date:
-//! 
+//!
 //! ```
 //! use datealgo::{rd_to_date, date_to_rd};
-//! 
+//!
 //! assert_eq!(date_to_rd((1970, 1, 1)), 0);
 //! assert_eq!(date_to_rd((2023, 5, 12)), 19489);
 //! assert_eq!(rd_to_date(19489), (2023, 5, 12));
 //! ```
-//! 
+//!
 //! For convenience, there is also converters to and from Unix timestamps:
-//! 
+//!
 //! ```
 //! use datealgo::{secs_to_datetime, datetime_to_secs};
-//! 
+//!
 //! assert_eq!(datetime_to_secs((1970, 1, 1, 0, 0, 0)), 0);
 //! assert_eq!(datetime_to_secs((2023, 5, 20, 9, 24, 38)), 1684574678);
 //! assert_eq!(secs_to_datetime(1684574678), (2023, 5, 20, 9, 24, 38));
 //! ```
-//! 
+//!
 //! If the `std` feature is enabled, there are also converters to and from
 //! `SystemTime`:
-//! 
+//!
 //! ```
 //! use datealgo::{systemtime_to_datetime, datetime_to_systemtime};
 //! use std::time::{Duration, UNIX_EPOCH};
-//! 
+//!
 //! assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
 //! assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
 //! assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
 //! ```
-//! 
+//!
 //! # Features
-//! 
+//!
 //! The crate works in `no_std` environments and has no allocations. Most of the
 //! functions also work in constant contexts.
-//! 
+//!
 //! - `std` (default): Include [std::time::SystemTime] conversion
-//! 
+//!
 //! # Background
 //!
 //! There are many date and time libraries for Rust for varying use cases as the
@@ -90,18 +90,18 @@
 //! The Rata Die values are represented as `i32` for performance reasons. The
 //! needed calculations reduce that to roughly an effective `i30` integer range,
 //! which means a usable range of roughly -1,460,000 to 1,460,000 years.
-//! 
+//!
 //! # Benchmarks
-//! 
+//!
 //! Results on GitHub Codespaces default VM:
-//! 
+//!
 //! | x                      | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 //! | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
 //! | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
 //! | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
 //! | systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
 //! | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
-//! 
+//!
 //! Some code has been adapted from the libraries to produce comparable
 //! benchmarks.
 
@@ -162,19 +162,19 @@ pub const RD_MIN: i32 = date_to_rd((YEAR_MIN, 1, 1));
 pub const RD_MAX: i32 = date_to_rd((YEAR_MAX, 12, 31));
 
 /// Minimum Rata Die in seconds for conversion
-/// 
+///
 /// Rata die seconds earlier than this are not supported and will likely produce incorrect
 /// results.
 pub const RD_SECONDS_MIN: i64 = RD_MIN as i64 * SECS_IN_DAY;
 
 /// Maximum Rata die in seconds for conversion
-/// 
+///
 /// Rata die seconds later than this are not supported and will likely produce incorrect
 /// results.
 pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 
 /// Convenience constants, mostly for input validation
-/// 
+///
 /// The use of these constants is strictly optional, as this is a low level
 /// library and the values are wholly unremarkable.
 pub mod consts {
@@ -433,36 +433,41 @@ pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
     let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
     let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
     let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 { idx = 0; } // ensure no bounds check
+    if idx > 11 {
+        idx = 0;
+    } // ensure no bounds check
     (y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d) % 7 + 1
 }
 
 /// Split total seconds to days, hours, minutes and seconds
-/// 
+///
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(days,
 /// hours, minutes, seconds)` tuple. Argument must be between [RD_SECONDS_MIN]
 /// and [RD_SECONDS_MAX] inclusive. Bounds are checked using `debug_assert`
 /// only, so that the checks are not present in release builds, similar to
 /// integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::{secs_to_dhms, date_to_rd};
-/// 
+///
 /// assert_eq!(secs_to_dhms(0), (0, 0, 0, 0));
 /// assert_eq!(secs_to_dhms(86400), (1, 0, 0, 0));
 /// assert_eq!(secs_to_dhms(86399), (0, 23, 59, 59));
 /// assert_eq!(secs_to_dhms(-1), (-1, 23, 59, 59));
 /// assert_eq!(secs_to_dhms(1684574678), (date_to_rd((2023, 5, 20)), 9, 24, 38));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Algorithm is simple modulus on unsigned values.
 #[inline]
 pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
-    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds value is out of range");
+    debug_assert!(
+        secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX,
+        "given seconds value is out of range"
+    );
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
     let secs = (secs % SECS_IN_DAY as u64) as u32;
@@ -474,18 +479,18 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 }
 
 /// Combine days, hours, minutes and seconds to total seconds
-/// 
+///
 /// Given a `(days, hours, minutes, seconds)` tuple from Unix epoch (January
 /// 1st, 1970) returns the total seconds. Days must be between [RD_MIN] and
 /// [RD_MAX] inclusive. Bounds are checked using `debug_assert` only, so that
 /// the checks are not present in release builds, similar to integer overflow
 /// checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::{dhms_to_secs, date_to_rd};
-/// 
+///
 /// assert_eq!(dhms_to_secs((0, 0, 0, 0)), 0);
 /// assert_eq!(dhms_to_secs((1, 0, 0, 0)), 86400);
 /// assert_eq!(dhms_to_secs((0, 23, 59, 59)), 86399);
@@ -493,9 +498,9 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 /// assert_eq!(dhms_to_secs((-1, 0, 0, 1)), -86399);
 /// assert_eq!(dhms_to_secs((date_to_rd((2023, 5, 20)), 9, 24, 38)), 1684574678)
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
 pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
@@ -507,27 +512,27 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
 }
 
 /// Convert total seconds to year, month, day, hours, minutes and seconds
-/// 
+///
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(year,
 /// month, day, hours, minutes, seconds)` tuple. Argument must be between
 /// [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive. Bounds are checked using
 /// `debug_assert` only, so that the checks are not present in release builds,
 /// similar to integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::secs_to_datetime;
-/// 
+///
 /// assert_eq!(secs_to_datetime(0), (1970, 1, 1, 0, 0, 0));
 /// assert_eq!(secs_to_datetime(86400), (1970, 1, 2, 0, 0, 0));
 /// assert_eq!(secs_to_datetime(86399), (1970, 1, 1, 23, 59, 59));
 /// assert_eq!(secs_to_datetime(-1), (1969, 12, 31, 23, 59, 59));
 /// assert_eq!(secs_to_datetime(1684574678), (2023, 5, 20, 9, 24, 38));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Combination of existing functions for convenience only.
 #[inline]
 pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
@@ -538,18 +543,18 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 }
 
 /// Convert year, month, day, hours, minutes and seconds to total seconds
-/// 
+///
 /// Given a `(year, month, day, hours, minutes, seconds)` tuple from Unix epoch
 /// (January 1st, 1970) returns the total seconds. Year must be between
 /// [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked using `debug_assert`
 /// only, so that the checks are not present in release builds, similar to
 /// integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::datetime_to_secs;
-/// 
+///
 /// assert_eq!(datetime_to_secs((1970, 1, 1, 0, 0, 0)), 0);
 /// assert_eq!(datetime_to_secs((1970, 1, 2, 0, 0, 0)), 86400);
 /// assert_eq!(datetime_to_secs((1970, 1, 1, 23, 59, 59)), 86399);
@@ -557,9 +562,9 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 /// assert_eq!(datetime_to_secs((1969, 12, 31, 0, 0, 1)), -86399);
 /// assert_eq!(datetime_to_secs((2023, 5, 20, 9, 24, 38)), 1684574678)
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
 pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u32, u32, u8, u8, u8)) -> i64 {
@@ -574,20 +579,20 @@ pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u32, u32, u8, u8, u8)
 }
 
 /// Determine if the given year is a leap year
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::is_leap_year;
-/// 
+///
 /// assert_eq!(is_leap_year(2023), false);
 /// assert_eq!(is_leap_year(2024), true);
 /// assert_eq!(is_leap_year(2100), false);
 /// assert_eq!(is_leap_year(2400), true);
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Simple modulus checks on a year transformed positive.
 #[inline]
 pub const fn is_leap_year(y: i32) -> bool {
@@ -597,12 +602,12 @@ pub const fn is_leap_year(y: i32) -> bool {
 }
 
 /// Determine the number of days in the given month in the given year
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// use datealgo::days_in_month;
-/// 
+///
 /// assert_eq!(days_in_month(2023, 1), 31);
 /// assert_eq!(days_in_month(2023, 2), 28);
 /// assert_eq!(days_in_month(2023, 4), 30);
@@ -610,16 +615,18 @@ pub const fn is_leap_year(y: i32) -> bool {
 /// assert_eq!(days_in_month(2024, 2), 29);
 /// assert_eq!(days_in_month(2024, 4), 30);
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Algorithm is table lookup with leap year checking.
 #[inline]
 pub const fn days_in_month(y: i32, m: u32) -> u32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 { idx = 0; }
+    if idx > 11 {
+        idx = 0;
+    }
     if is_leap_year(y) {
         [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx] as u32
     } else {
@@ -628,26 +635,26 @@ pub const fn days_in_month(y: i32, m: u32) -> u32 {
 }
 
 /// Convert [`std::time::SystemTime`] to seconds and nanoseconds
-/// 
+///
 /// Given [`std::time::SystemTime`] returns an `Option` of `(seconds,
 /// nanoseconds)` tuple from Unix epoch (January 1st, 1970). Returns `None` if
 /// the time is before [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::systemtime_to_secs;
 /// use std::time::{Duration, UNIX_EPOCH};
-/// 
+///
 /// assert_eq!(systemtime_to_secs(UNIX_EPOCH), Some((0, 0)));
 /// assert_eq!(systemtime_to_secs(UNIX_EPOCH + Duration::new(1, 0)), Some((1, 0)));
 /// assert_eq!(systemtime_to_secs(UNIX_EPOCH + Duration::new(0, 1)), Some((0, 1)));
 /// assert_eq!(systemtime_to_secs(UNIX_EPOCH - Duration::new(1, 0)), Some((-1, 0)));
 /// assert_eq!(systemtime_to_secs(UNIX_EPOCH - Duration::new(0, 1)), Some((-1, 999_999_999)));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Uses `.duration_since(UNIX_EPOCH)` and handles both positive and negative
 /// result.
 #[cfg(feature = "std")]
@@ -657,7 +664,9 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
         Ok(dur) => {
             let secs = dur.as_secs();
             let nsecs = dur.subsec_nanos();
-            if secs > RD_SECONDS_MAX as u64 { return None; }
+            if secs > RD_SECONDS_MAX as u64 {
+                return None;
+            }
             Some((secs as i64, nsecs))
         }
         Err(err) => {
@@ -668,7 +677,9 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
                 secs += 1;
                 nsecs = 1_000_000_000 - nsecs;
             }
-            if secs > -RD_SECONDS_MIN as u64 { return None; }
+            if secs > -RD_SECONDS_MIN as u64 {
+                return None;
+            }
             Some((-(secs as i64), nsecs))
         }
     }
@@ -687,19 +698,19 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 // }
 
 /// Convert seconds and nanoseconds to `SystemTime`
-/// 
+///
 /// Given a tuple of seconds and nanoseconds counting from Unix epoch (January 1st, 1970)
 /// returns `SystemTime`. Seconds must be between [RD_SECONDS_MIN] and
 /// [RD_SECONDS_MAX] inclusive. Bounds are checked using `debug_assert` only, so
 /// that the checks are not present in release builds, similar to integer
 /// overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::secs_to_systemtime;
 /// use std::time::{Duration, UNIX_EPOCH};
-/// 
+///
 /// assert_eq!(secs_to_systemtime((0, 0)), UNIX_EPOCH);
 /// assert_eq!(secs_to_systemtime((0, 1)), UNIX_EPOCH + Duration::new(0, 1));
 /// assert_eq!(secs_to_systemtime((1, 0)), UNIX_EPOCH + Duration::new(1, 0));
@@ -707,15 +718,18 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 /// assert_eq!(secs_to_systemtime((-1, 0)), UNIX_EPOCH - Duration::new(1, 0));
 /// assert_eq!(secs_to_systemtime((-2, 999_999_999)), UNIX_EPOCH - Duration::new(1, 1));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
 pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
     debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
-    debug_assert!(nsecs >= consts::NANOSECOND_MIN && nsecs <= consts::NANOSECOND_MAX, "given nanoseconds is out of range");
+    debug_assert!(
+        nsecs >= consts::NANOSECOND_MIN && nsecs <= consts::NANOSECOND_MAX,
+        "given nanoseconds is out of range"
+    );
     if secs >= 0 {
         UNIX_EPOCH + Duration::new(secs as u64, nsecs)
     } else if nsecs > 0 {
@@ -727,25 +741,25 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
 
 /// Convert `SystemTime` to year, month, day, hours, minutes, seconds and
 /// nanoseconds
-/// 
+///
 /// Given `SystemTime` returns an Option of `(year, month, day, hours, minutes,
 /// seconds, nanoseconds)` tuple. Returns `None` if the time is before
 /// [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::systemtime_to_datetime;
 /// use std::time::{Duration, UNIX_EPOCH};
-/// 
+///
 /// assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
 /// assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
 /// assert_eq!(systemtime_to_datetime(UNIX_EPOCH - Duration::from_secs(1)), Some((1969, 12, 31, 23, 59, 59, 0)));
 /// assert_eq!(systemtime_to_datetime(UNIX_EPOCH - Duration::new(0, 1)), Some((1969, 12, 31, 23, 59, 59, 999_999_999)));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
@@ -758,26 +772,26 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 
 /// Convert year, month, day, hours, minutes, seconds and nanoseconds to
 /// `SystemTime`
-/// 
+///
 /// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
 /// from Unix epoch (January 1st, 1970) returns `SystemTime`. Year must be
 /// between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked using
 /// `debug_assert` only, so that the checks are not present in release builds,
 /// similar to integer overflow checks.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use datealgo::datetime_to_systemtime;
 /// use std::time::{Duration, UNIX_EPOCH};
-/// 
+///
 /// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), UNIX_EPOCH);
 /// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 1, 0)), UNIX_EPOCH + Duration::new(1, 0));
 /// assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
 /// ```
-/// 
+///
 /// # Algorithm
-/// 
+///
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
@@ -843,26 +857,20 @@ mod tests {
     }
 
     #[test]
-    fn test_secs_to_dhms() {
-    }
+    fn test_secs_to_dhms() {}
 
     #[test]
-    fn test_dhms_to_secs() {
-    }
+    fn test_dhms_to_secs() {}
 
     #[test]
-    fn test_secs_to_datetime() {
-    }
+    fn test_secs_to_datetime() {}
 
     #[test]
-    fn test_datetime_to_secs() {
-    }
+    fn test_datetime_to_secs() {}
 
     #[test]
-    fn test_is_leap_year() {
-    }
+    fn test_is_leap_year() {}
 
     #[test]
-    fn test_days_in_month() {
-    }
+    fn test_days_in_month() {}
 }

@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::time::{UNIX_EPOCH, Duration};
+use std::time::{Duration, UNIX_EPOCH};
 
 mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
@@ -42,7 +42,7 @@ mod datealgo_alt {
         let mm = month + 12 * adjustment - 2;
         let yy = year - adjustment;
         (day + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1
-    }    
+    }
 }
 
 mod httpdate {
@@ -492,7 +492,7 @@ mod chrono {
             d.hour() as u8,
             d.minute() as u8,
             d.second() as u8,
-            d.nanosecond()
+            d.nanosecond(),
         )
     }
 }
@@ -536,7 +536,7 @@ mod time {
             d.hour() as u8,
             d.minute() as u8,
             d.second() as u8,
-            d.nanosecond()
+            d.nanosecond(),
         )
     }
 }
