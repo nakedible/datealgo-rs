@@ -104,6 +104,32 @@
 //!
 //! Some code has been adapted from the libraries to produce comparable
 //! benchmarks.
+//! 
+//! # Acknowledgements
+//! 
+//! I do not claim original research on anything that is in this crate.
+//! 
+//! - [Cassio Neri and Lorenz
+//!   Schneider](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172):
+//!   While searching for best method for date conversion, I stumbled upon a
+//!   research paper which explains a novel way to optimize the performance.
+//!   These algorithms have been implemented here based on the published
+//!   article. This wouldn't be the best performing date conversion library
+//!   without their work.
+//! - [David Hinnant](https://howardhinnant.github.io/date_algorithms.html):
+//!   While searching for "perpetual calendar" algorithms, and having already
+//!   started my library, I stumbled upon a very similar idea by David Hinnant.
+//!   It remains one of the cleanest and simplest algorithms while still
+//!   retaining excellent performance.
+//! - [Rich
+//!   Felker](https://git.musl-libc.org/cgit/musl/tree/src/time/__secs_to_tm.c):
+//!   The original musl `__time_to_tm` function has spread far and wide and been
+//!   translated to many languages, and is still the basis of many of the
+//!   standalone implementations littered among the libraries.
+//! - [Many authors of newlib
+//!   `gmtime_r.c`](https://sourceware.org/git/?p=newlib-cygwin.git;a=blob;f=newlib/libc/time/gmtime_r.c;hb=HEAD):
+//!   The newlib implementation has evolved significantly over time and has now
+//!   been updated based on the work by David Hinnant.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
