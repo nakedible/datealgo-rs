@@ -7,8 +7,47 @@
 //!
 //! # Usage
 //!
-//! xxx
-//!
+//! The primary contribution of this crate for date libraries are the
+//! conversions between a day number from Unix epoch (January 1st, 1970) and a
+//! Gregorian date:
+//! 
+//! ```
+//! use datealgo::{rd_to_date, date_to_rd};
+//! 
+//! assert_eq!(date_to_rd((1970, 1, 1)), 0);
+//! assert_eq!(date_to_rd((2023, 5, 12)), 19489);
+//! assert_eq!(rd_to_date(19489), (2023, 5, 12));
+//! ```
+//! 
+//! For convenience, there is also converters to and from Unix timestamps:
+//! 
+//! ```
+//! use datealgo::{secs_to_datetime, datetime_to_secs};
+//! 
+//! assert_eq!(datetime_to_secs((1970, 1, 1, 0, 0, 0)), 0);
+//! assert_eq!(datetime_to_secs((2023, 5, 20, 9, 24, 38)), 1684574678);
+//! assert_eq!(secs_to_datetime(1684574678), (2023, 5, 20, 9, 24, 38));
+//! ```
+//! 
+//! If the `std` feature is enabled, there are also converters to and from
+//! `SystemTime`:
+//! 
+//! ```
+//! use datealgo::{systemtime_to_datetime, datetime_to_systemtime};
+//! use std::time::{Duration, UNIX_EPOCH};
+//! 
+//! assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
+//! assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
+//! assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+//! ```
+//! 
+//! # Features
+//! 
+//! The crate works in `no_std` environments and has no allocations. Most of the
+//! functions also work in constant contexts.
+//! 
+//! - `std` (default): Include [std::time::SystemTime] conversion
+//! 
 //! # Background
 //!
 //! There are many date and time libraries for Rust for varying use cases as the
@@ -63,7 +102,8 @@
 //! | systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
 //! | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
 //! 
-//! Some code has been adapted from the libraries to produce comparable benchmarks.
+//! Some code has been adapted from the libraries to produce comparable
+//! benchmarks.
 
 #![no_std]
 
@@ -219,7 +259,7 @@ pub mod consts {
 /// Convert Rata Die to Gregorian date
 ///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns a `(year,
-/// month, day)` tuple. Argument must be between `RD_MIN` and `RD_MAX`
+/// month, day)` tuple. Argument must be between [RD_MIN] and [RD_MAX]
 /// inclusive. Bounds are checked using `debug_assert` only, so that the checks
 /// are not present in release builds, similar to integer overflow checks.
 ///
@@ -270,7 +310,7 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 ///
 /// Given a `(year, month, day)` tuple returns the days since Unix epoch
 /// (January 1st, 1970). Dates before the epoch produce negative values. Year
-/// must be between `YEAR_MIN` and `YEAR_MAX`, month must be between `1` and
+/// must be between [YEAR_MIN] and [YEAR_MAX], month must be between `1` and
 /// `12` and day must be between `1` and the number of days in the month in
 /// question. Bounds are checked using `debug_assert` only, so that the checks
 /// are not present in release builds, similar to integer overflow checks.
@@ -317,8 +357,8 @@ pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
 ///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns the day of
 /// week. Day of week is given as `u32` number between 1 and 7, with `1` meaning
-/// Monday and `7` meaning Sunday. Argument must be between `RD_MIN` and
-/// `RD_MAX` inclusive. Bounds are checked using `debug_assert` only, so that
+/// Monday and `7` meaning Sunday. Argument must be between [RD_MIN] and
+/// [RD_MAX] inclusive. Bounds are checked using `debug_assert` only, so that
 /// the checks are not present in release builds, similar to integer overflow
 /// checks.
 ///
@@ -356,7 +396,7 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 ///
 /// Given a `(year, month, day)` tuple returns the day of week. Day of week is
 /// given as `u32` number between 1 and 7, with `1` meaning Monday and `7`
-/// meaning Sunday. Year must be between `YEAR_MIN` and `YEAR_MAX` inclusive.
+/// meaning Sunday. Year must be between [YEAR_MIN] and [YEAR_MAX] inclusive.
 /// Bounds are checked using `debug_assert` only, so that the checks are not
 /// present in release builds, similar to integer overflow checks.
 ///
@@ -400,8 +440,8 @@ pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
 /// Split total seconds to days, hours, minutes and seconds
 /// 
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(days,
-/// hours, minutes, seconds)` tuple. Argument must be between `RD_SECONDS_MIN`
-/// and `RD_SECONDS_MAX` inclusive. Bounds are checked using `debug_assert`
+/// hours, minutes, seconds)` tuple. Argument must be between [RD_SECONDS_MIN]
+/// and [RD_SECONDS_MAX] inclusive. Bounds are checked using `debug_assert`
 /// only, so that the checks are not present in release builds, similar to
 /// integer overflow checks.
 /// 
@@ -436,8 +476,8 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 /// Combine days, hours, minutes and seconds to total seconds
 /// 
 /// Given a `(days, hours, minutes, seconds)` tuple from Unix epoch (January
-/// 1st, 1970) returns the total seconds. Days must be between `RD_MIN` and
-/// `RD_MAX` inclusive. Bounds are checked using `debug_assert` only, so that
+/// 1st, 1970) returns the total seconds. Days must be between [RD_MIN] and
+/// [RD_MAX] inclusive. Bounds are checked using `debug_assert` only, so that
 /// the checks are not present in release builds, similar to integer overflow
 /// checks.
 /// 
@@ -470,7 +510,7 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
 /// 
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(year,
 /// month, day, hours, minutes, seconds)` tuple. Argument must be between
-/// `RD_SECONDS_MIN` and `RD_SECONDS_MAX` inclusive. Bounds are checked using
+/// [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive. Bounds are checked using
 /// `debug_assert` only, so that the checks are not present in release builds,
 /// similar to integer overflow checks.
 /// 
@@ -501,7 +541,7 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 /// 
 /// Given a `(year, month, day, hours, minutes, seconds)` tuple from Unix epoch
 /// (January 1st, 1970) returns the total seconds. Year must be between
-/// `YEAR_MIN` and `YEAR_MAX` inclusive. Bounds are checked using `debug_assert`
+/// [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked using `debug_assert`
 /// only, so that the checks are not present in release builds, similar to
 /// integer overflow checks.
 /// 
@@ -587,11 +627,11 @@ pub const fn days_in_month(y: i32, m: u32) -> u32 {
     }
 }
 
-/// Convert `SystemTime` to seconds and nanoseconds
+/// Convert [`std::time::SystemTime`] to seconds and nanoseconds
 /// 
-/// Given `SystemTime` returns an `Option` of `(seconds, nanoseconds)` tuple
-/// from Unix epoch (January 1st, 1970). Returns `None` if the time is before
-/// `RD_SECONDS_MIN` or after `RD_SECONDS_MAX`.
+/// Given [`std::time::SystemTime`] returns an `Option` of `(seconds,
+/// nanoseconds)` tuple from Unix epoch (January 1st, 1970). Returns `None` if
+/// the time is before [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
 /// 
 /// # Examples
 /// 
@@ -646,11 +686,11 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 //     Some((secs as i64 - SECS_OFFSET, nsecs))
 // }
 
-/// Convert `(seconds, nanoseconds)` to `SystemTime`
+/// Convert seconds and nanoseconds to `SystemTime`
 /// 
-/// Given seconds and nanoseconds counting from Unix epoch (January 1st, 1970)
-/// returns `SystemTime`. Seconds must be between `RD_SECONDS_MIN` and
-/// `RD_SECONDS_MAX` inclusive. Bounds are checked using `debug_assert` only, so
+/// Given a tuple of seconds and nanoseconds counting from Unix epoch (January 1st, 1970)
+/// returns `SystemTime`. Seconds must be between [RD_SECONDS_MIN] and
+/// [RD_SECONDS_MAX] inclusive. Bounds are checked using `debug_assert` only, so
 /// that the checks are not present in release builds, similar to integer
 /// overflow checks.
 /// 
@@ -690,7 +730,7 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
 /// 
 /// Given `SystemTime` returns an Option of `(year, month, day, hours, minutes,
 /// seconds, nanoseconds)` tuple. Returns `None` if the time is before
-/// `RD_SECONDS_MIN` or after `RD_SECONDS_MAX`.
+/// [RD_SECONDS_MIN] or after [RD_SECONDS_MAX].
 /// 
 /// # Examples
 /// 
@@ -721,7 +761,7 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 /// 
 /// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
 /// from Unix epoch (January 1st, 1970) returns `SystemTime`. Year must be
-/// between `YEAR_MIN` and `YEAR_MAX` inclusive. Bounds are checked using
+/// between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked using
 /// `debug_assert` only, so that the checks are not present in release builds,
 /// similar to integer overflow checks.
 /// 

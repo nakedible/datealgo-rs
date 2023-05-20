@@ -16,7 +16,46 @@ interfaces for their users.
 
 ## Usage
 
-xxx
+The primary contribution of this crate for date libraries are the
+conversions between a day number from Unix epoch (January 1st, 1970) and a
+Gregorian date:
+
+```rust
+use datealgo::{rd_to_date, date_to_rd};
+
+assert_eq!(date_to_rd((1970, 1, 1)), 0);
+assert_eq!(date_to_rd((2023, 5, 12)), 19489);
+assert_eq!(rd_to_date(19489), (2023, 5, 12));
+```
+
+For convenience, there is also converters to and from Unix timestamps:
+
+```rust
+use datealgo::{secs_to_datetime, datetime_to_secs};
+
+assert_eq!(datetime_to_secs((1970, 1, 1, 0, 0, 0)), 0);
+assert_eq!(datetime_to_secs((2023, 5, 20, 9, 24, 38)), 1684574678);
+assert_eq!(secs_to_datetime(1684574678), (2023, 5, 20, 9, 24, 38));
+```
+
+If the `std` feature is enabled, there are also converters to and from
+`SystemTime`:
+
+```rust
+use datealgo::{systemtime_to_datetime, datetime_to_systemtime};
+use std::time::{Duration, UNIX_EPOCH};
+
+assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
+assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
+assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+```
+
+## Features
+
+The crate works in `no_std` environments and has no allocations. Most of the
+functions also work in constant contexts.
+
+- `std` (default): Include [std::time::SystemTime] conversion
 
 ## Background
 
@@ -72,7 +111,8 @@ Results on GitHub Codespaces default VM:
 | systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
 | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
 
-Some code has been adapted from the libraries to produce comparable benchmarks.
+Some code has been adapted from the libraries to produce comparable
+benchmarks.
 
 ## Releases
 
