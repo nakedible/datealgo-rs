@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3](https://github.com/nakedible/datealgo-rs/compare/v0.0.2...v0.0.3) - 2023-05-20
+
+### Other
+- Fix changelog link
+- Add acknowledments section
+- Only run basic bench in actions
+- Reorganize benchmarks
+- Allow benchmark runner to modify pull
+- Add automatic pull request criterion bench
+- Remove version from README
+- Remove warning from README
+
 ## [0.0.2](https://github.com/nakedible/datealgo-rs/compare/v0.0.1...v0.0.2) - 2023-05-20
 
 ### Added
