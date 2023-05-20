@@ -108,11 +108,7 @@
 //!
 //! Some code has been adapted from the libraries to produce comparable
 //! benchmarks.
-
-#![no_std]
-
-#[cfg(feature = "std")]
-extern crate std;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
