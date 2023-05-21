@@ -82,7 +82,7 @@
 //! timestamps.
 //!
 //! We define [Rata Die](https://en.wikipedia.org/wiki/Rata_Die) to be integral
-//! day numbers counted from 1st of January, 1979, which is the Unix epoch. We
+//! day numbers counted from 1st of January, 1970, which is the Unix epoch. We
 //! use the abbreviation `rd` to concisely refer to such values. This differs
 //! from the epoch originally chosen by Howard Jacobson, but is more convenient
 //! for usage.
