@@ -313,8 +313,8 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
     let n = n.wrapping_add(DAY_OFFSET) as u32;
     let n = 4 * n + 3;
     let c = n / 146097;
-    let n = n % 146097 / 4;
-    let n = 4 * n + 3;
+    let r = n % 146097;
+    let n = r | 3;
     let p = 2939745 * n as u64;
     let z = (p / 2u64.pow(32)) as u32;
     let n = (p % 2u64.pow(32)) as u32 / 2939745 / 4;
@@ -324,7 +324,7 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
     let m = n / 2u32.pow(16);
     let d = n % 2u32.pow(16) / 2141;
     let y = (y as i32).wrapping_sub(YEAR_OFFSET);
-    let m = m - 12 * nd;
+    let m = if nd == 1 { m - 12 } else { m };
     let d = d + 1;
     (y, m, d)
 }
