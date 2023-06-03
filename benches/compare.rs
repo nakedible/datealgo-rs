@@ -660,7 +660,7 @@ mod hinnant {
 // }
 
 fn bench_rd_to_date(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rd_to_date");
+    let mut group = c.benchmark_group("compare_rd_to_date");
     let rd = datealgo::date_to_rd((2023, 5, 12));
     group.bench_with_input(BenchmarkId::new("datealgo", rd), &rd, |b, i| {
         b.iter(|| black_box(datealgo::rd_to_date(black_box(*i))))
@@ -687,7 +687,7 @@ fn bench_rd_to_date(c: &mut Criterion) {
 }
 
 fn bench_date_to_rd(c: &mut Criterion) {
-    let mut group = c.benchmark_group("date_to_rd");
+    let mut group = c.benchmark_group("compare_date_to_rd");
     let d = (2023, 5, 12);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", d)), &d, |b, i| {
         b.iter(|| black_box(datealgo::date_to_rd(black_box(*i))))
@@ -714,7 +714,7 @@ fn bench_date_to_rd(c: &mut Criterion) {
 }
 
 fn bench_rd_to_weekday(c: &mut Criterion) {
-    let mut group = c.benchmark_group("rd_to_weekday");
+    let mut group = c.benchmark_group("compare_rd_to_weekday");
     let rd = datealgo::date_to_rd((2023, 5, 12));
     group.bench_with_input(BenchmarkId::new("datealgo", rd), &rd, |b, i| {
         b.iter(|| black_box(datealgo::rd_to_weekday(black_box(*i))))
@@ -729,7 +729,7 @@ fn bench_rd_to_weekday(c: &mut Criterion) {
 }
 
 fn bench_date_to_weekday(c: &mut Criterion) {
-    let mut group = c.benchmark_group("date_to_weekday");
+    let mut group = c.benchmark_group("compare_date_to_weekday");
     let d = (2023, 5, 12);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", d)), &d, |b, i| {
         b.iter(|| black_box(datealgo::date_to_weekday(black_box(*i))))
@@ -744,7 +744,7 @@ fn bench_date_to_weekday(c: &mut Criterion) {
 }
 
 fn bench_secs_to_dhms(c: &mut Criterion) {
-    let mut group = c.benchmark_group("secs_to_dhms");
+    let mut group = c.benchmark_group("compare_secs_to_dhms");
     let s = 1684574678i64;
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
         b.iter(|| black_box(datealgo::secs_to_dhms(black_box(*i))))
@@ -756,7 +756,7 @@ fn bench_secs_to_dhms(c: &mut Criterion) {
 }
 
 fn bench_dhms_to_secs(c: &mut Criterion) {
-    let mut group = c.benchmark_group("dhms_to_secs");
+    let mut group = c.benchmark_group("compare_dhms_to_secs");
     let dhms = (123123, 12, 34, 56);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dhms)), &dhms, |b, i| {
         b.iter(|| black_box(datealgo::dhms_to_secs(black_box(*i))))
@@ -765,7 +765,7 @@ fn bench_dhms_to_secs(c: &mut Criterion) {
 }
 
 fn bench_secs_to_datetime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("secs_to_datetime");
+    let mut group = c.benchmark_group("compare_secs_to_datetime");
     let s = 1684574678i64;
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
         b.iter(|| black_box(datealgo::secs_to_datetime(black_box(*i))))
@@ -774,7 +774,7 @@ fn bench_secs_to_datetime(c: &mut Criterion) {
 }
 
 fn bench_datetime_to_secs(c: &mut Criterion) {
-    let mut group = c.benchmark_group("datetime_to_secs");
+    let mut group = c.benchmark_group("compare_datetime_to_secs");
     let dt = (2023, 5, 20, 12, 34, 56);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
         b.iter(|| black_box(datealgo::datetime_to_secs(black_box(*i))))
@@ -783,7 +783,7 @@ fn bench_datetime_to_secs(c: &mut Criterion) {
 }
 
 fn bench_is_leap_year(c: &mut Criterion) {
-    let mut group = c.benchmark_group("is_leap_year");
+    let mut group = c.benchmark_group("compare_is_leap_year");
     for y in [1895, 1896, 1900, 2000] {
         group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", y)), &y, |b, i| {
             b.iter(|| black_box(datealgo::is_leap_year(black_box(*i))))
@@ -793,7 +793,7 @@ fn bench_is_leap_year(c: &mut Criterion) {
 }
 
 fn bench_days_in_month(c: &mut Criterion) {
-    let mut group = c.benchmark_group("days_in_month");
+    let mut group = c.benchmark_group("compare_days_in_month");
     for m in [2, 3] {
         group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", m)), &m, |b, i| {
             b.iter(|| black_box(datealgo::days_in_month(2000, black_box(*i))))
@@ -803,7 +803,7 @@ fn bench_days_in_month(c: &mut Criterion) {
 }
 
 fn bench_systemtime_to_secs(c: &mut Criterion) {
-    let mut group = c.benchmark_group("systemtime_to_secs");
+    let mut group = c.benchmark_group("compare_systemtime_to_secs");
     let s = UNIX_EPOCH + Duration::from_secs(1684574678);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
         b.iter(|| black_box(datealgo::systemtime_to_secs(black_box(*i))))
@@ -815,7 +815,7 @@ fn bench_systemtime_to_secs(c: &mut Criterion) {
 }
 
 fn bench_secs_to_systemtime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("secs_to_systemtime");
+    let mut group = c.benchmark_group("compare_secs_to_systemtime");
     let s = (1684574678, 0);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
         b.iter(|| black_box(datealgo::secs_to_systemtime(black_box(*i))))
@@ -824,7 +824,7 @@ fn bench_secs_to_systemtime(c: &mut Criterion) {
 }
 
 fn bench_systemtime_to_datetime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("systemtime_to_datetime");
+    let mut group = c.benchmark_group("compare_systemtime_to_datetime");
     let s = UNIX_EPOCH + Duration::from_secs(1684574678);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
         b.iter(|| black_box(datealgo::systemtime_to_datetime(black_box(*i))))
@@ -845,7 +845,7 @@ fn bench_systemtime_to_datetime(c: &mut Criterion) {
 }
 
 fn bench_datetime_to_systemtime(c: &mut Criterion) {
-    let mut group = c.benchmark_group("datetime_to_systemtime");
+    let mut group = c.benchmark_group("compare_datetime_to_systemtime");
     let dt = (2023, 5, 20, 12, 34, 56, 0);
     group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
         b.iter(|| black_box(datealgo::datetime_to_systemtime(black_box(*i))))
