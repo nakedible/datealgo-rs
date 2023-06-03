@@ -605,60 +605,6 @@ mod hinnant {
     }
 }
 
-// fn bench_datetime_to_systemtime(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("datetime_to_systemtime");
-//     let arr = build_datetimes();
-//     group.bench_with_input(BenchmarkId::new("to_systemtime", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(to_systemtime))
-//     });
-//     group.bench_with_input(BenchmarkId::new("httpdate_to_systemtime", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(httpdate_to_systemtime))
-//     });
-//     group.bench_with_input(
-//         BenchmarkId::new("humantime_to_systemtime", "epoch+100"),
-//         &arr,
-//         |b, i| b.iter(|| i.map(humantime_to_systemtime)),
-//     );
-//     group.bench_with_input(BenchmarkId::new("chrono_to_systemtime", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(chrono_to_systemtime))
-//     });
-//     group.finish();
-// }
-
-// fn bench_systemtime_to_datetime(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("systemtime_to_datetime");
-//     let arr = build_systemtimes();
-//     group.bench_with_input(BenchmarkId::new("from_systemtime", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(from_systemtime))
-//     });
-//     group.bench_with_input(
-//         BenchmarkId::new("httpdate_from_systemtime", "epoch+100"),
-//         &arr,
-//         |b, i| b.iter(|| i.map(httpdate_from_systemtime)),
-//     );
-//     group.bench_with_input(
-//         BenchmarkId::new("humantime_from_systemtime", "epoch+100"),
-//         &arr,
-//         |b, i| b.iter(|| i.map(humantime_from_systemtime)),
-//     );
-//     group.bench_with_input(BenchmarkId::new("chrono_from_systemtime", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(chrono_from_systemtime))
-//     });
-//     group.finish();
-// }
-
-// fn bench_secs_to_dhms(c: &mut Criterion) {
-//     let mut group = c.benchmark_group("secs_to_dhms");
-//     let arr = build_secs();
-//     group.bench_with_input(BenchmarkId::new("secs_to_dhms", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(secs_to_dhms))
-//     });
-//     group.bench_with_input(BenchmarkId::new("secs_to_dhms2", "epoch+100"), &arr, |b, i| {
-//         b.iter(|| i.map(secs_to_dhms2))
-//     });
-//     group.finish();
-// }
-
 fn bench_rd_to_date(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_rd_to_date");
     let rd = datealgo::date_to_rd((2023, 5, 12));
@@ -867,8 +813,6 @@ fn bench_datetime_to_systemtime(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    // bench_datetime_to_systemtime,
-    // bench_systemtime_to_datetime,
     bench_rd_to_date,
     bench_date_to_rd,
     bench_rd_to_weekday,
