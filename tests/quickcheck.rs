@@ -6,12 +6,12 @@ quickcheck! {
     fn quickcheck_rd_to_date(d: time::Date) -> TestResult {
         let rd = d.to_julian_day() - 2440588;
         let a = rd_to_date(rd);
-        let b = (d.year() as i32, d.month() as u32, d.day() as u32);
+        let b = (d.year() as i32, d.month() as u8, d.day() as u8);
         TestResult::from_bool(a == b)
     }
 
     fn quickcheck_date_to_rd(d: time::Date) -> TestResult {
-        let a = (d.year() as i32, d.month() as u32, d.day() as u32);
+        let a = (d.year() as i32, d.month() as u8, d.day() as u8);
         let rd = date_to_rd(a);
         TestResult::from_bool(rd == d.to_julian_day() - 2440588)
     }
@@ -36,8 +36,8 @@ quickcheck! {
         let a = systemtime_to_datetime(s.into()).unwrap();
         let b = (
             s.year() as i32,
-            s.month() as u32,
-            s.day() as u32,
+            s.month() as u8,
+            s.day() as u8,
             s.hour() as u8,
             s.minute() as u8,
             s.second() as u8,
@@ -50,8 +50,8 @@ quickcheck! {
         let s = s.assume_utc();
         let dt = (
             s.year() as i32,
-            s.month() as u32,
-            s.day() as u32,
+            s.month() as u8,
+            s.day() as u8,
             s.hour() as u8,
             s.minute() as u8,
             s.second() as u8,

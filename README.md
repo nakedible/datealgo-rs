@@ -72,11 +72,10 @@ algorithms available.
 ## Notes
 
 The library does not expose any kind of `Date` or `DateTime` structures, but
-simply tuples for the necessary values. There is bounds checking via
-`debug_assert`, which means that it is not present in release builds.
-Callers are required to do their own bounds checking where ever input
-require it. Datatypes are selected for performance and utility, rather than
-what is most natural for the value.
+simply tuples for the necessary values. Bounds checking is done via
+`debug_assert` only, which means the methods are guaranteed to not panic in
+release builds. Callers are required to do their own bounds checking.
+Datatypes are selected as the smallest that will fit the value.
 
 Currently the library implements algorithms for the [Proleptic Gregorian
 Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
@@ -102,14 +101,14 @@ which means a usable range of roughly -1,460,000 to 1,460,000 years.
 
 ## Benchmarks
 
-Results on GitHub Codespaces default VM:
+Results on GitHub Codespaces 8-core VM:
 
 | Function               | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
-| date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
-| rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
-| datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
-| systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
+| date_to_rd             | **2.5 ns**    | 3.3 ns    | 3.1 ns    | 3.2 ns    | 17.7 ns   | 7.4 ns    |
+| rd_to_date             | **3.7 ns**    | 7.1 ns    | 11.8 ns   | 11.9 ns   | 18.7 ns   | 8.7 ns    |
+| datetime_to_systemtime | **6.9 ns**    |           | 10.6 ns   | 9.6 ns    | 58.9 ns   | 50.7 ns   |
+| systemtime_to_datetime | **14.6 ns**   |           | 20.5 ns   | 20.3 ns   | 57.0 ns   | 228.2 ns  |
 
 Some code has been adapted from the libraries to produce comparable
 benchmarks.
