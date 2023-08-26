@@ -66,8 +66,8 @@
 //! simply tuples for the necessary values. There is bounds checking via
 //! `debug_assert`, which means that it is not present in release builds.
 //! Callers are required to do their own bounds checking where ever input
-//! require it. Datatypes are selected for performance and utility, rather than
-//! what is most natural for the value.
+//! require it. Datatypes are selected as smallest that will fit the value to
+//! allow the compiler maximum freedom in optimizing.
 //!
 //! Currently the library implements algorithms for the [Proleptic Gregorian
 //! Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
@@ -198,17 +198,17 @@ pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// library and the values are wholly unremarkable.
 pub mod consts {
     /// Minimum value for month
-    pub const MONTH_MIN: u32 = 1;
+    pub const MONTH_MIN: u8 = 1;
     /// Maximum value for month
-    pub const MONTH_MAX: u32 = 12;
+    pub const MONTH_MAX: u8 = 12;
     /// Minimum value for day of month
-    pub const DAY_MIN: u32 = 1;
+    pub const DAY_MIN: u8 = 1;
     /// Maximum value for day of month
-    pub const DAY_MAX: u32 = 31;
+    pub const DAY_MAX: u8 = 31;
     /// Minimum value for day of week
-    pub const WEEKDAY_MIN: u32 = 1;
+    pub const WEEKDAY_MIN: u8 = 1;
     /// Maximum value for day of week
-    pub const WEEKDAY_MAX: u32 = 7;
+    pub const WEEKDAY_MAX: u8 = 7;
     /// Minimum value for hours
     pub const HOUR_MIN: u8 = 0;
     /// Maximum value for hours
@@ -308,7 +308,7 @@ pub mod consts {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
+pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     let n = n.wrapping_add(DAY_OFFSET) as u32;
     let n = 4 * n + 3;
@@ -326,7 +326,7 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
     let y = (y as i32).wrapping_sub(YEAR_OFFSET);
     let m = if nd == 1 { m - 12 } else { m };
     let d = d + 1;
-    (y, m, d)
+    (y, m as u8, d as u8)
 }
 
 /// Convert Gregorian date to Rata Die
@@ -363,15 +363,15 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
+pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
     let y = y.wrapping_add(YEAR_OFFSET) as u32;
     let jf = (m < 3) as u32;
     let y = y - jf;
-    let m = m + 12 * jf;
-    let d = d - 1;
+    let m = m as u32 + 12 * jf;
+    let d = d as u32 - 1;
     let c = y / 100;
     let y = 1461 * y / 4 - c + c / 4;
     let m = (979 * m - 2919) / 32;
@@ -416,9 +416,9 @@ pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
 /// Algorithm is a simple modulus with offset, but argument is first converted
 /// to unsigned for performance.
 #[inline]
-pub const fn rd_to_weekday(n: i32) -> u32 {
+pub const fn rd_to_weekday(n: i32) -> u8 {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
-    (n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1
+    ((n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1) as u8
 }
 
 /// Convert Gregorian date to day of week
@@ -455,23 +455,12 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is [Sakamoto's
-/// method](https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week#Sakamoto's_methods).
-/// It is very marginally faster than converting first to Rata Die and
-/// determining the day of week from that. If Rata Die value is available,
-/// always prefer converting from that.
+/// Simply converts date to rata die and then rata die to weekday.
+/// 
 #[inline]
-pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range"); // FIXME
-    let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
-    let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
-    let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 {
-        idx = 0;
-    } // ensure no bounds check
-    (y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d) % 7 + 1
+pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+    let rd = date_to_rd((y, m, d));
+    rd_to_weekday(rd)
 }
 
 /// Split total seconds to days, hours, minutes and seconds
@@ -506,6 +495,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
         secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX,
         "given seconds value is out of range"
     );
+    let secs = if secs > RD_SECONDS_MAX { 0 } else { secs }; // allows compiler to optimize more
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
     let secs = (secs % SECS_IN_DAY as u64) as u32;
@@ -579,8 +569,7 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
 ///
 /// Combination of existing functions for convenience only.
 #[inline]
-pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
-    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
+pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (y, m, s) = rd_to_date(days);
     (y, m, s, hh, mm, ss)
@@ -614,13 +603,7 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 ///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
-pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u32, u32, u8, u8, u8)) -> i64 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
-    debug_assert!(hh >= consts::HOUR_MIN && hh <= consts::HOUR_MAX, "given hour is out of range");
-    debug_assert!(mm >= consts::MINUTE_MIN && mm <= consts::MINUTE_MAX, "given minute is out of range");
-    debug_assert!(ss >= consts::SECOND_MIN && ss <= consts::SECOND_MAX, "given second is out of range");
+pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
     let days = date_to_rd((y, m, d));
     dhms_to_secs((days, hh, mm, ss))
 }
@@ -667,17 +650,18 @@ pub const fn is_leap_year(y: i32) -> bool {
 ///
 /// Algorithm is table lookup with leap year checking.
 #[inline]
-pub const fn days_in_month(y: i32, m: u32) -> u32 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+pub const fn days_in_month(y: i32, m: u8) -> u8 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 {
-        idx = 0;
-    }
-    if is_leap_year(y) {
-        [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx] as u32
+    // ensure compiler doesn't include a bounds check
+    if m >= consts::MONTH_MIN && m <= consts::MONTH_MAX {
+        let idx = m as usize - 1;
+        if is_leap_year(y) {
+            [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+        } else {
+            [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+        }
     } else {
-        [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx] as u32
+        0
     }
 }
 
@@ -809,7 +793,7 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, u8, u32)> {
+pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
     let (secs, nsecs) = systemtime_to_secs(st)?;
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (year, month, day) = rd_to_date(days);
@@ -844,7 +828,7 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
     let days = date_to_rd((y, m, d));
     let secs = dhms_to_secs((days, hh, mm, ss));
     secs_to_systemtime((secs, nsec))
