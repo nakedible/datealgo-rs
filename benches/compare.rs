@@ -21,31 +21,31 @@ mod datealgo_alt {
     }
 
     #[inline]
-    pub const fn rd_to_weekday2(n: i32) -> u32 {
-        (n + 4).rem_euclid(7) as u32
+    pub const fn rd_to_weekday2(n: i32) -> u8 {
+        (n + 4).rem_euclid(7) as u8
     }
 
     #[inline]
-    pub const fn rd_to_weekday3(n: i32) -> u32 {
+    pub const fn rd_to_weekday3(n: i32) -> u8 {
         if n >= -4 {
-            ((n + 4) % 7) as u32
+            ((n + 4) % 7) as u8
         } else {
-            ((n + 5) % 7 + 6) as u32
+            ((n + 5) % 7 + 6) as u8
         }
     }
 
     #[inline]
-    pub const fn date_to_weekday2((y, m, d): (i32, u32, u32)) -> u32 {
+    pub const fn date_to_weekday2((y, m, d): (i32, u8, u8)) -> u8 {
         datealgo::rd_to_weekday(datealgo::date_to_rd((y, m, d)))
     }
 
     #[inline]
-    pub const fn date_to_weekday3((year, month, day): (i32, u32, u32)) -> u32 {
+    pub const fn date_to_weekday3((year, month, day): (i32, u8, u8)) -> u8 {
         let year = year.wrapping_add(YEAR_OFFSET) as u32;
         let adjustment = (14 - month) / 12;
-        let mm = month + 12 * adjustment - 2;
-        let yy = year - adjustment;
-        (day + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1
+        let mm = (month + 12 * adjustment - 2) as u32;
+        let yy = year - adjustment as u32;
+        ((day as u32 + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1) as u8
     }
 
     #[cfg(feature = "std")]
@@ -67,7 +67,7 @@ mod httpdate {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u32, u32) {
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         /* 2000-03-01 (mod 400 year, immediately after feb29 */
         const LEAPOCH: i64 = 11017;
         const DAYS_PER_400Y: i64 = 365 * 400 + 97;
@@ -121,11 +121,11 @@ mod httpdate {
             mon + 2
         };
 
-        (year as i32, mon as u32, mday as u32)
+        (year as i32, mon as u8, mday as u8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
         fn is_leap_year(y: u16) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -155,7 +155,7 @@ mod httpdate {
         days as i32
     }
 
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -224,8 +224,8 @@ mod httpdate {
         // };
         (
             year as i32,
-            mon as u32,
-            mday as u32,
+            mon as u8,
+            mday as u8,
             (secs_of_day / 3600) as u8,
             ((secs_of_day % 3600) / 60) as u8,
             (secs_of_day % 60) as u8,
@@ -233,7 +233,7 @@ mod httpdate {
         )
     }
 
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
         fn is_leap_year(y: i32) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -267,7 +267,7 @@ mod humantime {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u32, u32) {
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         /* 2000-03-01 (mod 400 year, immediately after feb29 */
         const LEAPOCH: i64 = 11017;
         const DAYS_PER_400Y: i64 = 365 * 400 + 97;
@@ -321,11 +321,11 @@ mod humantime {
             mon + 2
         };
 
-        (year as i32, mon as u32, mday as u32)
+        (year as i32, mon as u8, mday as u8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -359,7 +359,7 @@ mod humantime {
         days as i32
     }
 
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -403,7 +403,7 @@ mod humantime {
         UNIX_EPOCH + Duration::new(total_seconds, nsec)
     }
 
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -464,7 +464,7 @@ mod humantime {
         (
             year as i32,
             mon,
-            mday as u32,
+            mday as u8,
             (secs_of_day / 3600) as u8,
             (secs_of_day / 60 % 60) as u8,
             (secs_of_day % 60) as u8,
@@ -478,19 +478,19 @@ mod chrono {
     use std::time::SystemTime;
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u32, u32) {
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         let date = chrono::NaiveDate::from_num_days_from_ce_opt(n + 719162).unwrap();
-        (date.year(), date.month(), date.day())
+        (date.year(), date.month() as u8, date.day() as u8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
-        let days = chrono::NaiveDate::from_ymd_opt(y, m, d).unwrap().num_days_from_ce();
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        let days = chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap().num_days_from_ce();
         days - 719162
     }
 
     #[inline]
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
         chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
             .unwrap()
             .and_hms_nano_opt(hh as u32, mm as u32, ss as u32, nsec)
@@ -501,12 +501,12 @@ mod chrono {
     }
 
     #[inline]
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let d: chrono::DateTime<chrono::Utc> = v.into();
         (
             d.year() as i32,
-            d.month(),
-            d.day(),
+            d.month() as u8,
+            d.day() as u8,
             d.hour() as u8,
             d.minute() as u8,
             d.second() as u8,
@@ -521,13 +521,13 @@ mod time {
     const UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u32, u32) {
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         let date = time::Date::from_julian_day(n + UNIX_EPOCH_JULIAN_DAY).unwrap();
-        (date.year(), date.month() as u32, date.day() as u32)
+        (date.year(), date.month() as u8, date.day() as u8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
         time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
             .unwrap()
             .to_julian_day()
@@ -535,7 +535,7 @@ mod time {
     }
 
     #[inline]
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
         time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
             .unwrap()
             .with_hms_nano(hh, mm, ss, nsec)
@@ -545,12 +545,12 @@ mod time {
     }
 
     #[inline]
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u32, u32, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let d: time::OffsetDateTime = v.into();
         (
             d.year() as i32,
-            d.month() as u32,
-            d.day() as u32,
+            d.month() as u8,
+            d.day() as u8,
             d.hour() as u8,
             d.minute() as u8,
             d.second() as u8,
@@ -560,7 +560,7 @@ mod time {
 }
 
 mod hinnant {
-    pub fn days_from_civil((y, m, d): (i32, u32, u32)) -> i32 {
+    pub fn days_from_civil((y, m, d): (i32, u8, u8)) -> i32 {
         let y = y as i32 - (m <= 2) as i32;
         let era = y.div_euclid(400);
         let yoe = y.rem_euclid(400) as u32;
@@ -569,7 +569,7 @@ mod hinnant {
         era * 146097 + doe as i32 - 719468
     }
 
-    pub fn days_from_civil_u((y, m, d): (i32, u32, u32)) -> i32 {
+    pub fn days_from_civil_u((y, m, d): (i32, u8, u8)) -> i32 {
         let y = y as u32 - (m <= 2) as u32;
         let era = y.div_euclid(400);
         let yoe = y.rem_euclid(400) as u32;
@@ -578,7 +578,7 @@ mod hinnant {
         (era * 146097 + doe as u32 - 719468) as i32
     }
 
-    pub fn civil_from_days(n: i32) -> (i32, u32, u32) {
+    pub fn civil_from_days(n: i32) -> (i32, u8, u8) {
         let z = n + 719468;
         let era = z.div_euclid(146097);
         let doe = z.rem_euclid(146097) as u32;
@@ -588,10 +588,10 @@ mod hinnant {
         let mp = (5 * doy + 2) / 153;
         let d = doy - (153 * mp + 2) / 5 + 1;
         let m = if mp < 10 { mp + 3 } else { mp - 9 };
-        (y + (m <= 2) as i32, m as u32, d as u32)
+        (y + (m <= 2) as i32, m as u8, d as u8)
     }
 
-    pub fn civil_from_days_u(n: i32) -> (i32, u32, u32) {
+    pub fn civil_from_days_u(n: i32) -> (i32, u8, u8) {
         let z = (n + 719468) as u32;
         let era = z.div_euclid(146097);
         let doe = z.rem_euclid(146097) as u32;
@@ -601,7 +601,7 @@ mod hinnant {
         let mp = (5 * doy + 2) / 153;
         let d = doy - (153 * mp + 2) / 5 + 1;
         let m = if mp < 10 { mp + 3 } else { mp - 9 };
-        ((y + (m <= 2) as u32) as i32, m as u32, d as u32)
+        ((y + (m <= 2) as u32) as i32, m as u8, d as u8)
     }
 }
 

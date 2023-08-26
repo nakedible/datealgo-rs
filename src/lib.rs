@@ -63,11 +63,10 @@
 //! # Notes
 //!
 //! The library does not expose any kind of `Date` or `DateTime` structures, but
-//! simply tuples for the necessary values. There is bounds checking via
-//! `debug_assert`, which means that it is not present in release builds.
-//! Callers are required to do their own bounds checking where ever input
-//! require it. Datatypes are selected for performance and utility, rather than
-//! what is most natural for the value.
+//! simply tuples for the necessary values. Bounds checking is done via
+//! `debug_assert` only, which means the methods are guaranteed to not panic in
+//! release builds. Callers are required to do their own bounds checking.
+//! Datatypes are selected as the smallest that will fit the value.
 //!
 //! Currently the library implements algorithms for the [Proleptic Gregorian
 //! Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
@@ -93,22 +92,22 @@
 //!
 //! # Benchmarks
 //!
-//! Results on GitHub Codespaces default VM:
+//! Results on GitHub Codespaces 8-core VM:
 //!
 //! | Function               | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 //! | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
-//! | date_to_rd             | **3.1 ns**    | 3.9 ns    | 4.2 ns    | 3.8 ns    | 18.5 ns   | 8.6 ns    |
-//! | rd_to_date             | **5.0 ns**    | 9.6 ns    | 12.4 ns   | 12.3 ns   | 23.6 ns   | 10.1 ns   |
-//! | datetime_to_systemtime | **6.2 ns**    |           | 10.9 ns   | 10.1 ns   | 46.1 ns   | 47.5 ns   |
-//! | systemtime_to_datetime | **17.2 ns**   |           | 27.0 ns   | 26.8 ns   | 51.1 ns   | 216.8 ns  |
+//! | date_to_rd             | **2.5 ns**    | 3.3 ns    | 3.1 ns    | 3.2 ns    | 17.7 ns   | 7.4 ns    |
+//! | rd_to_date             | **3.7 ns**    | 7.1 ns    | 11.8 ns   | 11.9 ns   | 18.7 ns   | 8.7 ns    |
+//! | datetime_to_systemtime | **6.9 ns**    |           | 10.6 ns   | 9.6 ns    | 58.9 ns   | 50.7 ns   |
+//! | systemtime_to_datetime | **14.6 ns**   |           | 20.5 ns   | 20.3 ns   | 57.0 ns   | 228.2 ns  |
 //!
 //! Some code has been adapted from the libraries to produce comparable
 //! benchmarks.
-//! 
+//!
 //! # Acknowledgements
-//! 
+//!
 //! I do not claim original research on anything that is in this crate.
-//! 
+//!
 //! - [Cassio Neri and Lorenz
 //!   Schneider](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172):
 //!   While searching for best method for date conversion, I stumbled upon a
@@ -198,17 +197,17 @@ pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// library and the values are wholly unremarkable.
 pub mod consts {
     /// Minimum value for month
-    pub const MONTH_MIN: u32 = 1;
+    pub const MONTH_MIN: u8 = 1;
     /// Maximum value for month
-    pub const MONTH_MAX: u32 = 12;
+    pub const MONTH_MAX: u8 = 12;
     /// Minimum value for day of month
-    pub const DAY_MIN: u32 = 1;
+    pub const DAY_MIN: u8 = 1;
     /// Maximum value for day of month
-    pub const DAY_MAX: u32 = 31;
+    pub const DAY_MAX: u8 = 31;
     /// Minimum value for day of week
-    pub const WEEKDAY_MIN: u32 = 1;
+    pub const WEEKDAY_MIN: u8 = 1;
     /// Maximum value for day of week
-    pub const WEEKDAY_MAX: u32 = 7;
+    pub const WEEKDAY_MAX: u8 = 7;
     /// Minimum value for hours
     pub const HOUR_MIN: u8 = 0;
     /// Maximum value for hours
@@ -279,9 +278,9 @@ pub mod consts {
 ///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns a `(year,
 /// month, day)` tuple.
-/// 
-/// # Errors
-/// 
+///
+/// # Panics
+///
 /// Argument must be between [RD_MIN] and [RD_MAX] inclusive. Bounds are checked
 /// using `debug_assert` only, so that the checks are not present in release
 /// builds, similar to integer overflow checks.
@@ -308,7 +307,7 @@ pub mod consts {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
+pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     let n = n.wrapping_add(DAY_OFFSET) as u32;
     let n = 4 * n + 3;
@@ -326,18 +325,18 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
     let y = (y as i32).wrapping_sub(YEAR_OFFSET);
     let m = if nd == 1 { m - 12 } else { m };
     let d = d + 1;
-    (y, m, d)
+    (y, m as u8, d as u8)
 }
 
 /// Convert Gregorian date to Rata Die
 ///
 /// Given a `(year, month, day)` tuple returns the days since Unix epoch
 /// (January 1st, 1970). Dates before the epoch produce negative values.
-/// 
-/// # Errors
-/// 
-/// Year must be between [YEAR_MIN] and [YEAR_MAX], month must be between `1`
-/// and `12` and day must be between `1` and the number of days in the month in
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
 /// question. Bounds are checked using `debug_assert` only, so that the checks
 /// are not present in release builds, similar to integer overflow checks.
 ///
@@ -363,15 +362,15 @@ pub const fn rd_to_date(n: i32) -> (i32, u32, u32) {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
+pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
     let y = y.wrapping_add(YEAR_OFFSET) as u32;
     let jf = (m < 3) as u32;
     let y = y - jf;
-    let m = m + 12 * jf;
-    let d = d - 1;
+    let m = m as u32 + 12 * jf;
+    let d = d as u32 - 1;
     let c = y / 100;
     let y = 1461 * y / 4 - c + c / 4;
     let m = (979 * m - 2919) / 32;
@@ -384,9 +383,9 @@ pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
 /// Given a day counting from Unix epoch (January 1st, 1970) returns the day of
 /// week. Day of week is given as `u32` number between 1 and 7, with `1` meaning
 /// Monday and `7` meaning Sunday.
-/// 
-/// # Errors
-/// 
+///
+/// # Panics
+///
 /// Argument must be between [RD_MIN] and [RD_MAX] inclusive. Bounds are checked
 /// using `debug_assert` only, so that the checks are not present in release
 /// builds, similar to integer overflow checks.
@@ -416,9 +415,9 @@ pub const fn date_to_rd((y, m, d): (i32, u32, u32)) -> i32 {
 /// Algorithm is a simple modulus with offset, but argument is first converted
 /// to unsigned for performance.
 #[inline]
-pub const fn rd_to_weekday(n: i32) -> u32 {
+pub const fn rd_to_weekday(n: i32) -> u8 {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
-    (n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1
+    ((n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1) as u8
 }
 
 /// Convert Gregorian date to day of week
@@ -426,12 +425,13 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 /// Given a `(year, month, day)` tuple returns the day of week. Day of week is
 /// given as `u32` number between 1 and 7, with `1` meaning Monday and `7`
 /// meaning Sunday.
-/// 
-/// # Errors
-/// 
-/// Year must be between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked
-/// using `debug_assert` only, so that the checks are not present in release
-/// builds, similar to integer overflow checks.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
+/// question. Bounds are checked using `debug_assert` only, so that the checks
+/// are not present in release builds, similar to integer overflow checks.
 ///
 /// # Examples
 ///
@@ -455,32 +455,21 @@ pub const fn rd_to_weekday(n: i32) -> u32 {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is [Sakamoto's
-/// method](https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week#Sakamoto's_methods).
-/// It is very marginally faster than converting first to Rata Die and
-/// determining the day of week from that. If Rata Die value is available,
-/// always prefer converting from that.
+/// Simply converts date to rata die and then rata die to weekday.
+///
 #[inline]
-pub const fn date_to_weekday((y, m, d): (i32, u32, u32)) -> u32 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range"); // FIXME
-    let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
-    let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
-    let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 {
-        idx = 0;
-    } // ensure no bounds check
-    (y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d) % 7 + 1
+pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+    let rd = date_to_rd((y, m, d));
+    rd_to_weekday(rd)
 }
 
 /// Split total seconds to days, hours, minutes and seconds
 ///
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(days,
 /// hours, minutes, seconds)` tuple.
-/// 
-/// # Errors
-/// 
+///
+/// # Panics
+///
 /// Argument must be between [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive.
 /// Bounds are checked using `debug_assert` only, so that the checks are not
 /// present in release builds, similar to integer overflow checks.
@@ -506,6 +495,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
         secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX,
         "given seconds value is out of range"
     );
+    let secs = if secs > RD_SECONDS_MAX { 0 } else { secs }; // allows compiler to optimize more
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
     let secs = (secs % SECS_IN_DAY as u64) as u32;
@@ -520,12 +510,14 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 ///
 /// Given a `(days, hours, minutes, seconds)` tuple from Unix epoch (January
 /// 1st, 1970) returns the total seconds.
-/// 
-/// # Errors
-/// 
-/// Days must be between [RD_MIN] and [RD_MAX] inclusive. Bounds are checked
-/// using `debug_assert` only, so that the checks are not present in release
-/// builds, similar to integer overflow checks.
+///
+/// # Panics
+///
+/// Days must be between [RD_MIN] and [RD_MAX] inclusive. Hours must be between
+/// `0` and `23`. Minutes must be between `0` and `59`. Seconds must be between
+/// `0` and `59`. Bounds are checked using `debug_assert` only, so that the
+/// checks are not present in release builds, similar to integer overflow
+/// checks.
 ///
 /// # Examples
 ///
@@ -549,16 +541,20 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
     debug_assert!(h >= consts::HOUR_MIN && h <= consts::HOUR_MAX, "given hour is out of range");
     debug_assert!(m >= consts::MINUTE_MIN && m <= consts::MINUTE_MAX, "given minute is out of range");
     debug_assert!(s >= consts::SECOND_MIN && s <= consts::SECOND_MAX, "given second is out of range");
-    d as i64 * SECS_IN_DAY + h as i64 * 3600 + m as i64 * 60 + s as i64
+    if d >= RD_MIN && d <= RD_MAX {
+        d as i64 * SECS_IN_DAY + h as i64 * 3600 + m as i64 * 60 + s as i64
+    } else {
+        0
+    }
 }
 
 /// Convert total seconds to year, month, day, hours, minutes and seconds
 ///
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(year,
 /// month, day, hours, minutes, seconds)` tuple.
-/// 
-/// # Errors
-/// 
+///
+/// # Panics
+///
 /// Argument must be between [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive.
 /// Bounds are checked using `debug_assert` only, so that the checks are not
 /// present in release builds, similar to integer overflow checks.
@@ -579,8 +575,7 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
 ///
 /// Combination of existing functions for convenience only.
 #[inline]
-pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
-    debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
+pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (y, m, s) = rd_to_date(days);
     (y, m, s, hh, mm, ss)
@@ -590,12 +585,15 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 ///
 /// Given a `(year, month, day, hours, minutes, seconds)` tuple from Unix epoch
 /// (January 1st, 1970) returns the total seconds.
-/// 
-/// # Errors
-/// 
-/// Year must be between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked
-/// using `debug_assert` only, so that the checks are not present in release
-/// builds, similar to integer overflow checks.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
+/// question. Hours must be between `0` and `23`. Minutes must be between `0`
+/// and `59`. Seconds must be between `0` and `59`. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
 ///
 /// # Examples
 ///
@@ -614,18 +612,18 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u32, u32, u8, u8, u8) {
 ///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
-pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u32, u32, u8, u8, u8)) -> i64 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
-    debug_assert!(hh >= consts::HOUR_MIN && hh <= consts::HOUR_MAX, "given hour is out of range");
-    debug_assert!(mm >= consts::MINUTE_MIN && mm <= consts::MINUTE_MAX, "given minute is out of range");
-    debug_assert!(ss >= consts::SECOND_MIN && ss <= consts::SECOND_MAX, "given second is out of range");
+pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
     let days = date_to_rd((y, m, d));
     dhms_to_secs((days, hh, mm, ss))
 }
 
 /// Determine if the given year is a leap year
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked
+/// using `debug_assert` only, so that the checks are not present in release
+/// builds, similar to integer overflow checks.
 ///
 /// # Examples
 ///
@@ -650,6 +648,12 @@ pub const fn is_leap_year(y: i32) -> bool {
 
 /// Determine the number of days in the given month in the given year
 ///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Bounds are checked using `debug_assert` only, so that the checks
+/// are not present in release builds, similar to integer overflow checks.
+///
 /// # Example
 ///
 /// ```
@@ -667,17 +671,18 @@ pub const fn is_leap_year(y: i32) -> bool {
 ///
 /// Algorithm is table lookup with leap year checking.
 #[inline]
-pub const fn days_in_month(y: i32, m: u32) -> u32 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+pub const fn days_in_month(y: i32, m: u8) -> u8 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    let mut idx = m.wrapping_sub(1) as usize;
-    if idx > 11 {
-        idx = 0;
-    }
-    if is_leap_year(y) {
-        [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx] as u32
+    // ensure compiler doesn't include a bounds check
+    if m >= consts::MONTH_MIN && m <= consts::MONTH_MAX {
+        let idx = m as usize - 1;
+        if is_leap_year(y) {
+            [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+        } else {
+            [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+        }
     } else {
-        [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx] as u32
+        0
     }
 }
 
@@ -685,9 +690,9 @@ pub const fn days_in_month(y: i32, m: u32) -> u32 {
 ///
 /// Given [`std::time::SystemTime`] returns an `Option` of `(seconds,
 /// nanoseconds)` tuple from Unix epoch (January 1st, 1970).
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns `None` if the time is before [RD_SECONDS_MIN] or after
 /// [RD_SECONDS_MAX].
 ///
@@ -740,12 +745,13 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 ///
 /// Given a tuple of seconds and nanoseconds counting from Unix epoch (January
 /// 1st, 1970) returns [`std::time::SystemTime`].
-/// 
-/// # Errors
-/// 
+///
+/// # Panics
+///
 /// Seconds must be between [RD_SECONDS_MIN] and [RD_SECONDS_MAX] inclusive.
-/// Bounds are checked using `debug_assert` only, so that the checks are not
-/// present in release builds, similar to integer overflow checks.
+/// Nanoseconds must between `0` and `999_999_999`. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
 ///
 /// # Examples
 ///
@@ -786,9 +792,9 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
 ///
 /// Given [`std::time::SystemTime`] returns an Option of `(year, month, day,
 /// hours, minutes, seconds, nanoseconds)` tuple.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns `None` if the time is before [RD_SECONDS_MIN] or after
 /// [RD_SECONDS_MAX].
 ///
@@ -809,7 +815,7 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, u8, u32)> {
+pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
     let (secs, nsecs) = systemtime_to_secs(st)?;
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (year, month, day) = rd_to_date(days);
@@ -821,12 +827,16 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 ///
 /// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
 /// from Unix epoch (January 1st, 1970) returns [`std::time::SystemTime`].
-/// 
-/// # Errors
-/// 
-/// Year must be between [YEAR_MIN] and [YEAR_MAX] inclusive. Bounds are checked
-/// using `debug_assert` only, so that the checks are not present in release
-/// builds, similar to integer overflow checks.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
+/// question. Hours must be between `0` and `23`. Minutes must be between `0`
+/// and `59`. Seconds must be between `0` and `59`. Nanoseconds must be between
+/// `0` and `999_999_999`. Bounds are checked using `debug_assert` only, so that
+/// the checks are not present in release builds, similar to integer overflow
+/// checks.
 ///
 /// # Examples
 ///
@@ -844,7 +854,7 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u32, u32, u8, u8, 
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u32, u32, u8, u8, u8, u32)) -> SystemTime {
+pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
     let days = date_to_rd((y, m, d));
     let secs = dhms_to_secs((days, hh, mm, ss));
     secs_to_systemtime((secs, nsec))
