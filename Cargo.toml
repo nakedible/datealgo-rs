@@ -26,8 +26,13 @@ harness = false
 name = "basic"
 harness = false
 
+[[bench]]
+name = "iai"
+harness = false
+
 [dev-dependencies]
 chrono = "0.4.24"
 criterion = "0.4.0"
+iai-callgrind = "0.6"
 quickcheck = "1.0.3"
 time = { version = "0.3.21", features = ["quickcheck", "large-dates"] }
