@@ -2,8 +2,8 @@ use iai_callgrind::{black_box, main};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[inline(never)]
-fn iai_rd_to_date() -> (i32, u32, u32) {
-    datealgo::rd_to_date(black_box(12345))
+fn iai_rd_to_date() -> (i32, u8, u8) {
+    datealgo::rd_to_date(black_box(19489))
 }
 
 #[inline(never)]
@@ -12,12 +12,12 @@ fn iai_date_to_rd() -> i32 {
 }
 
 #[inline(never)]
-fn iai_rd_to_weekday() -> u32 {
-    datealgo::rd_to_weekday(black_box(12345))
+fn iai_rd_to_weekday() -> u8 {
+    datealgo::rd_to_weekday(black_box(19489))
 }
 
 #[inline(never)]
-fn iai_date_to_weekday() -> u32 {
+fn iai_date_to_weekday() -> u8 {
     datealgo::date_to_weekday(black_box((2023, 5, 12)))
 }
 
@@ -28,11 +28,11 @@ fn iai_secs_to_dhms() -> (i32, u8, u8, u8) {
 
 #[inline(never)]
 fn iai_dhms_to_secs() -> i64 {
-    datealgo::dhms_to_secs(black_box((123123, 12, 34, 56)))
+    datealgo::dhms_to_secs(black_box((19489, 12, 34, 56)))
 }
 
 #[inline(never)]
-fn iai_secs_to_datetime() -> (i32, u32, u32, u8, u8, u8) {
+fn iai_secs_to_datetime() -> (i32, u8, u8, u8, u8, u8) {
     datealgo::secs_to_datetime(black_box(1684574678i64))
 }
 
@@ -47,7 +47,7 @@ fn iai_is_leap_year() -> bool {
 }
 
 #[inline(never)]
-fn iai_days_in_month() -> u32 {
+fn iai_days_in_month() -> u8 {
     datealgo::days_in_month(black_box(2000), black_box(2))
 }
 
@@ -62,7 +62,7 @@ fn iai_secs_to_systemtime() -> SystemTime {
 }
 
 #[inline(never)]
-fn iai_systemtime_to_datetime() -> Option<(i32, u32, u32, u8, u8, u8, u32)> {
+fn iai_systemtime_to_datetime() -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
     datealgo::systemtime_to_datetime(black_box(UNIX_EPOCH + Duration::from_secs(1684574678)))
 }
 
