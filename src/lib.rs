@@ -541,7 +541,11 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
     debug_assert!(h >= consts::HOUR_MIN && h <= consts::HOUR_MAX, "given hour is out of range");
     debug_assert!(m >= consts::MINUTE_MIN && m <= consts::MINUTE_MAX, "given minute is out of range");
     debug_assert!(s >= consts::SECOND_MIN && s <= consts::SECOND_MAX, "given second is out of range");
-    d as i64 * SECS_IN_DAY + h as i64 * 3600 + m as i64 * 60 + s as i64
+    if d >= RD_MIN && d <= RD_MAX {
+        d as i64 * SECS_IN_DAY + h as i64 * 3600 + m as i64 * 60 + s as i64
+    } else {
+        0
+    }
 }
 
 /// Convert total seconds to year, month, day, hours, minutes and seconds
