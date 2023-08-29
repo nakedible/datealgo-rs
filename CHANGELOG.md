@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4](https://github.com/nakedible/datealgo-rs/compare/v0.0.3...v0.0.4) - 2023-08-29
+
+### Other
+- Remove criterion run from CI as it is useless
+- Change everything to `u8` that can be
+- Add iai benchmarking as well
+- Remove outdated commented benches
+- Change names of benches to avoid conflicts
+- Small optimisations of `rd_to_date`.
+- Fix typo in Unix epoch
+
 ## [0.0.3](https://github.com/nakedible/datealgo-rs/compare/v0.0.2...v0.0.3) - 2023-05-20
 
 ### Other
