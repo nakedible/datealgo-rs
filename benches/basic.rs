@@ -42,5 +42,9 @@ fn bench_basic(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_basic,);
+criterion_group! {
+    name = benches;
+    config = Criterion::default().sample_size(5000).measurement_time(Duration::from_secs(10));
+    targets = bench_basic
+}
 criterion_main!(benches);
