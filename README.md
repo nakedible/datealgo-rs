@@ -72,11 +72,10 @@ algorithms available.
 ## Notes
 
 The library does not expose any kind of `Date` or `DateTime` structures, but
-simply tuples for the necessary values. There is bounds checking via
-`debug_assert`, which means that it is not present in release builds.
-Callers are required to do their own bounds checking where ever input
-require it. Datatypes are selected for performance and utility, rather than
-what is most natural for the value.
+simply tuples for the necessary values. Bounds checking is done via
+`debug_assert` only, which means the methods are guaranteed to not panic in
+release builds. Callers are required to do their own bounds checking.
+Datatypes are selected as the smallest that will fit the value.
 
 Currently the library implements algorithms for the [Proleptic Gregorian
 Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar) which
