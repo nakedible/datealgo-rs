@@ -57,7 +57,7 @@ quickcheck! {
             s.second() as u8,
             s.nanosecond(),
         );
-        let a = datetime_to_systemtime(dt);
+        let a = datetime_to_systemtime(dt).unwrap();
         let b: std::time::SystemTime = s.into();
         TestResult::from_bool(a == b)
     }
