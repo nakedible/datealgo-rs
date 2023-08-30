@@ -38,7 +38,7 @@
 //!
 //! assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
 //! assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
-//! assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+//! assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH.checked_add(Duration::from_secs(1684574678)));
 //! ```
 //!
 //! # Features
@@ -744,7 +744,11 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 /// Convert seconds and nanoseconds to [`std::time::SystemTime`]
 ///
 /// Given a tuple of seconds and nanoseconds counting from Unix epoch (January
-/// 1st, 1970) returns [`std::time::SystemTime`].
+/// 1st, 1970) returns Option of [`std::time::SystemTime`].
+///
+/// # Errors
+///
+/// Returns `None` if given datetime cannot be represented as `SystemTime`.
 ///
 /// # Panics
 ///
@@ -759,12 +763,12 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 /// use datealgo::secs_to_systemtime;
 /// use std::time::{Duration, UNIX_EPOCH};
 ///
-/// assert_eq!(secs_to_systemtime((0, 0)), UNIX_EPOCH);
-/// assert_eq!(secs_to_systemtime((0, 1)), UNIX_EPOCH + Duration::new(0, 1));
-/// assert_eq!(secs_to_systemtime((1, 0)), UNIX_EPOCH + Duration::new(1, 0));
-/// assert_eq!(secs_to_systemtime((-1, 999_999_999)), UNIX_EPOCH - Duration::new(0, 1));
-/// assert_eq!(secs_to_systemtime((-1, 0)), UNIX_EPOCH - Duration::new(1, 0));
-/// assert_eq!(secs_to_systemtime((-2, 999_999_999)), UNIX_EPOCH - Duration::new(1, 1));
+/// assert_eq!(secs_to_systemtime((0, 0)), Some(UNIX_EPOCH));
+/// assert_eq!(secs_to_systemtime((0, 1)), UNIX_EPOCH.checked_add(Duration::new(0, 1)));
+/// assert_eq!(secs_to_systemtime((1, 0)), UNIX_EPOCH.checked_add(Duration::new(1, 0)));
+/// assert_eq!(secs_to_systemtime((-1, 999_999_999)), UNIX_EPOCH.checked_sub(Duration::new(0, 1)));
+/// assert_eq!(secs_to_systemtime((-1, 0)), UNIX_EPOCH.checked_sub(Duration::new(1, 0)));
+/// assert_eq!(secs_to_systemtime((-2, 999_999_999)), UNIX_EPOCH.checked_sub(Duration::new(1, 1)));
 /// ```
 ///
 /// # Algorithm
@@ -772,18 +776,18 @@ pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> SystemTime {
+pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> Option<SystemTime> {
     debug_assert!(secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX, "given seconds is out of range");
     debug_assert!(
         nsecs >= consts::NANOSECOND_MIN && nsecs <= consts::NANOSECOND_MAX,
         "given nanoseconds is out of range"
     );
     if secs >= 0 {
-        UNIX_EPOCH + Duration::new(secs as u64, nsecs)
+        UNIX_EPOCH.checked_add(Duration::new(secs as u64, nsecs))
     } else if nsecs > 0 {
-        UNIX_EPOCH - Duration::new((-secs - 1) as u64, 1_000_000_000 - nsecs)
+        UNIX_EPOCH.checked_sub(Duration::new((-secs - 1) as u64, 1_000_000_000 - nsecs))
     } else {
-        UNIX_EPOCH - Duration::from_secs(-secs as u64)
+        UNIX_EPOCH.checked_sub(Duration::from_secs(-secs as u64))
     }
 }
 
@@ -826,7 +830,12 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8
 /// [`std::time::SystemTime`]
 ///
 /// Given a `(year, month, day, hours, minutes, seconds, nanoseconds)` tuple
-/// from Unix epoch (January 1st, 1970) returns [`std::time::SystemTime`].
+/// from Unix epoch (January 1st, 1970) returns Option of
+/// [`std::time::SystemTime`].
+///
+/// # Errors
+///
+/// Returns `None` if given datetime cannot be represented as `SystemTime`.
 ///
 /// # Panics
 ///
@@ -844,9 +853,9 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8
 /// use datealgo::datetime_to_systemtime;
 /// use std::time::{Duration, UNIX_EPOCH};
 ///
-/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), UNIX_EPOCH);
-/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 1, 0)), UNIX_EPOCH + Duration::new(1, 0));
-/// assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), Some(UNIX_EPOCH));
+/// assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 1, 0)), UNIX_EPOCH.checked_add(Duration::new(1, 0)));
+/// assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH.checked_add(Duration::from_secs(1684574678)));
 /// ```
 ///
 /// # Algorithm
@@ -854,7 +863,7 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> Option<SystemTime> {
     let days = date_to_rd((y, m, d));
     let secs = dhms_to_secs((days, hh, mm, ss));
     secs_to_systemtime((secs, nsec))

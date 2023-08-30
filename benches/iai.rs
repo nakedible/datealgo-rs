@@ -57,7 +57,7 @@ fn iai_systemtime_to_secs() -> Option<(i64, u32)> {
 }
 
 #[inline(never)]
-fn iai_secs_to_systemtime() -> SystemTime {
+fn iai_secs_to_systemtime() -> Option<SystemTime> {
     datealgo::secs_to_systemtime(black_box((1684574678, 0)))
 }
 
@@ -67,7 +67,7 @@ fn iai_systemtime_to_datetime() -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
 }
 
 #[inline(never)]
-fn iai_datetime_to_systemtime() -> SystemTime {
+fn iai_datetime_to_systemtime() -> Option<SystemTime> {
     datealgo::datetime_to_systemtime(black_box((2023, 5, 20, 12, 34, 56, 0)))
 }
 

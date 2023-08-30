@@ -182,14 +182,14 @@ fn test_systemtime_to_secs() {
 
 #[test]
 fn test_secs_to_systemtime() {
-    assert_eq!(secs_to_systemtime((0, 0)), UNIX_EPOCH);
+    assert_eq!(secs_to_systemtime((0, 0)), Some(UNIX_EPOCH));
     assert_eq!(
         secs_to_systemtime((RD_SECONDS_MAX, 0)),
-        UNIX_EPOCH + Duration::from_secs(RD_SECONDS_MAX as u64)
+        UNIX_EPOCH.checked_add(Duration::from_secs(RD_SECONDS_MAX as u64))
     );
     assert_eq!(
         secs_to_systemtime((RD_SECONDS_MIN, 0)),
-        UNIX_EPOCH - Duration::from_secs(-RD_SECONDS_MIN as u64)
+        UNIX_EPOCH.checked_sub(Duration::from_secs(-RD_SECONDS_MIN as u64))
     );
 }
 
@@ -216,13 +216,13 @@ fn test_systemtime_to_datetime() {
 
 #[test]
 fn test_datetime_to_systemtime() {
-    assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), UNIX_EPOCH);
+    assert_eq!(datetime_to_systemtime((1970, 1, 1, 0, 0, 0, 0)), Some(UNIX_EPOCH));
     assert_eq!(
         datetime_to_systemtime((YEAR_MAX, 12, 31, 23, 59, 59, 0)),
-        UNIX_EPOCH + Duration::from_secs(RD_SECONDS_MAX as u64)
+        UNIX_EPOCH.checked_add(Duration::from_secs(RD_SECONDS_MAX as u64))
     );
     assert_eq!(
         datetime_to_systemtime((YEAR_MIN, 1, 1, 0, 0, 0, 0)),
-        UNIX_EPOCH - Duration::from_secs(-RD_SECONDS_MIN as u64)
+        UNIX_EPOCH.checked_sub(Duration::from_secs(-RD_SECONDS_MIN as u64))
     );
 }
