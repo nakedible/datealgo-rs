@@ -101,6 +101,10 @@ fn test_datetime_to_secs() {
 #[test]
 fn test_is_leap_year() {
     assert_eq!(is_leap_year(0), true);
+    assert_eq!(is_leap_year(1), false);
+    assert_eq!(is_leap_year(4), true);
+    assert_eq!(is_leap_year(100), false);
+    assert_eq!(is_leap_year(400), true);
     assert_eq!(is_leap_year(-1), false);
     assert_eq!(is_leap_year(-4), true);
     assert_eq!(is_leap_year(-100), false);
