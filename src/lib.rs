@@ -647,12 +647,19 @@ pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) 
 ///
 /// # Algorithm
 ///
-/// Simple modulus checks on a year transformed positive.
+/// Algorithm is Neri-Schneider from C++now 2023 conference:
+/// > https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf
 #[inline]
 pub const fn is_leap_year(y: i32) -> bool {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    let y = y.wrapping_add(YEAR_OFFSET) as u32;
-    y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
+    // Using `%` instead of `&` causes compiler to emit branches instead. This
+    // is faster in a tight loop due to good branch prediction, but probably
+    // slower in a real program so we use `&`.
+    if (y % 100) != 0 {
+        y & 3 == 0
+    } else {
+        y & 15 == 0
+    }
 }
 
 /// Determine the number of days in the given month in the given year
@@ -678,20 +685,17 @@ pub const fn is_leap_year(y: i32) -> bool {
 ///
 /// # Algorithm
 ///
-/// Algorithm is table lookup with leap year checking.
+/// Algorithm is Neri-Schneider from C++now 2023 conference:
+/// > https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf
 #[inline]
 pub const fn days_in_month(y: i32, m: u8) -> u8 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    // ensure compiler doesn't include a bounds check
-    if m >= consts::MONTH_MIN && m <= consts::MONTH_MAX {
-        let idx = m as usize - 1;
-        if is_leap_year(y) {
-            [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
-        } else {
-            [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
-        }
+    if m != 2 {
+        30 | (m ^ (m >> 3))
+    } else if is_leap_year(y) {
+        29
     } else {
-        0
+        28
     }
 }
 
