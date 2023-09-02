@@ -31,6 +31,27 @@ quickcheck! {
         TestResult::from_bool(wd_a as u8 == wd_b)
     }
 
+    fn quickcheck_is_leap_year(y: i32) -> TestResult {
+        if y < datealgo::YEAR_MIN || y > datealgo::YEAR_MAX {
+            return TestResult::discard();
+        }
+        let leap_a = datealgo::is_leap_year(y);
+        let leap_b = time::util::is_leap_year(y);
+        TestResult::from_bool(leap_a == leap_b)
+    }
+
+    fn quickcheck_days_in_month(y: i32, m: u8) -> TestResult {
+        if y < datealgo::YEAR_MIN || y > datealgo::YEAR_MAX {
+            return TestResult::discard();
+        }
+        if m < datealgo::consts::MONTH_MIN || m > datealgo::consts::MONTH_MAX {
+            return TestResult::discard();
+        }
+        let days_a = datealgo::days_in_month(y, m);
+        let days_b = time::util::days_in_year_month(y, m.try_into().unwrap());
+        TestResult::from_bool(days_a == days_b)
+    }
+
     fn quickcheck_systemtime_to_datetime(s: time::PrimitiveDateTime) -> TestResult {
         let s = s.assume_utc();
         let a = systemtime_to_datetime(s.into()).unwrap();
