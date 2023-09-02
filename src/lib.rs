@@ -310,20 +310,24 @@ pub mod consts {
 pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     let n = n.wrapping_add(DAY_OFFSET) as u32;
+    // century
     let n = 4 * n + 3;
     let c = n / 146097;
     let r = n % 146097;
+    // year
     let n = r | 3;
     let p = 2939745 * n as u64;
     let z = (p / 2u64.pow(32)) as u32;
     let n = (p % 2u64.pow(32)) as u32 / 2939745 / 4;
-    let nd = (n >= 306) as u32;
-    let y = 100 * c + z + nd;
+    let j = n >= 306;
+    let y = 100 * c + z + j as u32;
+    // month and day
     let n = 2141 * n + 197913;
     let m = n / 2u32.pow(16);
     let d = n % 2u32.pow(16) / 2141;
+    // map
     let y = (y as i32).wrapping_sub(YEAR_OFFSET);
-    let m = if nd == 1 { m - 12 } else { m };
+    let m = if j { m - 12 } else { m };
     let d = d + 1;
     (y, m as u8, d as u8)
 }
@@ -367,13 +371,18 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
     let y = y.wrapping_add(YEAR_OFFSET) as u32;
+    // map
     let jf = (m < 3) as u32;
     let y = y - jf;
     let m = m as u32 + 12 * jf;
     let d = d as u32 - 1;
+    // century
     let c = y / 100;
+    // year
     let y = 1461 * y / 4 - c + c / 4;
+    // month
     let m = (979 * m - 2919) / 32;
+    // result
     let n = y + m + d;
     (n as i32).wrapping_sub(DAY_OFFSET)
 }
