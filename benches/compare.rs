@@ -80,7 +80,7 @@ mod datealgo_alt {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
+    pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
         let secs = secs as u64;
         let ss = secs % 60;
         let secs = secs / 60;
@@ -92,12 +92,12 @@ mod datealgo_alt {
     }
 
     #[inline]
-    pub const fn rd_to_weekday2(n: i32) -> u8 {
+    pub const fn rd_to_weekday(n: i32) -> u8 {
         (n + 4).rem_euclid(7) as u8
     }
 
     #[inline]
-    pub const fn rd_to_weekday3(n: i32) -> u8 {
+    pub const fn rd_to_weekday2(n: i32) -> u8 {
         if n >= -4 {
             ((n + 4) % 7) as u8
         } else {
@@ -106,12 +106,18 @@ mod datealgo_alt {
     }
 
     #[inline]
-    pub const fn date_to_weekday2((y, m, d): (i32, u8, u8)) -> u8 {
-        datealgo::rd_to_weekday(datealgo::date_to_rd((y, m, d)))
+    pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+        let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
+        let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
+        let mut idx = m.wrapping_sub(1) as usize;
+        if idx > 11 {
+            idx = 0;
+        } // ensure no bounds check
+        ((y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d as u32) % 7 + 1) as u8
     }
 
     #[inline]
-    pub const fn date_to_weekday3((year, month, day): (i32, u8, u8)) -> u8 {
+    pub const fn date_to_weekday2((year, month, day): (i32, u8, u8)) -> u8 {
         let year = year.wrapping_add(YEAR_OFFSET) as u32;
         let adjustment = (14 - month) / 12;
         let mm = (month + 12 * adjustment - 2) as u32;
@@ -119,11 +125,69 @@ mod datealgo_alt {
         ((day as u32 + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1) as u8
     }
 
+    #[inline]
+    pub const fn is_leap_year(y: i32) -> bool {
+        y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
+    }
+
+    #[inline]
+    pub const fn is_leap_year2(y: i32) -> bool {
+        let y = y.wrapping_add(YEAR_OFFSET) as u32;
+        y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
+    }
+
+    #[inline]
+    pub const fn is_leap_year3(y: i32) -> bool {
+        if y % 100 != 0 {
+            y % 4 == 0
+        } else {
+            y % 16 == 0
+        }
+    }
+
+    #[inline]
+    pub const fn is_leap_year4(y: i32) -> bool {
+        let y = y.wrapping_add(YEAR_OFFSET) as u32;
+        if y % 100 != 0 {
+            y % 4 == 0
+        } else {
+            y % 16 == 0
+        }
+    }
+
+    #[inline]
+    pub const fn days_in_month(y: i32, m: u8) -> u8 {
+        // ensure compiler doesn't include a bounds check
+        if m >= datealgo::consts::MONTH_MIN && m <= datealgo::consts::MONTH_MAX {
+            let idx = m as usize - 1;
+            if datealgo::is_leap_year(y) {
+                [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+            } else {
+                [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+            }
+        } else {
+            0
+        }
+    }
+
+    #[inline]
+    pub const fn days_in_month2(y: i32, m: u8) -> u8 {
+        if m == 2 {
+            if datealgo::is_leap_year(y) {
+                29
+            } else {
+                28
+            }
+        } else {
+            30 | (9 * m / 8)
+        }
+    }
+
     #[cfg(feature = "std")]
     const SECS_OFFSET_DURATION: Duration = Duration::from_secs(SECS_OFFSET as u64);
 
     #[inline]
-    pub fn systemtime_to_secs2(st: SystemTime) -> Option<(i64, u32)> {
+    pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
         let dur = st.duration_since(UNIX_EPOCH - SECS_OFFSET_DURATION).ok()?;
         let secs = dur.as_secs();
         // if secs < (SECS_OFFSET + SECS_MIN) as u64 || secs > (SECS_OFFSET + SECS_MAX) as u64 {
@@ -730,10 +794,10 @@ fn bench_rd_to_weekday(c: &mut Criterion) {
         b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_weekday(black_box(rd))))
     });
     group.bench_function("datealgo_alt", |b| {
-        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday2(black_box(rd))))
+        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday(black_box(rd))))
     });
     group.bench_function("datealgo_alt2", |b| {
-        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday3(black_box(rd))))
+        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday2(black_box(rd))))
     });
     group.finish();
 }
@@ -744,10 +808,10 @@ fn bench_date_to_weekday(c: &mut Criterion) {
         b.iter_custom(bencher(rand_date, |d| datealgo::date_to_weekday(black_box(d))))
     });
     group.bench_function("datealgo_alt", |b| {
-        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday2(black_box(d))))
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday(black_box(d))))
     });
     group.bench_function("datealgo_alt2", |b| {
-        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday3(black_box(d))))
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday2(black_box(d))))
     });
     group.finish();
 }
@@ -758,7 +822,7 @@ fn bench_secs_to_dhms(c: &mut Criterion) {
         b.iter_custom(bencher(rand_secs, |s| datealgo::secs_to_dhms(black_box(s))))
     });
     group.bench_function("datealgo_alt", |b| {
-        b.iter_custom(bencher(rand_secs, |s| datealgo_alt::secs_to_dhms2(black_box(s))))
+        b.iter_custom(bencher(rand_secs, |s| datealgo_alt::secs_to_dhms(black_box(s))))
     });
     group.finish();
 }
@@ -792,6 +856,18 @@ fn bench_is_leap_year(c: &mut Criterion) {
     group.bench_function("datealgo", |b| {
         b.iter_custom(bencher(rand_year, |y| datealgo::is_leap_year(black_box(y))))
     });
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo_alt::is_leap_year(black_box(y))))
+    });
+    group.bench_function("datealgo_alt2", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo_alt::is_leap_year2(black_box(y))))
+    });
+    group.bench_function("datealgo_alt3", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo_alt::is_leap_year3(black_box(y))))
+    });
+    group.bench_function("datealgo_alt4", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo_alt::is_leap_year4(black_box(y))))
+    });
     group.finish();
 }
 
@@ -799,6 +875,12 @@ fn bench_days_in_month(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_days_in_month");
     group.bench_function("datealgo", |b| {
         b.iter_custom(bencher(rand_ym, |(y, m)| datealgo::days_in_month(black_box(y), black_box(m))))
+    });
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_ym, |(y, m)| datealgo_alt::days_in_month(black_box(y), black_box(m))))
+    });
+    group.bench_function("datealgo_alt2", |b| {
+        b.iter_custom(bencher(rand_ym, |(y, m)| datealgo_alt::days_in_month2(black_box(y), black_box(m))))
     });
     group.finish();
 }
@@ -809,7 +891,7 @@ fn bench_systemtime_to_secs(c: &mut Criterion) {
         b.iter_custom(bencher(rand_st, |st| datealgo::systemtime_to_secs(black_box(st))))
     });
     group.bench_function("datealgo_alt", |b| {
-        b.iter_custom(bencher(rand_st, |st| datealgo_alt::systemtime_to_secs2(black_box(st))))
+        b.iter_custom(bencher(rand_st, |st| datealgo_alt::systemtime_to_secs(black_box(st))))
     });
     group.finish();
 }
