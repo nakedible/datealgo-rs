@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/nakedible/datealgo-rs/compare/v0.0.5...v0.0.6) - 2023-09-02
+
+### Added
+- Optimize `is_leap_year` and `days_in_month`
+
+### Other
+- Add also generated asm to track evolution
+- Add asm dump script using godbolt
+- Add many alternatives to compare benchmark
+- Add positive `is_leap_year` tests
+- Slight cleanups and comments to clarify
+- Update benchmarks
+- Add script for dumping performance results
+- Change compare benchmark to use rand values
+- Change basic benchmark to use random values
+- Check more with quickcheck
+
 ## [0.0.5](https://github.com/nakedible/datealgo-rs/compare/v0.0.4...v0.0.5) - 2023-08-30
 
 ### Added
