@@ -1,5 +1,76 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::time::{Duration, UNIX_EPOCH};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::time::{Duration, Instant, SystemTime};
+
+fn bencher<I: Copy, O>(s: impl Fn() -> I, f: impl Fn(I) -> O) -> impl Fn(u64) -> Duration {
+    move |n| {
+        let v = s();
+        let now = Instant::now();
+        for _ in 0..n {
+            let _ = black_box(f(v));
+        }
+        now.elapsed()
+    }
+}
+
+fn rand_year() -> i32 {
+    fastrand::i32(1970..=9999)
+}
+
+fn rand_rd() -> i32 {
+    fastrand::i32(datealgo::date_to_rd((1970, 1, 1))..=datealgo::date_to_rd((9999, 1, 1)))
+}
+
+fn rand_date() -> (i32, u8, u8) {
+    let y = rand_year();
+    let m = fastrand::u8(1..=12);
+    let d = fastrand::u8(1..=datealgo::days_in_month(y, m));
+    (y, m, d)
+}
+
+fn rand_secs() -> i64 {
+    fastrand::i64(datealgo::datetime_to_secs((1970, 1, 1, 0, 0, 0))..=datealgo::datetime_to_secs((9999, 12, 31, 23, 59, 59)))
+}
+
+fn rand_hms() -> (u8, u8, u8) {
+    let h = fastrand::u8(0..=23);
+    let m = fastrand::u8(0..=59);
+    let s = fastrand::u8(0..59);
+    (h, m, s)
+}
+
+fn rand_dhms() -> (i32, u8, u8, u8) {
+    let rd = rand_rd();
+    let (h, m, s) = rand_hms();
+    (rd, h, m, s)
+}
+
+fn rand_dt() -> (i32, u8, u8, u8, u8, u8) {
+    let (y, m, d) = rand_date();
+    let (hh, mm, ss) = rand_hms();
+    (y, m, d, hh, mm, ss)
+}
+
+fn rand_ym() -> (i32, u8) {
+    let y = rand_year();
+    let m = fastrand::u8(1..=12);
+    (y, m)
+}
+
+fn rand_sn() -> (i64, u32) {
+    let s = rand_secs();
+    let n = fastrand::u32(0..=999_999_999);
+    (s, n)
+}
+
+fn rand_st() -> SystemTime {
+    datealgo::secs_to_systemtime(rand_sn()).unwrap()
+}
+
+fn rand_dtn() -> (i32, u8, u8, u8, u8, u8, u32) {
+    let (y, m, d, hh, mm, ss) = rand_dt();
+    let n = fastrand::u32(0..=999_999_999);
+    (y, m, d, hh, mm, ss, n)
+}
 
 mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
@@ -607,225 +678,207 @@ mod hinnant {
 
 fn bench_rd_to_date(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_rd_to_date");
-    let rd = datealgo::date_to_rd((2023, 5, 12));
-    group.bench_with_input(BenchmarkId::new("datealgo", rd), &rd, |b, i| {
-        b.iter(|| black_box(datealgo::rd_to_date(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_date(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("hinnant_unsigned", rd), &rd, |b, i| {
-        b.iter(|| black_box(hinnant::civil_from_days_u(black_box(*i))))
+    group.bench_function("hinnant_unsigned", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| hinnant::civil_from_days_u(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("hinnant", rd), &rd, |b, i| {
-        b.iter(|| black_box(hinnant::civil_from_days(black_box(*i))))
+    group.bench_function("hinnant", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| hinnant::civil_from_days(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("httpdate", rd), &rd, |b, i| {
-        b.iter(|| black_box(httpdate::rd_to_date(black_box(*i))))
+    group.bench_function("httpdate", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| httpdate::rd_to_date(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("humantime", rd), &rd, |b, i| {
-        b.iter(|| black_box(humantime::rd_to_date(black_box(*i))))
+    group.bench_function("humantime", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| humantime::rd_to_date(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("chrono", rd), &rd, |b, i| {
-        b.iter(|| black_box(chrono::rd_to_date(black_box(*i))))
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| chrono::rd_to_date(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("time", rd), &rd, |b, i| {
-        b.iter(|| black_box(time::rd_to_date(black_box(*i))))
-    });
+    group.bench_function("time", |b| b.iter_custom(bencher(rand_rd, |rd| time::rd_to_date(black_box(rd)))));
     group.finish();
 }
 
 fn bench_date_to_rd(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_date_to_rd");
-    let d = (2023, 5, 12);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(datealgo::date_to_rd(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::date_to_rd(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("hinnant_unsigned", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(hinnant::days_from_civil_u(black_box(*i))))
+    group.bench_function("hinnant_unsigned", |b| {
+        b.iter_custom(bencher(rand_date, |d| hinnant::days_from_civil_u(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("hinnant", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(hinnant::days_from_civil(black_box(*i))))
+    group.bench_function("hinnant", |b| {
+        b.iter_custom(bencher(rand_date, |d| hinnant::days_from_civil(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("httpdate", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(httpdate::date_to_rd(black_box(*i))))
+    group.bench_function("httpdate", |b| {
+        b.iter_custom(bencher(rand_date, |d| httpdate::date_to_rd(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("humantime", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(humantime::date_to_rd(black_box(*i))))
+    group.bench_function("humantime", |b| {
+        b.iter_custom(bencher(rand_date, |d| humantime::date_to_rd(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("chrono", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(chrono::date_to_rd(black_box(*i))))
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_date, |d| chrono::date_to_rd(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("time", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(time::date_to_rd(black_box(*i))))
-    });
+    group.bench_function("time", |b| b.iter_custom(bencher(rand_date, |d| time::date_to_rd(black_box(d)))));
     group.finish();
 }
 
 fn bench_rd_to_weekday(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_rd_to_weekday");
-    let rd = datealgo::date_to_rd((2023, 5, 12));
-    group.bench_with_input(BenchmarkId::new("datealgo", rd), &rd, |b, i| {
-        b.iter(|| black_box(datealgo::rd_to_weekday(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_weekday(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt", rd), &rd, |b, i| {
-        b.iter(|| black_box(datealgo_alt::rd_to_weekday2(black_box(*i))))
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday2(black_box(rd))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt2", rd), &rd, |b, i| {
-        b.iter(|| black_box(datealgo_alt::rd_to_weekday3(black_box(*i))))
+    group.bench_function("datealgo_alt2", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday3(black_box(rd))))
     });
     group.finish();
 }
 
 fn bench_date_to_weekday(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_date_to_weekday");
-    let d = (2023, 5, 12);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(datealgo::date_to_weekday(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::date_to_weekday(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(datealgo_alt::date_to_weekday2(black_box(*i))))
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday2(black_box(d))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt2", format!("{:?}", d)), &d, |b, i| {
-        b.iter(|| black_box(datealgo_alt::date_to_weekday3(black_box(*i))))
+    group.bench_function("datealgo_alt2", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday3(black_box(d))))
     });
     group.finish();
 }
 
 fn bench_secs_to_dhms(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_secs_to_dhms");
-    let s = 1684574678i64;
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo::secs_to_dhms(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_secs, |s| datealgo::secs_to_dhms(black_box(s))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo_alt::secs_to_dhms2(black_box(*i))))
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_secs, |s| datealgo_alt::secs_to_dhms2(black_box(s))))
     });
     group.finish();
 }
 
 fn bench_dhms_to_secs(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_dhms_to_secs");
-    let dhms = (123123, 12, 34, 56);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dhms)), &dhms, |b, i| {
-        b.iter(|| black_box(datealgo::dhms_to_secs(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_dhms, |dhms| datealgo::dhms_to_secs(black_box(dhms))))
     });
     group.finish();
 }
 
 fn bench_secs_to_datetime(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_secs_to_datetime");
-    let s = 1684574678i64;
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo::secs_to_datetime(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_secs, |s| datealgo::secs_to_datetime(black_box(s))))
     });
     group.finish();
 }
 
 fn bench_datetime_to_secs(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_datetime_to_secs");
-    let dt = (2023, 5, 20, 12, 34, 56);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(datealgo::datetime_to_secs(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_dt, |dt| datealgo::datetime_to_secs(black_box(dt))))
     });
     group.finish();
 }
 
 fn bench_is_leap_year(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_is_leap_year");
-    for y in [1895, 1896, 1900, 2000] {
-        group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", y)), &y, |b, i| {
-            b.iter(|| black_box(datealgo::is_leap_year(black_box(*i))))
-        });
-    }
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo::is_leap_year(black_box(y))))
+    });
     group.finish();
 }
 
 fn bench_days_in_month(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_days_in_month");
-    for m in [2, 3] {
-        group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", m)), &m, |b, i| {
-            b.iter(|| black_box(datealgo::days_in_month(2000, black_box(*i))))
-        });
-    }
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_ym, |(y, m)| datealgo::days_in_month(black_box(y), black_box(m))))
+    });
     group.finish();
 }
 
 fn bench_systemtime_to_secs(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_systemtime_to_secs");
-    let s = UNIX_EPOCH + Duration::from_secs(1684574678);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo::systemtime_to_secs(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_st, |st| datealgo::systemtime_to_secs(black_box(st))))
     });
-    group.bench_with_input(BenchmarkId::new("datealgo_alt", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo_alt::systemtime_to_secs2(black_box(*i))))
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_st, |st| datealgo_alt::systemtime_to_secs2(black_box(st))))
     });
     group.finish();
 }
 
 fn bench_secs_to_systemtime(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_secs_to_systemtime");
-    let s = (1684574678, 0);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo::secs_to_systemtime(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_sn, |sn| datealgo::secs_to_systemtime(black_box(sn))))
     });
     group.finish();
 }
 
 fn bench_systemtime_to_datetime(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_systemtime_to_datetime");
-    let s = UNIX_EPOCH + Duration::from_secs(1684574678);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(datealgo::systemtime_to_datetime(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_st, |st| datealgo::systemtime_to_datetime(black_box(st))))
     });
-    group.bench_with_input(BenchmarkId::new("httpdate", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(httpdate::systemtime_to_datetime(black_box(*i))))
+    group.bench_function("httpdate", |b| {
+        b.iter_custom(bencher(rand_st, |st| httpdate::systemtime_to_datetime(black_box(st))))
     });
-    group.bench_with_input(BenchmarkId::new("humantime", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(humantime::systemtime_to_datetime(black_box(*i))))
+    group.bench_function("humantime", |b| {
+        b.iter_custom(bencher(rand_st, |st| humantime::systemtime_to_datetime(black_box(st))))
     });
-    group.bench_with_input(BenchmarkId::new("time", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(time::systemtime_to_datetime(black_box(*i))))
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(rand_st, |st| time::systemtime_to_datetime(black_box(st))))
     });
-    group.bench_with_input(BenchmarkId::new("chrono", format!("{:?}", s)), &s, |b, i| {
-        b.iter(|| black_box(chrono::systemtime_to_datetime(black_box(*i))))
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_st, |st| chrono::systemtime_to_datetime(black_box(st))))
     });
     group.finish();
 }
 
 fn bench_datetime_to_systemtime(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_datetime_to_systemtime");
-    let dt = (2023, 5, 20, 12, 34, 56, 0);
-    group.bench_with_input(BenchmarkId::new("datealgo", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(datealgo::datetime_to_systemtime(black_box(*i))))
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_dtn, |dtn| datealgo::datetime_to_systemtime(black_box(dtn))))
     });
-    group.bench_with_input(BenchmarkId::new("httpdate", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(httpdate::datetime_to_systemtime(black_box(*i))))
+    group.bench_function("httpdate", |b| {
+        b.iter_custom(bencher(rand_dtn, |dtn| httpdate::datetime_to_systemtime(black_box(dtn))))
     });
-    group.bench_with_input(BenchmarkId::new("humantime", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(humantime::datetime_to_systemtime(black_box(*i))))
+    group.bench_function("humantime", |b| {
+        b.iter_custom(bencher(rand_dtn, |dtn| humantime::datetime_to_systemtime(black_box(dtn))))
     });
-    group.bench_with_input(BenchmarkId::new("time", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(time::datetime_to_systemtime(black_box(*i))))
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(rand_dtn, |dtn| time::datetime_to_systemtime(black_box(dtn))))
     });
-    group.bench_with_input(BenchmarkId::new("chrono", format!("{:?}", dt)), &dt, |b, i| {
-        b.iter(|| black_box(chrono::datetime_to_systemtime(black_box(*i))))
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_dtn, |dtn| chrono::datetime_to_systemtime(black_box(dtn))))
     });
     group.finish();
 }
 
 criterion_group!(
-    benches,
-    bench_rd_to_date,
-    bench_date_to_rd,
-    bench_rd_to_weekday,
-    bench_date_to_weekday,
-    bench_secs_to_dhms,
-    bench_dhms_to_secs,
-    bench_secs_to_datetime,
-    bench_datetime_to_secs,
-    bench_is_leap_year,
-    bench_days_in_month,
-    bench_systemtime_to_secs,
-    bench_secs_to_systemtime,
-    bench_systemtime_to_datetime,
-    bench_datetime_to_systemtime,
+    name = benches;
+    config = Criterion::default().sample_size(5000).measurement_time(Duration::from_secs(10));
+    targets =
+        bench_rd_to_date,
+        bench_date_to_rd,
+        bench_rd_to_weekday,
+        bench_date_to_weekday,
+        bench_secs_to_dhms,
+        bench_dhms_to_secs,
+        bench_secs_to_datetime,
+        bench_datetime_to_secs,
+        bench_is_leap_year,
+        bench_days_in_month,
+        bench_systemtime_to_secs,
+        bench_secs_to_systemtime,
+        bench_systemtime_to_datetime,
+        bench_datetime_to_systemtime,
 );
 criterion_main!(benches);
