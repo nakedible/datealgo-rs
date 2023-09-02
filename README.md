@@ -47,7 +47,7 @@ use std::time::{Duration, UNIX_EPOCH};
 
 assert_eq!(systemtime_to_datetime(UNIX_EPOCH), Some((1970, 1, 1, 0, 0, 0, 0)));
 assert_eq!(systemtime_to_datetime(UNIX_EPOCH + Duration::from_secs(1684574678)), Some((2023, 5, 20, 9, 24, 38, 0)));
-assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH + Duration::from_secs(1684574678));
+assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH.checked_add(Duration::from_secs(1684574678)));
 ```
 
 ## Features
@@ -103,12 +103,12 @@ which means a usable range of roughly -1,460,000 to 1,460,000 years.
 
 Results on GitHub Codespaces 8-core VM:
 
-| Function               | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
+| Function | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
-| date_to_rd             | **2.5 ns**    | 3.3 ns    | 3.1 ns    | 3.2 ns    | 17.7 ns   | 7.4 ns    |
-| rd_to_date             | **3.7 ns**    | 7.1 ns    | 11.8 ns   | 11.9 ns   | 18.7 ns   | 8.7 ns    |
-| datetime_to_systemtime | **6.9 ns**    |           | 10.6 ns   | 9.6 ns    | 58.9 ns   | 50.7 ns   |
-| systemtime_to_datetime | **14.6 ns**   |           | 20.5 ns   | 20.3 ns   | 57.0 ns   | 228.2 ns  |
+| date_to_rd | **2.3 ns** | 4 ns | 3.2 ns | 3.2 ns | 17.7 ns | 7.2 ns |
+| rd_to_date | **3.6 ns** | 9.3 ns | 11.3 ns | 11.3 ns | 18.8 ns | 8.2 ns |
+| datetime_to_systemtime | **8.6 ns** | | 9.9 ns | 9.8 ns | 57.3 ns | 50.1 ns |
+| systemtime_to_datetime | **14.2 ns** | | 18.9 ns | 19 ns | 54.6 ns | 226.4 ns |
 
 Some code has been adapted from the libraries to produce comparable
 benchmarks.
