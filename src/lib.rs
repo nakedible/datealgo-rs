@@ -654,8 +654,11 @@ pub const fn is_leap_year(y: i32) -> bool {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     // Using `%` instead of `&` causes compiler to emit branches instead. This
     // is faster in a tight loop due to good branch prediction, but probably
-    // slower in a real program so we use `&`.
-    if (y % 100) != 0 {
+    // slower in a real program so we use `&`. Also `% 25` is functionally
+    // equivalent to `% 100` here, but a little cheaper to compute. If branches
+    // were to be emitted, using `% 100` would be most likely faster due to
+    // better branch prediction.
+    if (y % 25) != 0 {
         y & 3 == 0
     } else {
         y & 15 == 0
