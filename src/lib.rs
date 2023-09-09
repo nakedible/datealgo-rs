@@ -196,6 +196,10 @@ pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// The use of these constants is strictly optional, as this is a low level
 /// library and the values are wholly unremarkable.
 pub mod consts {
+    /// Minimum value for week
+    pub const WEEK_MIN: u8 = 1;
+    /// Maximum value for week
+    pub const WEEK_MAX: u8 = 53;
     /// Minimum value for month
     pub const MONTH_MIN: u8 = 1;
     /// Maximum value for month
@@ -715,6 +719,224 @@ pub const fn days_in_month(y: i32, m: u8) -> u8 {
         29
     } else {
         28
+    }
+}
+
+/// Convert Rata Die to [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date)
+///
+/// Given a day counting from Unix epoch (January 1st, 1970) returns a `(year,
+/// week, day of week)` tuple. Week is the ISO week number, with the first week
+/// of the year being the week containing the first Thursday of the year. Day of
+/// week is between 1 and 7, with `1` meaning Monday and `7` meaning Sunday.
+///
+/// Compared to Gregorian date, the first one to three days of the year might
+/// belong to a week in the previous year, and the last one to three days of the
+/// year might belong to a week in the next year. Also some years have 53 weeks
+/// instead of 52.
+///
+/// # Panics
+///
+/// Argument must be between [RD_MIN] and [RD_MAX] inclusive. Bounds are checked
+/// using `debug_assert` only, so that the checks are not present in release
+/// builds, similar to integer overflow checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{rd_to_isoweekdate, date_to_rd};
+///
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((2023, 5, 12))), (2023, 19, 5));
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((1970, 1, 1))), (1970, 1, 4));
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((2023, 1, 1))), (2022, 52, 7));
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((1979, 12, 31))), (1980, 1, 1));
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((1981, 12, 31))), (1981, 53, 4));
+/// assert_eq!(rd_to_isoweekdate(date_to_rd((1982, 1, 1))), (1981, 53, 5));
+/// ```
+///
+/// # Algorithm
+///
+/// Algorithm is hand crafted and not significantly optimized.
+#[inline]
+pub const fn rd_to_isoweekdate(rd: i32) -> (i32, u8, u8) {
+    debug_assert!(rd >= RD_MIN && rd <= RD_MAX, "given rata die is out of range");
+    let wd = rd_to_weekday(rd);
+    let rdt = rd + (4 - wd as i32) % 7;
+    let (y, _, _) = rd_to_date(rdt);
+    let ys = date_to_rd((y, 1, 1));
+    let w = (rdt - ys) / 7 + 1;
+    (y, w as u8, wd)
+}
+
+/// Convert [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date) to Rata Die
+///
+/// Given a `(year, week, day of week)` tuple returns the days since Unix epoch
+/// (January 1st, 1970). Week is the ISO week number, with the first week of the
+/// year being the week containing the first Thursday of the year. Day of week
+/// is between 1 and 7, with `1` meaning Monday and `7` meaning Sunday. Dates
+/// before the epoch produce negative values.
+///
+/// Compared to Gregorian date, the first one to three days of the year might
+/// belong to a week in the previous year, and the last one to three days of the
+/// year might belong to a week in the next year. Also some years have 53 weeks
+/// instead of 52.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Week must be between `1` and
+/// the number of ISO weeks in the given year (52 or 53). Day must be between
+/// `1` and `7`. Bounds are checked using `debug_assert` only, so that the
+/// checks are not present in release builds, similar to integer overflow
+/// checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{isoweekdate_to_rd, date_to_rd};
+///
+/// assert_eq!(isoweekdate_to_rd((2023, 19, 5)), date_to_rd((2023, 5, 12)));
+/// assert_eq!(isoweekdate_to_rd((1970, 1, 4)), date_to_rd((1970, 1, 1)));
+/// assert_eq!(isoweekdate_to_rd((2022, 52, 7)), date_to_rd((2023, 1, 1)));
+/// assert_eq!(isoweekdate_to_rd((1980, 1, 1)), date_to_rd((1979, 12, 31)));
+/// assert_eq!(isoweekdate_to_rd((1981, 53, 4)), date_to_rd((1981, 12, 31)));
+/// assert_eq!(isoweekdate_to_rd((1981, 53, 5)), date_to_rd((1982, 1, 1)));
+/// ```
+///
+/// # Algorithm
+///
+/// Algorithm is hand crafted and not significantly optimized.
+#[inline]
+pub const fn isoweekdate_to_rd((y, w, d): (i32, u8, u8)) -> i32 {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(w >= consts::WEEK_MIN && w <= isoweeks_in_year(y), "given week is out of range");
+    debug_assert!(
+        d >= consts::WEEKDAY_MIN && d <= consts::WEEKDAY_MAX,
+        "given weekday is out of range"
+    );
+    let rd4 = date_to_rd((y, 1, 4));
+    let wd4 = rd_to_weekday(rd4);
+    let ys = rd4 - (wd4 - 1) as i32;
+    ys + (w as i32 - 1) * 7 + (d as i32 - 1)
+}
+
+/// Convert Gregorian date to [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date)
+///
+/// Given a `(year, month, day)` tuple returns a `(year, week, day of week)`
+/// tuple. Week is the ISO week number, with the first week of the year being
+/// the week containing the first Thursday of the year. Day of week is between
+/// 1 and 7, with `1` meaning Monday and `7` meaning Sunday.
+///
+/// Compared to Gregorian date, the first one to three days of the year might
+/// belong to a week in the previous year, and the last one to three days of the
+/// year might belong to a week in the next year. Also some years have 53 weeks
+/// instead of 52.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
+/// question. Bounds are checked using `debug_assert` only, so that the checks
+/// are not present in release builds, similar to integer overflow checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{date_to_isoweekdate};
+///
+/// assert_eq!(date_to_isoweekdate((2023, 5, 12)), (2023, 19, 5));
+/// assert_eq!(date_to_isoweekdate((1970, 1, 1)), (1970, 1, 4));
+/// assert_eq!(date_to_isoweekdate((2023, 1, 1)), (2022, 52, 7));
+/// assert_eq!(date_to_isoweekdate((1979, 12, 31)), (1980, 1, 1));
+/// assert_eq!(date_to_isoweekdate((1981, 12, 31)), (1981, 53, 4));
+/// assert_eq!(date_to_isoweekdate((1982, 1, 1)), (1981, 53, 5));
+/// ```
+///
+/// # Algorithm
+///
+/// Simply converts date to rata die and then rata die to ISO week date.
+#[inline]
+pub const fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    let rd = date_to_rd((y, m, d));
+    rd_to_isoweekdate(rd)
+}
+
+/// Convert [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date) to Gregorian date
+///
+/// Given a `(year, week, day of week)` tuple returns a `(year, month, day)`
+/// tuple. Week is the ISO week number, with the first week of the year being
+/// the week containing the first Thursday of the year. Day of week is between
+/// 1 and 7, with `1` meaning Monday and `7` meaning Sunday.
+///
+/// Compared to Gregorian date, the first one to three days of the year might
+/// belong to a week in the previous year, and the last one to three days of the
+/// year might belong to a week in the next year. Also some years have 53 weeks
+/// instead of 52.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Week must be between `1` and
+/// the number of ISO weeks in the given year (52 or 53). Day must be between
+/// `1` and `7`. Bounds are checked using `debug_assert` only, so that the
+/// checks are not present in release builds, similar to integer overflow
+/// checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{isoweekdate_to_date};
+///
+/// assert_eq!(isoweekdate_to_date((2023, 19, 5)), (2023, 5, 12));
+/// assert_eq!(isoweekdate_to_date((1970, 1, 4)), (1970, 1, 1));
+/// assert_eq!(isoweekdate_to_date((2022, 52, 7)), (2023, 1, 1));
+/// assert_eq!(isoweekdate_to_date((1980, 1, 1)), (1979, 12, 31));
+/// assert_eq!(isoweekdate_to_date((1981, 53, 4)), (1981, 12, 31));
+/// assert_eq!(isoweekdate_to_date((1981, 53, 5)), (1982, 1, 1));
+/// ```
+///
+/// # Algorithm
+///
+/// Simply converts ISO week date to rata die and then rata die to date.
+#[inline]
+pub const fn isoweekdate_to_date((y, w, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    let rd = isoweekdate_to_rd((y, w, d));
+    rd_to_date(rd)
+}
+
+/// Determine the number of [ISO weeks](https://en.wikipedia.org/wiki/ISO_week_date) in the given year
+///
+/// According to the ISO standard a year has 52 weeks, unless the first week of
+/// the year starts on a Thursday or the year is a leap year and the first week
+/// of the year starts on a Wednesday, in which case the year has 53 weeks.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Bounds are checked using
+/// `debug_assert` only, so that the checks are not present in release builds,
+/// similar to integer overflow checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::isoweeks_in_year;
+///
+/// assert_eq!(isoweeks_in_year(2023), 52);
+/// assert_eq!(isoweeks_in_year(2024), 52);
+/// assert_eq!(isoweeks_in_year(2025), 52);
+/// assert_eq!(isoweeks_in_year(2026), 53);
+/// assert_eq!(isoweeks_in_year(2027), 52);
+/// ```
+///
+/// # Algorithm
+///
+/// Algorithm is hand crafted and not significantly optimized.
+#[inline]
+pub const fn isoweeks_in_year(y: i32) -> u8 {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    let wd = date_to_weekday((y, 1, 1));
+    let l = is_leap_year(y);
+    match wd {
+        consts::THURSDAY => 53,
+        consts::WEDNESDAY if l => 53,
+        _ => 52,
     }
 }
 

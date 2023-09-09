@@ -164,6 +164,145 @@ fn test_days_in_month() {
 }
 
 #[test]
+fn test_rd_to_isoweekdate() {
+    assert_eq!(rd_to_isoweekdate(date_to_rd((-4, 12, 30))), (-3, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((-4, 12, 31))), (-3, 1, 2));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((-3, 1, 1))), (-3, 1, 3));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((-1, 12, 31))), (-1, 52, 5));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((0, 1, 1))), (-1, 52, 6));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((0, 1, 2))), (-1, 52, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((0, 1, 3))), (0, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1970, 1, 1))), (1970, 1, 4));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1977, 1, 1))), (1976, 53, 6));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1977, 1, 2))), (1976, 53, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1977, 12, 31))), (1977, 52, 6));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1978, 1, 1))), (1977, 52, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1978, 1, 2))), (1978, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1978, 12, 31))), (1978, 52, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1979, 1, 1))), (1979, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1979, 12, 30))), (1979, 52, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1979, 12, 31))), (1980, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1980, 1, 1))), (1980, 1, 2));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1980, 12, 28))), (1980, 52, 7));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1980, 12, 29))), (1981, 1, 1));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1980, 12, 30))), (1981, 1, 2));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1980, 12, 31))), (1981, 1, 3));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1981, 1, 1))), (1981, 1, 4));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1981, 12, 31))), (1981, 53, 4));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1982, 1, 1))), (1981, 53, 5));
+    assert_eq!(rd_to_isoweekdate(date_to_rd((1982, 1, 2))), (1981, 53, 6));
+}
+
+#[test]
+fn test_isoweekdate_to_rd() {
+    assert_eq!(isoweekdate_to_rd((-3, 1, 1)), date_to_rd((-4, 12, 30)));
+    assert_eq!(isoweekdate_to_rd((-3, 1, 2)), date_to_rd((-4, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((-3, 1, 3)), date_to_rd((-3, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((-1, 52, 5)), date_to_rd((-1, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((-1, 52, 6)), date_to_rd((0, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((-1, 52, 7)), date_to_rd((0, 1, 2)));
+    assert_eq!(isoweekdate_to_rd((0, 1, 1)), date_to_rd((0, 1, 3)));
+    assert_eq!(isoweekdate_to_rd((1970, 1, 4)), date_to_rd((1970, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1976, 53, 6)), date_to_rd((1977, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1976, 53, 7)), date_to_rd((1977, 1, 2)));
+    assert_eq!(isoweekdate_to_rd((1977, 52, 6)), date_to_rd((1977, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((1977, 52, 7)), date_to_rd((1978, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1978, 1, 1)), date_to_rd((1978, 1, 2)));
+    assert_eq!(isoweekdate_to_rd((1978, 52, 7)), date_to_rd((1978, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((1979, 1, 1)), date_to_rd((1979, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1979, 52, 7)), date_to_rd((1979, 12, 30)));
+    assert_eq!(isoweekdate_to_rd((1980, 1, 1)), date_to_rd((1979, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((1980, 1, 2)), date_to_rd((1980, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1980, 52, 7)), date_to_rd((1980, 12, 28)));
+    assert_eq!(isoweekdate_to_rd((1981, 1, 1)), date_to_rd((1980, 12, 29)));
+    assert_eq!(isoweekdate_to_rd((1981, 1, 2)), date_to_rd((1980, 12, 30)));
+    assert_eq!(isoweekdate_to_rd((1981, 1, 3)), date_to_rd((1980, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((1981, 1, 4)), date_to_rd((1981, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1981, 53, 4)), date_to_rd((1981, 12, 31)));
+    assert_eq!(isoweekdate_to_rd((1981, 53, 5)), date_to_rd((1982, 1, 1)));
+    assert_eq!(isoweekdate_to_rd((1981, 53, 6)), date_to_rd((1982, 1, 2)));
+}
+
+#[test]
+fn test_date_to_isoweekdate() {
+    assert_eq!(date_to_isoweekdate((-4, 12, 30)), (-3, 1, 1));
+    assert_eq!(date_to_isoweekdate((-4, 12, 31)), (-3, 1, 2));
+    assert_eq!(date_to_isoweekdate((-3, 1, 1)), (-3, 1, 3));
+    assert_eq!(date_to_isoweekdate((-1, 12, 31)), (-1, 52, 5));
+    assert_eq!(date_to_isoweekdate((0, 1, 1)), (-1, 52, 6));
+    assert_eq!(date_to_isoweekdate((0, 1, 2)), (-1, 52, 7));
+    assert_eq!(date_to_isoweekdate((0, 1, 3)), (0, 1, 1));
+    assert_eq!(date_to_isoweekdate((1970, 1, 1)), (1970, 1, 4));
+    assert_eq!(date_to_isoweekdate((1977, 1, 1)), (1976, 53, 6));
+    assert_eq!(date_to_isoweekdate((1977, 1, 2)), (1976, 53, 7));
+    assert_eq!(date_to_isoweekdate((1977, 12, 31)), (1977, 52, 6));
+    assert_eq!(date_to_isoweekdate((1978, 1, 1)), (1977, 52, 7));
+    assert_eq!(date_to_isoweekdate((1978, 1, 2)), (1978, 1, 1));
+    assert_eq!(date_to_isoweekdate((1978, 12, 31)), (1978, 52, 7));
+    assert_eq!(date_to_isoweekdate((1979, 1, 1)), (1979, 1, 1));
+    assert_eq!(date_to_isoweekdate((1979, 12, 30)), (1979, 52, 7));
+    assert_eq!(date_to_isoweekdate((1979, 12, 31)), (1980, 1, 1));
+    assert_eq!(date_to_isoweekdate((1980, 1, 1)), (1980, 1, 2));
+    assert_eq!(date_to_isoweekdate((1980, 12, 28)), (1980, 52, 7));
+    assert_eq!(date_to_isoweekdate((1980, 12, 29)), (1981, 1, 1));
+    assert_eq!(date_to_isoweekdate((1980, 12, 30)), (1981, 1, 2));
+    assert_eq!(date_to_isoweekdate((1980, 12, 31)), (1981, 1, 3));
+    assert_eq!(date_to_isoweekdate((1981, 1, 1)), (1981, 1, 4));
+    assert_eq!(date_to_isoweekdate((1981, 12, 31)), (1981, 53, 4));
+    assert_eq!(date_to_isoweekdate((1982, 1, 1)), (1981, 53, 5));
+    assert_eq!(date_to_isoweekdate((1982, 1, 2)), (1981, 53, 6));
+}
+
+#[test]
+fn test_isoweekdate_to_date() {
+    assert_eq!(isoweekdate_to_date((-3, 1, 1)), (-4, 12, 30));
+    assert_eq!(isoweekdate_to_date((-3, 1, 2)), (-4, 12, 31));
+    assert_eq!(isoweekdate_to_date((-3, 1, 3)), (-3, 1, 1));
+    assert_eq!(isoweekdate_to_date((-1, 52, 5)), (-1, 12, 31));
+    assert_eq!(isoweekdate_to_date((-1, 52, 6)), (0, 1, 1));
+    assert_eq!(isoweekdate_to_date((-1, 52, 7)), (0, 1, 2));
+    assert_eq!(isoweekdate_to_date((0, 1, 1)), (0, 1, 3));
+    assert_eq!(isoweekdate_to_date((1970, 1, 4)), (1970, 1, 1));
+    assert_eq!(isoweekdate_to_date((1976, 53, 6)), (1977, 1, 1));
+    assert_eq!(isoweekdate_to_date((1976, 53, 7)), (1977, 1, 2));
+    assert_eq!(isoweekdate_to_date((1977, 52, 6)), (1977, 12, 31));
+    assert_eq!(isoweekdate_to_date((1977, 52, 7)), (1978, 1, 1));
+    assert_eq!(isoweekdate_to_date((1978, 1, 1)), (1978, 1, 2));
+    assert_eq!(isoweekdate_to_date((1978, 52, 7)), (1978, 12, 31));
+    assert_eq!(isoweekdate_to_date((1979, 1, 1)), (1979, 1, 1));
+    assert_eq!(isoweekdate_to_date((1979, 52, 7)), (1979, 12, 30));
+    assert_eq!(isoweekdate_to_date((1980, 1, 1)), (1979, 12, 31));
+    assert_eq!(isoweekdate_to_date((1980, 1, 2)), (1980, 1, 1));
+    assert_eq!(isoweekdate_to_date((1980, 52, 7)), (1980, 12, 28));
+    assert_eq!(isoweekdate_to_date((1981, 1, 1)), (1980, 12, 29));
+    assert_eq!(isoweekdate_to_date((1981, 1, 2)), (1980, 12, 30));
+    assert_eq!(isoweekdate_to_date((1981, 1, 3)), (1980, 12, 31));
+    assert_eq!(isoweekdate_to_date((1981, 1, 4)), (1981, 1, 1));
+    assert_eq!(isoweekdate_to_date((1981, 53, 4)), (1981, 12, 31));
+    assert_eq!(isoweekdate_to_date((1981, 53, 5)), (1982, 1, 1));
+    assert_eq!(isoweekdate_to_date((1981, 53, 6)), (1982, 1, 2));
+}
+
+#[test]
+fn test_isoweeks_in_year() {
+    assert_eq!(isoweeks_in_year(-3), 52); // wednesday
+    assert_eq!(isoweeks_in_year(-2), 53); // thursday
+    assert_eq!(isoweeks_in_year(-1), 52); // friday
+    assert_eq!(isoweeks_in_year(0), 52); // saturday, leap year
+    assert_eq!(isoweeks_in_year(1), 52); // monday
+    assert_eq!(isoweeks_in_year(2), 52); // tuesday
+    assert_eq!(isoweeks_in_year(3), 52); // wednesday
+    assert_eq!(isoweeks_in_year(4), 53); // thursday, leap year
+    assert_eq!(isoweeks_in_year(5), 52); // saturday
+    assert_eq!(isoweeks_in_year(1969), 52); // wednesday
+    assert_eq!(isoweeks_in_year(1970), 53); // thursday
+    assert_eq!(isoweeks_in_year(1971), 52); // friday
+    assert_eq!(isoweeks_in_year(2004), 53); // leap year, thursday
+    assert_eq!(isoweeks_in_year(2015), 53); // thursday
+    assert_eq!(isoweeks_in_year(2020), 53); // leap year, wednesday
+}
+
+#[test]
 fn test_systemtime_to_secs() {
     assert_eq!(systemtime_to_secs(UNIX_EPOCH), Some((0, 0)));
     assert_eq!(

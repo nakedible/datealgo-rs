@@ -72,6 +72,10 @@ fn rand_dtn() -> (i32, u8, u8, u8, u8, u8, u32) {
     (y, m, d, hh, mm, ss, n)
 }
 
+fn rand_iwd() -> (i32, u8, u8) {
+    datealgo::rd_to_isoweekdate(rand_rd())
+}
+
 fn bench_basic(c: &mut Criterion) {
     c.bench_function("rd_to_date", |b| {
         b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_date(black_box(rd))))
@@ -102,6 +106,21 @@ fn bench_basic(c: &mut Criterion) {
     });
     c.bench_function("days_in_month", |b| {
         b.iter_custom(bencher(rand_ym, |(y, m)| datealgo::days_in_month(black_box(y), black_box(m))))
+    });
+    c.bench_function("rd_to_isoweekdate", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_isoweekdate(black_box(rd))))
+    });
+    c.bench_function("isoweekdate_to_rd", |b| {
+        b.iter_custom(bencher(rand_iwd, |iwd| datealgo::isoweekdate_to_rd(black_box(iwd))))
+    });
+    c.bench_function("date_to_isoweekdate", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::date_to_isoweekdate(black_box(d))))
+    });
+    c.bench_function("isoweekdate_to_date", |b| {
+        b.iter_custom(bencher(rand_iwd, |iwd| datealgo::isoweekdate_to_date(black_box(iwd))))
+    });
+    c.bench_function("isoweeks_in_year", |b| {
+        b.iter_custom(bencher(rand_year, |y| datealgo::isoweeks_in_year(black_box(y))))
     });
     c.bench_function("systemtime_to_secs", |b| {
         b.iter_custom(bencher(rand_st, |st| datealgo::systemtime_to_secs(black_box(st))))
