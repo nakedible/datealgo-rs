@@ -226,44 +226,44 @@ pub mod consts {
     pub const NANOSECOND_MAX: u32 = 999_999_999;
 
     /// January month value
-    pub const JANUARY: u32 = 1;
+    pub const JANUARY: u8 = 1;
     /// February month value
-    pub const FEBRUARY: u32 = 2;
+    pub const FEBRUARY: u8 = 2;
     /// March month value
-    pub const MARCH: u32 = 3;
+    pub const MARCH: u8 = 3;
     /// April month value
-    pub const APRIL: u32 = 4;
+    pub const APRIL: u8 = 4;
     /// May month value
-    pub const MAY: u32 = 5;
+    pub const MAY: u8 = 5;
     /// June month value
-    pub const JUNE: u32 = 6;
+    pub const JUNE: u8 = 6;
     /// July month value
-    pub const JULY: u32 = 7;
+    pub const JULY: u8 = 7;
     /// August month value
-    pub const AUGUST: u32 = 8;
+    pub const AUGUST: u8 = 8;
     /// September month value
-    pub const SEPTEMBER: u32 = 9;
+    pub const SEPTEMBER: u8 = 9;
     /// October month value
-    pub const OCTOBER: u32 = 10;
+    pub const OCTOBER: u8 = 10;
     /// November month value
-    pub const NOVEMBER: u32 = 11;
+    pub const NOVEMBER: u8 = 11;
     /// December month value
-    pub const DECEMBER: u32 = 12;
+    pub const DECEMBER: u8 = 12;
 
     /// Monday day of week value
-    pub const MONDAY: u32 = 1;
+    pub const MONDAY: u8 = 1;
     /// Tuesday day of week value
-    pub const TUESDAY: u32 = 2;
+    pub const TUESDAY: u8 = 2;
     /// Wednesday day of week value
-    pub const WEDNESDAY: u32 = 3;
+    pub const WEDNESDAY: u8 = 3;
     /// Thursday day of week value
-    pub const THURSDAY: u32 = 4;
+    pub const THURSDAY: u8 = 4;
     /// Friday day of week value
-    pub const FRIDAY: u32 = 5;
+    pub const FRIDAY: u8 = 5;
     /// Saturday day of week value
-    pub const SATURDAY: u32 = 6;
+    pub const SATURDAY: u8 = 6;
     /// Sunday day of week value
-    pub const SUNDAY: u32 = 7;
+    pub const SUNDAY: u8 = 7;
 }
 
 // OPTIMIZATION NOTES:
