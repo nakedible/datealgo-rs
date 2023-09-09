@@ -72,6 +72,10 @@ fn rand_dtn() -> (i32, u8, u8, u8, u8, u8, u32) {
     (y, m, d, hh, mm, ss, n)
 }
 
+fn rand_iwd() -> (i32, u8, u8) {
+    datealgo::rd_to_isoweekdate(rand_rd())
+}
+
 mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
     const DAY_OFFSET: i32 = 3670 * 146097 + 719468;
@@ -639,6 +643,21 @@ mod chrono {
     }
 
     #[inline]
+    pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        let date = chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap();
+        let iw = date.iso_week();
+        let (y, w, d) = (iw.year(), iw.week(), date.weekday().number_from_monday());
+        (y, w as u8, d as u8)
+    }
+
+    #[inline]
+    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
+        let wd = chrono::Weekday::try_from(wd - 1).unwrap();
+        let date = chrono::NaiveDate::from_isoywd_opt(y, w as u32, wd).unwrap();
+        (date.year(), date.month() as u8, date.day() as u8)
+    }
+
+    #[inline]
     pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
         chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
             .unwrap()
@@ -681,6 +700,19 @@ mod time {
             .unwrap()
             .to_julian_day()
             - UNIX_EPOCH_JULIAN_DAY
+    }
+
+    #[inline]
+    pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        let date = time::Date::from_calendar_date(y, m.try_into().unwrap(), d).unwrap();
+        let (y, w, wd) = date.to_iso_week_date();
+        (y, w as u8, wd.number_from_monday())
+    }
+
+    #[inline]
+    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
+        let d = time::Date::from_iso_week_date(y, w, time::Weekday::Sunday.nth_next(wd)).unwrap();
+        (d.year(), d.month() as u8, d.day() as u8)
     }
 
     #[inline]
@@ -902,6 +934,34 @@ fn bench_days_in_month(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_date_to_isoweekdate(c: &mut Criterion) {
+    let mut group = c.benchmark_group("compare_date_to_isoweekdate");
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::date_to_isoweekdate(black_box(d))))
+    });
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_date, |d| chrono::date_to_isoweekdate(black_box(d))))
+    });
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(rand_date, |d| time::date_to_isoweekdate(black_box(d))))
+    });
+    group.finish();
+}
+
+fn bench_isoweekdate_to_date(c: &mut Criterion) {
+    let mut group = c.benchmark_group("compare_isoweekdate_to_date");
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_iwd, |iwd| datealgo::isoweekdate_to_date(black_box(iwd))))
+    });
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(rand_iwd, |iwd| chrono::isoweekdate_to_date(black_box(iwd))))
+    });
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(rand_iwd, |iwd| time::isoweekdate_to_date(black_box(iwd))))
+    });
+    group.finish();
+}
+
 fn bench_systemtime_to_secs(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_systemtime_to_secs");
     group.bench_function("datealgo", |b| {
@@ -975,6 +1035,8 @@ criterion_group!(
         bench_datetime_to_secs,
         bench_is_leap_year,
         bench_days_in_month,
+        bench_date_to_isoweekdate,
+        bench_isoweekdate_to_date,
         bench_systemtime_to_secs,
         bench_secs_to_systemtime,
         bench_systemtime_to_datetime,

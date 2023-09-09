@@ -52,6 +52,28 @@ quickcheck! {
         TestResult::from_bool(days_a == days_b)
     }
 
+    fn quickcheck_rd_to_isoweekdate(d: time::Date) -> TestResult {
+        let rd = d.to_julian_day() - 2440588;
+        let a = rd_to_isoweekdate(rd);
+        let (y, w, wd) = d.to_iso_week_date();
+        TestResult::from_bool(a == (y, w as u8, wd.number_from_monday()))
+    }
+
+    fn quickcheck_isoweekdate_to_rd(d: time::Date) -> TestResult {
+        let (y, w, wd) = d.to_iso_week_date();
+        let rd = isoweekdate_to_rd((y, w as u8, wd.number_from_monday()));
+        TestResult::from_bool(rd == d.to_julian_day() - 2440588)
+    }
+
+    fn quickcheck_isoweeks_in_year(y: i32) -> TestResult {
+        if y < datealgo::YEAR_MIN || y > datealgo::YEAR_MAX {
+            return TestResult::discard();
+        }
+        let weeks_a = datealgo::isoweeks_in_year(y);
+        let weeks_b = time::util::weeks_in_year(y);
+        TestResult::from_bool(weeks_a == weeks_b)
+    }
+
     fn quickcheck_systemtime_to_datetime(s: time::PrimitiveDateTime) -> TestResult {
         let s = s.assume_utc();
         let a = systemtime_to_datetime(s.into()).unwrap();
