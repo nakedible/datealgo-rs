@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/nakedible/datealgo-rs/compare/v0.1.0...v0.1.1) - 2023-09-10
+
+### Fixed
+- Change month and weekday constants to `u8`
+
+### Other
+- Update asm dump
+
 ## [0.1.0](https://github.com/nakedible/datealgo-rs/compare/v0.0.6...v0.1.0) - 2023-09-08
 
 ### Added
