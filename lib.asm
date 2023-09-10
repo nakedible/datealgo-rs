@@ -289,9 +289,8 @@ example::datetime_to_secs:
 
 example::is_leap_year:
   imul eax, edi, -1030792151
-  add eax, 85899344
-  ror eax, 2
-  cmp eax, 42949673
+  add eax, 85899345
+  cmp eax, 171798691
   mov eax, 15
   mov ecx, 3
   cmovb ecx, eax
@@ -303,9 +302,8 @@ example::days_in_month:
   cmp sil, 2
   jne .LBB9_2
   imul eax, edi, -1030792151
-  add eax, 85899344
-  ror eax, 2
-  cmp eax, 42949673
+  add eax, 85899345
+  cmp eax, 171798691
   mov eax, 15
   mov ecx, 3
   cmovb ecx, eax
@@ -386,7 +384,7 @@ example::secs_to_systemtime:
   sub eax, ecx
   lea rdi, [rip + .L__unnamed_1]
   mov edx, eax
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h6ac5fcb036f3f003E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h80e2b592348be7a3E@GOTPCREL]
 .LBB11_1:
   test eax, eax
   je .LBB11_4
@@ -401,12 +399,12 @@ example::secs_to_systemtime:
   imul eax, eax, 1000000000
   sub edx, eax
   lea rdi, [rip + .L__unnamed_1]
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h7e1caea028a19c77E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h31d3b45b49ca427cE@GOTPCREL]
 .LBB11_4:
   neg rsi
   lea rdi, [rip + .L__unnamed_1]
   xor edx, edx
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h7e1caea028a19c77E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h31d3b45b49ca427cE@GOTPCREL]
 
 example::systemtime_to_datetime:
   push r14
@@ -576,7 +574,7 @@ example::datetime_to_systemtime:
   sub eax, ecx
   lea rdi, [rip + .L__unnamed_1]
   mov edx, eax
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h7e1caea028a19c77E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h31d3b45b49ca427cE@GOTPCREL]
 .LBB13_1:
   xor esi, esi
 .LBB13_2:
@@ -588,12 +586,12 @@ example::datetime_to_systemtime:
   imul eax, eax, 1000000000
   sub edx, eax
   lea rdi, [rip + .L__unnamed_1]
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h6ac5fcb036f3f003E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h80e2b592348be7a3E@GOTPCREL]
 .LBB13_5:
   neg rsi
   lea rdi, [rip + .L__unnamed_1]
   xor edx, edx
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h7e1caea028a19c77E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h31d3b45b49ca427cE@GOTPCREL]
 
 .L__unnamed_1:
   .zero 12
