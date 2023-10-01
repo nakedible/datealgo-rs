@@ -497,6 +497,16 @@ pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
 ///
 /// # Algorithm
 ///
+/// Algorithm is based on the following identities valid for all n in [0, 97612919[.
+/// 
+/// n / 60 = 71582789 * n / 2^32,
+/// n % 60 = 71582789 * n % 2^32 / 71582789.
+/// 
+/// See examples 14 and 15 of:
+///
+/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
+/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
+/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 /// Algorithm is simple modulus on unsigned values.
 #[inline]
 pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
@@ -507,10 +517,16 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
     let secs = if secs > RD_SECONDS_MAX { 0 } else { secs }; // allows compiler to optimize more
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
-    let secs = (secs % SECS_IN_DAY as u64) as u32;
-    let ss = secs % 60;
-    let mm = secs / 60 % 60;
-    let hh = secs / 3600;
+    let secs = secs % SECS_IN_DAY as u64; // secs in [0, SECS_IN_DAY[ => secs in [0, 97612919[
+  
+    let prd  = 71582789 * secs;
+    let mins = prd >> 32;             // secs / 60
+    let ss = (prd as u32) / 71582789; // secs % 60
+  
+    let prd = 71582789 * mins;
+    let hh = prd >> 32;               // mins / 60
+    let mm = (prd as u32) / 71582789; // mins % 60
+  
     let days = (days as i32).wrapping_sub(DAY_OFFSET);
     (days, hh as u8, mm as u8, ss as u8)
 }
