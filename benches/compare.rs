@@ -76,6 +76,7 @@ mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
     const DAY_OFFSET: i32 = 3670 * 146097 + 719468;
     const SECS_OFFSET: i64 = DAY_OFFSET as i64 * 86400;
+    const SECS_IN_DAY: i64 = 86400;
 
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -89,6 +90,19 @@ mod datealgo_alt {
         let hh = secs % 24;
         let secs = secs / 24;
         (secs as i32, hh as u8, mm as u8, ss as u8)
+    }
+
+    #[inline]
+    pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
+        let secs = if secs > datealgo::RD_SECONDS_MAX { 0 } else { secs }; // allows compiler to optimize more
+        let secs = secs.wrapping_add(SECS_OFFSET) as u64;
+        let days = (secs / SECS_IN_DAY as u64) as u32;
+        let secs = (secs % SECS_IN_DAY as u64) as u32;
+        let ss = secs % 60;
+        let mm = secs / 60 % 60;
+        let hh = secs / 3600;
+        let days = (days as i32).wrapping_sub(DAY_OFFSET);
+        (days, hh as u8, mm as u8, ss as u8)    
     }
 
     #[inline]
@@ -823,6 +837,9 @@ fn bench_secs_to_dhms(c: &mut Criterion) {
     });
     group.bench_function("datealgo_alt", |b| {
         b.iter_custom(bencher(rand_secs, |s| datealgo_alt::secs_to_dhms(black_box(s))))
+    });
+    group.bench_function("datealgo_alt2", |b| {
+        b.iter_custom(bencher(rand_secs, |s| datealgo_alt::secs_to_dhms2(black_box(s))))
     });
     group.finish();
 }
