@@ -77,8 +77,8 @@
 //!
 //! The algorithms do not account for leap seconds, as is customary for [Unix
 //! time](https://en.wikipedia.org/wiki/Unix_time). Every day is exactly 86400
-//! in length, and the calculated times do not adjust for leap seconds between
-//! timestamps.
+//! seconds in length, and the calculated times do not adjust for leap seconds
+//! between timestamps.
 //!
 //! We define [Rata Die](https://en.wikipedia.org/wiki/Rata_Die) to be integral
 //! day numbers counted from 1st of January, 1970, which is the Unix epoch. We
@@ -115,9 +115,9 @@
 //!   These algorithms have been implemented here based on the published
 //!   article. This wouldn't be the best performing date conversion library
 //!   without their work.
-//! - [David Hinnant](https://howardhinnant.github.io/date_algorithms.html):
+//! - [Howard Hinnant](https://howardhinnant.github.io/date_algorithms.html):
 //!   While searching for "perpetual calendar" algorithms, and having already
-//!   started my library, I stumbled upon a very similar idea by David Hinnant.
+//!   started my library, I stumbled upon a very similar idea by Howard Hinnant.
 //!   It remains one of the cleanest and simplest algorithms while still
 //!   retaining excellent performance.
 //! - [Rich
@@ -128,7 +128,7 @@
 //! - [Many authors of newlib
 //!   `gmtime_r.c`](https://sourceware.org/git/?p=newlib-cygwin.git;a=blob;f=newlib/libc/time/gmtime_r.c;hb=HEAD):
 //!   The newlib implementation has evolved significantly over time and has now
-//!   been updated based on the work by David Hinnant.
+//!   been updated based on the work by Howard Hinnant.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
