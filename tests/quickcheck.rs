@@ -52,6 +52,28 @@ quickcheck! {
         TestResult::from_bool(days_a == days_b)
     }
 
+    fn quickcheck_next_date(d: time::Date) -> TestResult {
+        if d == time::Date::MAX {
+            return TestResult::discard();
+        }
+        let date = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let next_date = datealgo::next_date(date);
+        let nd = d + time::Duration::days(1);
+        let expected_date = (nd.year() as i32, nd.month() as u8, nd.day() as u8);
+        TestResult::from_bool(next_date == expected_date)
+    }
+
+    fn quickcheck_prev_date(d: time::Date) -> TestResult {
+        if d == time::Date::MIN {
+            return TestResult::discard();
+        }
+        let date = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let prev_date = datealgo::prev_date(date);
+        let pd = d - time::Duration::days(1);
+        let expected_date = (pd.year() as i32, pd.month() as u8, pd.day() as u8);
+        TestResult::from_bool(prev_date == expected_date)
+    }
+
     fn quickcheck_rd_to_isoweekdate(d: time::Date) -> TestResult {
         let rd = d.to_julian_day() - 2440588;
         let a = rd_to_isoweekdate(rd);
