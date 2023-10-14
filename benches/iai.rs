@@ -22,6 +22,16 @@ fn iai_date_to_weekday() -> u8 {
 }
 
 #[inline(never)]
+fn iai_next_date() -> (i32, u8, u8) {
+    datealgo::next_date(black_box((2023, 5, 12)))
+}
+
+#[inline(never)]
+fn iai_prev_date() -> (i32, u8, u8) {
+    datealgo::prev_date(black_box((2023, 5, 12)))
+}
+
+#[inline(never)]
 fn iai_secs_to_dhms() -> (i32, u8, u8, u8) {
     datealgo::secs_to_dhms(black_box(1684574678i64))
 }
@@ -76,6 +86,8 @@ main!(
     iai_date_to_rd,
     iai_rd_to_weekday,
     iai_date_to_weekday,
+    iai_next_date,
+    iai_prev_date,
     iai_secs_to_dhms,
     iai_dhms_to_secs,
     iai_secs_to_datetime,

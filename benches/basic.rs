@@ -89,6 +89,12 @@ fn bench_basic(c: &mut Criterion) {
     c.bench_function("date_to_weekday", |b| {
         b.iter_custom(bencher(rand_date, |d| datealgo::date_to_weekday(black_box(d))))
     });
+    c.bench_function("next_date", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::next_date(black_box(d))))
+    });
+    c.bench_function("prev_date", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::prev_date(black_box(d))))
+    });
     c.bench_function("secs_to_dhms", |b| {
         b.iter_custom(bencher(rand_secs, |s| datealgo::secs_to_dhms(black_box(s))))
     });

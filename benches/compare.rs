@@ -106,7 +106,7 @@ mod datealgo_alt {
         let mm = secs / 60 % 60;
         let hh = secs / 3600;
         let days = (days as i32).wrapping_sub(DAY_OFFSET);
-        (days, hh as u8, mm as u8, ss as u8)    
+        (days, hh as u8, mm as u8, ss as u8)
     }
 
     #[inline]
@@ -141,6 +141,18 @@ mod datealgo_alt {
         let mm = (month + 12 * adjustment - 2) as u32;
         let yy = year - adjustment as u32;
         ((day as u32 + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1) as u8
+    }
+
+    #[inline]
+    pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        let rd = datealgo::date_to_rd((y, m, d));
+        datealgo::rd_to_date(rd + 1)
+    }
+
+    #[inline]
+    pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        let rd = datealgo::date_to_rd((y, m, d));
+        datealgo::rd_to_date(rd - 1)
     }
 
     #[inline]
@@ -630,6 +642,21 @@ mod chrono {
     use chrono::{Datelike, Timelike};
     use std::time::SystemTime;
 
+    pub fn rand_date() -> chrono::NaiveDate {
+        let (y, m, d) = super::rand_date();
+        chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap()
+    }
+
+    #[inline]
+    pub fn next_date(d: chrono::NaiveDate) -> chrono::NaiveDate {
+        d.succ_opt().unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: chrono::NaiveDate) -> chrono::NaiveDate {
+        d.pred_opt().unwrap()
+    }
+
     #[inline]
     pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         let date = chrono::NaiveDate::from_num_days_from_ce_opt(n + 719162).unwrap();
@@ -687,6 +714,21 @@ mod time {
     use std::time::SystemTime;
 
     const UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
+
+    pub fn rand_date() -> time::Date {
+        let (y, m, d) = super::rand_date();
+        time::Date::from_calendar_date(y, m.try_into().unwrap(), d).unwrap()
+    }
+
+    #[inline]
+    pub fn next_date(d: time::Date) -> time::Date {
+        d.next_day().unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: time::Date) -> time::Date {
+        d.previous_day().unwrap()
+    }
 
     #[inline]
     pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
@@ -862,6 +904,40 @@ fn bench_date_to_weekday(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_next_date(c: &mut Criterion) {
+    let mut group = c.benchmark_group("compare_next_date");
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::next_date(black_box(d))))
+    });
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::next_date(black_box(d))))
+    });
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(chrono::rand_date, |d| chrono::next_date(black_box(d))))
+    });
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(time::rand_date, |d| time::next_date(black_box(d))))
+    });
+    group.finish();
+}
+
+fn bench_prev_date(c: &mut Criterion) {
+    let mut group = c.benchmark_group("compare_prev_date");
+    group.bench_function("datealgo", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::prev_date(black_box(d))))
+    });
+    group.bench_function("datealgo_alt", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo_alt::prev_date(black_box(d))))
+    });
+    group.bench_function("chrono", |b| {
+        b.iter_custom(bencher(chrono::rand_date, |d| chrono::prev_date(black_box(d))))
+    });
+    group.bench_function("time", |b| {
+        b.iter_custom(bencher(time::rand_date, |d| time::prev_date(black_box(d))))
+    });
+    group.finish();
+}
+
 fn bench_secs_to_dhms(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_secs_to_dhms");
     group.bench_function("datealgo", |b| {
@@ -1029,6 +1105,8 @@ criterion_group!(
         bench_date_to_rd,
         bench_rd_to_weekday,
         bench_date_to_weekday,
+        bench_next_date,
+        bench_prev_date,
         bench_secs_to_dhms,
         bench_dhms_to_secs,
         bench_secs_to_datetime,

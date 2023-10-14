@@ -476,6 +476,98 @@ pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
     rd_to_weekday(rd)
 }
 
+/// Calculate next Gregorian date given a Gregorian date
+///
+/// Given a `(year, month, day)` tuple returns the `(year, month, day)` tuple
+/// for the following Gregorian date.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1` and the number of days in the month in
+/// question and the next date must not be after [YEAR_MAX]. Bounds are checked
+/// using `debug_assert` only, so that the checks are not present in release
+/// builds, similar to integer overflow checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{next_date};
+///
+/// assert_eq!(next_date((2023, 5, 12)), (2023, 5, 13));
+/// assert_eq!(next_date((1970, 1, 1)), (1970, 1, 2));
+/// assert_eq!(next_date((2023, 1, 31)), (2023, 2, 1));
+/// assert_eq!(next_date((2023, 12, 31)), (2024, 1, 1));
+/// ```
+///
+/// # Algorithm
+///
+/// Simple incrementation with manual overflow checking and carry. Relatively
+/// speedy, but not fully optimized.
+#[inline]
+pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    debug_assert!(
+        y != YEAR_MAX || m != consts::MONTH_MAX || d != consts::DAY_MAX,
+        "next date is out of range"
+    );
+    if d < 28 || d < days_in_month(y, m) {
+        (y, m, d + 1)
+    } else if m < 12 {
+        (y, m + 1, 1)
+    } else {
+        (y + 1, 1, 1)
+    }
+}
+
+/// Calculate previous Gregorian date given a Gregorian date
+///
+/// Given a `(year, month, day)` tuple returns the `(year, month, day)` tuple
+/// for the preceding Gregorian date.
+///
+/// # Panics
+///
+/// Year must be between [YEAR_MIN] and [YEAR_MAX]. Month must be between `1`
+/// and `12`. Day must be between `1`, the number of days in the month in
+/// question and the previous date must not be before [YEAR_MIN]. Bounds are
+/// checked using `debug_assert` only, so that the checks are not present in
+/// release builds, similar to integer overflow checks.
+///
+/// # Examples
+///
+/// ```
+/// use datealgo::{prev_date};
+///
+/// assert_eq!(prev_date((2023, 5, 12)), (2023, 5, 11));
+/// assert_eq!(prev_date((1970, 1, 1)), (1969, 12, 31));
+/// assert_eq!(prev_date((2023, 2, 1)), (2023, 1, 31));
+/// assert_eq!(prev_date((2024, 1, 1)), (2023, 12, 31));
+/// ```
+///
+/// # Algorithm
+///
+/// Simple decrementation with manual underflow checking and carry. Relatively
+/// speedy, but not fully optimized.
+#[inline]
+pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    debug_assert!(
+        y != YEAR_MIN || m != consts::MONTH_MIN || d != consts::DAY_MIN,
+        "previous date is out of range"
+    );
+    if d > 1 {
+        (y, m, d - 1)
+    } else if m > 1 {
+        (y, m - 1, days_in_month(y, m - 1))
+    } else {
+        (y - 1, 12, 31)
+    }
+}
+
 /// Split total seconds to days, hours, minutes and seconds
 ///
 /// Given seconds counting from Unix epoch (January 1st, 1970) returns a `(days,
@@ -513,7 +605,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
         "given seconds value is out of range"
     );
     // Algorithm is based on the following identities valid for all n in [0, 97612919[.
-    // 
+    //
     // n / 60 = 71582789 * n / 2^32,
     // n % 60 = 71582789 * n % 2^32 / 71582789.
     //
@@ -522,15 +614,15 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
     let secs = secs.wrapping_add(SECS_OFFSET) as u64;
     let days = (secs / SECS_IN_DAY as u64) as u32;
     let secs = secs % SECS_IN_DAY as u64; // secs in [0, SECS_IN_DAY[ => secs in [0, 97612919[
-  
-    let prd  = 71582789 * secs;
-    let mins = prd >> 32;             // secs / 60
+
+    let prd = 71582789 * secs;
+    let mins = prd >> 32; // secs / 60
     let ss = (prd as u32) / 71582789; // secs % 60
-  
+
     let prd = 71582789 * mins;
-    let hh = prd >> 32;               // mins / 60
+    let hh = prd >> 32; // mins / 60
     let mm = (prd as u32) / 71582789; // mins % 60
-  
+
     let days = (days as i32).wrapping_sub(DAY_OFFSET);
     (days, hh as u8, mm as u8, ss as u8)
 }

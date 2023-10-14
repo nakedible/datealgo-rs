@@ -75,6 +75,36 @@ fn test_date_to_weekday() {
 }
 
 #[test]
+fn test_next_date() {
+    assert_eq!(next_date((2021, 1, 1)), (2021, 1, 2));
+    assert_eq!(next_date((-2021, 1, 1)), (-2021, 1, 2));
+    assert_eq!(next_date((2021, 2, 28)), (2021, 3, 1));
+    assert_eq!(next_date((2021, 4, 30)), (2021, 5, 1));
+    assert_eq!(next_date((2021, 5, 31)), (2021, 6, 1));
+    assert_eq!(next_date((2021, 1, 31)), (2021, 2, 1));
+    assert_eq!(next_date((2021, 12, 31)), (2022, 1, 1));
+    assert_eq!(next_date((2020, 2, 28)), (2020, 2, 29));
+    assert_eq!(next_date((2020, 2, 29)), (2020, 3, 1));
+    assert_eq!(next_date((-2020, 2, 28)), (-2020, 2, 29));
+    assert_eq!(next_date((-2020, 2, 29)), (-2020, 3, 1));
+}
+
+#[test]
+fn test_prev_date() {
+    assert_eq!(prev_date((2021, 1, 1)), (2020, 12, 31));
+    assert_eq!(prev_date((-2021, 1, 1)), (-2022, 12, 31));
+    assert_eq!(prev_date((2021, 3, 1)), (2021, 2, 28));
+    assert_eq!(prev_date((2021, 5, 1)), (2021, 4, 30));
+    assert_eq!(prev_date((2021, 6, 1)), (2021, 5, 31));
+    assert_eq!(prev_date((2021, 2, 1)), (2021, 1, 31));
+    assert_eq!(prev_date((2022, 1, 1)), (2021, 12, 31));
+    assert_eq!(prev_date((2020, 2, 29)), (2020, 2, 28));
+    assert_eq!(prev_date((2020, 3, 1)), (2020, 2, 29));
+    assert_eq!(prev_date((-2020, 2, 29)), (-2020, 2, 28));
+    assert_eq!(prev_date((-2020, 3, 1)), (-2020, 2, 29));
+}
+
+#[test]
 fn test_secs_to_dhms() {
     assert_eq!(secs_to_dhms(RD_SECONDS_MIN), (RD_MIN, 0, 0, 0));
     assert_eq!(secs_to_dhms(RD_SECONDS_MAX), (RD_MAX, 23, 59, 59));

@@ -117,6 +117,104 @@ example::date_to_weekday:
   inc al
   ret
 
+example::next_date:
+  movabs rcx, 1099511627776
+  mov rax, rdi
+  shr rax, 32
+  mov rdx, rdi
+  shr rdx, 40
+  cmp dl, 28
+  jb .LBB4_6
+  cmp al, 2
+  jne .LBB4_2
+  imul esi, edi, -1030792151
+  add esi, 85899345
+  cmp esi, 171798691
+  mov esi, 15
+  mov r8d, 3
+  cmovb r8d, esi
+  test r8d, edi
+  sete sil
+  or sil, 28
+  cmp sil, dl
+  ja .LBB4_6
+  jmp .LBB4_7
+.LBB4_2:
+  mov esi, eax
+  shr sil, 3
+  xor sil, al
+  or sil, 30
+  cmp sil, dl
+  jbe .LBB4_3
+.LBB4_6:
+  add rcx, rdi
+  movabs rdx, 280375465082880
+  and rcx, rdx
+  jmp .LBB4_8
+.LBB4_3:
+  cmp al, 12
+  jae .LBB4_4
+.LBB4_7:
+  inc rax
+  jmp .LBB4_8
+.LBB4_4:
+  inc rdi
+  mov eax, 1
+.LBB4_8:
+  movzx edx, al
+  shl rdx, 32
+  mov eax, edi
+  or rax, rcx
+  or rax, rdx
+  ret
+
+example::prev_date:
+  mov rax, rdi
+  shr rax, 32
+  mov rcx, rdi
+  shr rcx, 40
+  cmp cl, 1
+  jbe .LBB5_1
+  dec cl
+  jmp .LBB5_6
+.LBB5_1:
+  cmp al, 1
+  jbe .LBB5_2
+  dec al
+  cmp al, 2
+  jne .LBB5_5
+  imul eax, edi, -1030792151
+  add eax, 85899345
+  cmp eax, 171798691
+  mov eax, 15
+  mov ecx, 3
+  cmovb ecx, eax
+  test ecx, edi
+  sete cl
+  or cl, 28
+  mov al, 2
+  jmp .LBB5_6
+.LBB5_2:
+  mov eax, 4294967295
+  add rdi, rax
+  mov cl, 31
+  mov al, 12
+  jmp .LBB5_6
+.LBB5_5:
+  mov ecx, eax
+  shr cl, 3
+  xor cl, al
+  or cl, 30
+.LBB5_6:
+  movzx ecx, cl
+  shl rcx, 40
+  movzx edx, al
+  shl rdx, 32
+  or rdx, rcx
+  mov eax, edi
+  or rax, rdx
+  ret
+
 example::secs_to_dhms:
   movabs rax, 46387767571200
   lea rcx, [rdi + rax]
@@ -154,7 +252,7 @@ example::secs_to_dhms:
 example::dhms_to_secs:
   lea eax, [rdi + 536895152]
   cmp eax, 1073719447
-  ja .LBB5_1
+  ja .LBB7_1
   mov rax, rdi
   shr rax, 48
   mov rcx, rdi
@@ -172,7 +270,7 @@ example::dhms_to_secs:
   add rax, rdx
   add rax, rcx
   ret
-.LBB5_1:
+.LBB7_1:
   xor eax, eax
   ret
 
@@ -261,7 +359,7 @@ example::datetime_to_secs:
   lea edx, [rcx + rax]
   add edx, -307
   cmp edx, 1073719447
-  ja .LBB7_1
+  ja .LBB9_1
   add eax, ecx
   add eax, -536895459
   movzx ecx, byte ptr [rdi + 8]
@@ -275,7 +373,7 @@ example::datetime_to_secs:
   add rax, rsi
   add rax, rdi
   ret
-.LBB7_1:
+.LBB9_1:
   xor eax, eax
   ret
 
@@ -292,7 +390,7 @@ example::is_leap_year:
 
 example::days_in_month:
   cmp sil, 2
-  jne .LBB9_2
+  jne .LBB11_2
   imul eax, edi, -1030792151
   add eax, 85899345
   cmp eax, 171798691
@@ -303,7 +401,7 @@ example::days_in_month:
   sete al
   or al, 28
   ret
-.LBB9_2:
+.LBB11_2:
   mov eax, esi
   shr al, 3
   xor al, sil
@@ -582,13 +680,13 @@ example::isoweeks_in_year:
   sub ecx, edx
   add ecx, eax
   cmp cl, 2
-  je .LBB14_3
+  je .LBB16_3
   mov al, 52
   cmp ecx, 3
-  jne .LBB14_4
+  jne .LBB16_4
   mov al, 53
   ret
-.LBB14_3:
+.LBB16_3:
   imul eax, edi, -1030792151
   add eax, 85899345
   cmp eax, 171798691
@@ -598,7 +696,7 @@ example::isoweeks_in_year:
   test ecx, edi
   sete al
   or al, 52
-.LBB14_4:
+.LBB16_4:
   ret
 
 example::systemtime_to_secs:
@@ -613,7 +711,7 @@ example::systemtime_to_secs:
   xor ecx, ecx
   call qword ptr [rip + std::time::SystemTime::duration_since@GOTPCREL]
   cmp qword ptr [rsp + 8], 0
-  je .LBB15_1
+  je .LBB17_1
   mov rax, qword ptr [rsp + 16]
   mov ecx, dword ptr [rsp + 24]
   mov qword ptr [rsp + 48], rax
@@ -624,27 +722,27 @@ example::systemtime_to_secs:
   sbb rax, -1
   movabs rcx, 46387741132800
   cmp rax, rcx
-  ja .LBB15_6
+  ja .LBB17_6
   mov ecx, 1000000000
   sub ecx, edx
   test edx, edx
   cmove ecx, edx
   neg rax
-  jmp .LBB15_3
-.LBB15_1:
+  jmp .LBB17_3
+.LBB17_1:
   mov rax, qword ptr [rsp + 16]
   movabs rcx, 46381619174399
   cmp rax, rcx
-  jbe .LBB15_2
-.LBB15_6:
+  jbe .LBB17_2
+.LBB17_6:
   mov qword ptr [rbx], 0
   mov rax, rbx
   add rsp, 64
   pop rbx
   ret
-.LBB15_2:
+.LBB17_2:
   mov ecx, dword ptr [rsp + 24]
-.LBB15_3:
+.LBB17_3:
   mov qword ptr [rbx + 8], rax
   mov dword ptr [rbx + 16], ecx
   mov qword ptr [rbx], 1
@@ -657,7 +755,7 @@ example::secs_to_systemtime:
   mov eax, esi
   mov rsi, rdi
   test rdi, rdi
-  js .LBB16_1
+  js .LBB18_1
   mov ecx, eax
   shr ecx, 9
   imul rcx, rcx, 281475
@@ -667,10 +765,10 @@ example::secs_to_systemtime:
   sub eax, ecx
   lea rdi, [rip + .L__unnamed_1]
   mov edx, eax
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17hd4da3f7351fca66eE@GOTPCREL]
-.LBB16_1:
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h23ec42ea1b09df70E@GOTPCREL]
+.LBB18_1:
   test eax, eax
-  je .LBB16_4
+  je .LBB18_4
   not rsi
   mov edx, 1000000000
   sub edx, eax
@@ -682,12 +780,12 @@ example::secs_to_systemtime:
   imul eax, eax, 1000000000
   sub edx, eax
   lea rdi, [rip + .L__unnamed_1]
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17ha18ef911f5889a11E@GOTPCREL]
-.LBB16_4:
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h855e2dc31d3cb494E@GOTPCREL]
+.LBB18_4:
   neg rsi
   lea rdi, [rip + .L__unnamed_1]
   xor edx, edx
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17ha18ef911f5889a11E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h855e2dc31d3cb494E@GOTPCREL]
 
 example::systemtime_to_datetime:
   push r14
@@ -703,7 +801,7 @@ example::systemtime_to_datetime:
   xor ecx, ecx
   call qword ptr [rip + std::time::SystemTime::duration_since@GOTPCREL]
   cmp qword ptr [rsp], 0
-  je .LBB17_1
+  je .LBB19_1
   mov rax, qword ptr [rsp + 8]
   mov ecx, dword ptr [rsp + 16]
   mov qword ptr [rsp + 40], rax
@@ -713,24 +811,24 @@ example::systemtime_to_datetime:
   cmp edx, 1
   sbb rax, -1
   cmp rax, r14
-  ja .LBB17_6
+  ja .LBB19_6
   mov esi, 1000000000
   sub esi, edx
   test edx, edx
   cmove esi, edx
   neg rax
-  jmp .LBB17_5
-.LBB17_1:
+  jmp .LBB19_5
+.LBB19_1:
   mov rax, qword ptr [rsp + 8]
   movabs rcx, 46381619174399
   cmp rax, rcx
-  jbe .LBB17_2
-.LBB17_6:
+  jbe .LBB19_2
+.LBB19_6:
   xor eax, eax
-  jmp .LBB17_7
-.LBB17_2:
+  jmp .LBB19_7
+.LBB19_2:
   mov esi, dword ptr [rsp + 16]
-.LBB17_5:
+.LBB19_5:
   lea rcx, [r14 + rax]
   add rcx, 26438400
   movabs rdx, -4454547087429121353
@@ -786,7 +884,7 @@ example::systemtime_to_datetime:
   mov byte ptr [rbx + 12], dl
   mov dword ptr [rbx + 16], esi
   mov eax, 1
-.LBB17_7:
+.LBB19_7:
   mov dword ptr [rbx], eax
   mov rax, rbx
   add rsp, 56
@@ -820,7 +918,7 @@ example::datetime_to_systemtime:
   lea esi, [rcx + rax]
   add esi, -307
   cmp esi, 1073719447
-  ja .LBB18_1
+  ja .LBB20_1
   add eax, ecx
   add eax, -536895459
   movzx ecx, byte ptr [rdi + 8]
@@ -833,9 +931,9 @@ example::datetime_to_systemtime:
   add rsi, rcx
   add rsi, rax
   add rsi, rdi
-  jns .LBB18_2
+  jns .LBB20_2
   test edx, edx
-  je .LBB18_5
+  je .LBB20_5
   not rsi
   mov eax, 1000000000
   sub eax, edx
@@ -848,10 +946,10 @@ example::datetime_to_systemtime:
   sub eax, ecx
   lea rdi, [rip + .L__unnamed_1]
   mov edx, eax
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17ha18ef911f5889a11E@GOTPCREL]
-.LBB18_1:
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h855e2dc31d3cb494E@GOTPCREL]
+.LBB20_1:
   xor esi, esi
-.LBB18_2:
+.LBB20_2:
   mov eax, edx
   shr eax, 9
   imul rax, rax, 281475
@@ -860,12 +958,12 @@ example::datetime_to_systemtime:
   imul eax, eax, 1000000000
   sub edx, eax
   lea rdi, [rip + .L__unnamed_1]
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17hd4da3f7351fca66eE@GOTPCREL]
-.LBB18_5:
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_add17h23ec42ea1b09df70E@GOTPCREL]
+.LBB20_5:
   neg rsi
   lea rdi, [rip + .L__unnamed_1]
   xor edx, edx
-  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17ha18ef911f5889a11E@GOTPCREL]
+  jmp qword ptr [rip + _ZN3std4time10SystemTime11checked_sub17h855e2dc31d3cb494E@GOTPCREL]
 
 .L__unnamed_1:
   .zero 12
