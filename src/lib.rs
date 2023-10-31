@@ -129,6 +129,7 @@
 //!   `gmtime_r.c`](https://sourceware.org/git/?p=newlib-cygwin.git;a=blob;f=newlib/libc/time/gmtime_r.c;hb=HEAD):
 //!   The newlib implementation has evolved significantly over time and has now
 //!   been updated based on the work by Howard Hinnant.
+#![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
