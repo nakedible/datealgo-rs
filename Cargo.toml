@@ -1,6 +1,6 @@
 [package]
 name = "datealgo"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Nuutti Kotivuori <naked@iki.fi>"]
 description = "Low-level date algorithms for libraries"

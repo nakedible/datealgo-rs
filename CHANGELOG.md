@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/nakedible/datealgo-rs/compare/v0.1.1...v0.2.0) - 2023-10-31
+
+### Added
+- Add `next_date` and `prev_date` functions
+- Add ISO week calculations
+
+### Other
+- Add forbid unsafe, just to declare intent
+- Fix typos in documentation.
+- Update asm dump
+- Add old `secs_to_dhms` as compare bench
+- Improve performace of `secs_to_dhms`
+
 ## [0.1.1](https://github.com/nakedible/datealgo-rs/compare/v0.1.0...v0.1.1) - 2023-09-10
 
 ### Fixed
