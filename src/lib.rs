@@ -292,6 +292,23 @@ pub const fn date_to_packed((y, m, d): (i32, u8, u8)) -> i32 {
 }
 
 #[inline]
+pub const fn date_to_packed_nonzero((y, m, d): (i32, u8, u8)) -> std::num::NonZeroI32 {
+    let p = date_to_packed((y, m, d));
+    if let Some(v) = std::num::NonZeroI32::new(p) {
+        v
+    } else {
+        unreachable!()
+    }
+}
+
+#[inline]
+pub const fn rd_to_date_packed(n: i32) -> std::num::NonZeroI32 {
+    debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
+    let (y, m, d) = rd_to_date(n);
+    date_to_packed_nonzero((y, m, d))
+}
+
+#[inline]
 pub const fn packed_to_date(n: i32) -> (i32, u8, u8) {
     let y = n >> 9;
     let m = ((n >> 5) & 0b1111) as u8;
