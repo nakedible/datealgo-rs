@@ -30,9 +30,18 @@ harness = false
 name = "iai"
 harness = false
 
+[[bench]]
+name = "basicd"
+harness = false
+
+[[bench]]
+name = "compared"
+harness = false
+
 [dev-dependencies]
 chrono = "0.4.24"
 criterion = "0.4.0"
+divan = "0.1.2"
 fastrand = "2.0.0"
 iai-callgrind = "0.6"
 quickcheck = "1.0.3"
