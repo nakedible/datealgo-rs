@@ -1,16 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 
-fn bencher<I: Copy, O>(s: impl Fn() -> I, f: impl Fn(I) -> O) -> impl Fn(u64) -> Duration {
-    move |n| {
-        let v = s();
-        let now = Instant::now();
-        for _ in 0..n {
-            let _ = black_box(f(v));
-        }
-        now.elapsed()
-    }
-}
+mod util;
+use util::bencher;
 
 fn rand_year() -> i32 {
     fastrand::i32(1970..=9999)
