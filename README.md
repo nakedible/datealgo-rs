@@ -110,8 +110,12 @@ Results on Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz:
 | datetime_to_systemtime | **5.1 ns** | | 8.8 ns | 9 ns | 31.3 ns | 22.8 ns |
 | systemtime_to_datetime | **17.8 ns** | | 28.4 ns | 30.9 ns | 44.1 ns | 98.4 ns |
 
-Some code has been adapted from the libraries to produce comparable
-benchmarks.
+Reliable and reproducible microbenchmarks are extremely hard to obtain with
+modern processors. And even then, they are of limited use as the surrounding
+code will dictate a lot about the performance. These benchmarks are not
+meant to be authoritative, but rather illustrate the likely relative speed
+differences of the algorithms. Your mileage will vary, so always benchmark
+the real use case.
 
 ## Acknowledgements
 
