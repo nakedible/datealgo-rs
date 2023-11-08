@@ -101,14 +101,14 @@ which means a usable range of roughly -1,460,000 to 1,460,000 years.
 
 ## Benchmarks
 
-Results on GitHub Codespaces 8-core VM:
+Results on Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz:
 
 | Function | [datealgo](https://github.com/nakedible/datealgo-rs) | [hinnant](https://howardhinnant.github.io/date_algorithms.html) | [httpdate](https://github.com/pyfisch/httpdate) | [humantime](https://github.com/tailhook/humantime) | [time](https://github.com/time-rs/time) | [chrono](https://github.com/chronotope/chrono) |
 | ---------------------- | ------------- | --------- | --------- | --------- | --------- | --------- |
-| date_to_rd | **2.3 ns** | 4 ns | 3.2 ns | 3.2 ns | 17.7 ns | 7.2 ns |
-| rd_to_date | **3.6 ns** | 9.3 ns | 11.3 ns | 11.3 ns | 18.8 ns | 8.2 ns |
-| datetime_to_systemtime | **8.6 ns** | | 9.9 ns | 9.8 ns | 57.3 ns | 50.1 ns |
-| systemtime_to_datetime | **14.2 ns** | | 18.9 ns | 19 ns | 54.6 ns | 226.4 ns |
+| date_to_rd | **2.1 ns** | 3.3 ns | 3.3 ns | 3.6 ns | 15.1 ns | 6.5 ns |
+| rd_to_date | **3.2 ns** | 7.6 ns | 13.5 ns | 13.5 ns | 24.3 ns | 8 ns |
+| datetime_to_systemtime | **5.1 ns** | | 8.8 ns | 9 ns | 31.3 ns | 22.8 ns |
+| systemtime_to_datetime | **17.8 ns** | | 28.4 ns | 30.9 ns | 44.1 ns | 98.4 ns |
 
 Some code has been adapted from the libraries to produce comparable
 benchmarks.
