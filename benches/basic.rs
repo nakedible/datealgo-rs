@@ -1,14 +1,37 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::time::{Duration, Instant, SystemTime};
 
+#[cfg(target_arch = "x86")]
+use std::arch::x86;
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64 as x86;
+
+#[inline]
+fn start_tsc() -> u64 {
+    unsafe { x86::_mm_lfence() };
+    let tsc = unsafe { x86::_rdtsc() };
+    unsafe { x86::_mm_lfence() };
+    tsc
+}
+
+fn stop_tsc() -> u64 {
+    let tsc = unsafe { x86::__rdtscp(&mut 0) };
+    unsafe { x86::_mm_lfence() };
+    tsc
+}
+
 fn bencher<I: Copy, O>(s: impl Fn() -> I, f: impl Fn(I) -> O) -> impl Fn(u64) -> Duration {
     move |n| {
         let v = s();
-        let now = Instant::now();
+        //let now = Instant::now();
+        let start = start_tsc();
         for _ in 0..n {
             let _ = black_box(f(v));
         }
-        now.elapsed()
+        let end = stop_tsc();
+        let diff = end.saturating_sub(start);
+        Duration::from_nanos(diff)
+        //now.elapsed()
     }
 }
 
