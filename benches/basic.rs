@@ -4,12 +4,19 @@ use std::time::{Duration, SystemTime};
 mod util;
 use util::bencher;
 
+const BENCH_YEAR_MIN: i32 = -1467999;
+const BENCH_YEAR_MAX: i32 = 1471744;
+const BENCH_RD_MIN: i32 = -536895152;
+const BENCH_RD_MAX: i32 = 536824295;
+const BENCH_RD_SECONDS_MIN: i64 = -46387741132800;
+const BENCH_RD_SECONDS_MAX: i64 = 46381619174399;
+
 fn rand_year() -> i32 {
-    fastrand::i32(datealgo::YEAR_MIN..=datealgo::YEAR_MAX)
+    fastrand::i32(BENCH_YEAR_MIN..=BENCH_YEAR_MAX)
 }
 
 fn rand_rd() -> i32 {
-    fastrand::i32(datealgo::RD_MIN..=datealgo::RD_MAX)
+    fastrand::i32(BENCH_RD_MIN..=BENCH_RD_MAX)
 }
 
 fn rand_date() -> (i32, u8, u8) {
@@ -20,7 +27,7 @@ fn rand_date() -> (i32, u8, u8) {
 }
 
 fn rand_secs() -> i64 {
-    fastrand::i64(datealgo::RD_SECONDS_MIN..=datealgo::RD_SECONDS_MAX)
+    fastrand::i64(BENCH_RD_SECONDS_MIN..=BENCH_RD_SECONDS_MAX)
 }
 
 fn rand_hms() -> (u8, u8, u8) {
