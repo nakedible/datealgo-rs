@@ -16,7 +16,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Check format
+      run: cargo fmt -- --check
+    - name: Check clippy
+      run: cargo clippy -- -D warnings
+    - name: Check docs
+      run: cargo doc --no-deps
+    - name: Install cargo-show-asm and cargo-readme
+      run: cargo install cargo-show-asm cargo-readme
+    - name: Check asm is up-to-date
+      run: ./asm.sh
+    - name: Check that `README.md` is up-to-date
+      run: cargo readme | diff -u README.md -
