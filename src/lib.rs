@@ -431,33 +431,35 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 ///
 /// # Algorithm
 ///
-/// In essence, the algorithm calculates `(n + offset) % 7 + 1` where `offset`
-/// is such that `m := n + offset >= 0` and for `n = 0` it yields `4` (since
-/// January 1st, 1970 was a Thursday). However, it uses a faster way to evaluate
-/// `m % 7 + 1` based on the binary representation of the reciprocal of `7`,
-/// namely, `C := (0.001_001_001...)_2`. The following table presents the binary
-/// values of `m % 7 + 1` and `p := m * C` for `m = 0`, `2`, `...`:
+/// Novel algorithm contributed by Cassio Neri:
 ///
-/// | `m` | `m % 7 + 1` | `(m + 1) * C`          |
-/// | --- | ----------- | ---------------------- |
-/// | `0` | `(001)_2`   | `(0.001_001_001...)_2` |
-/// | `1` | `(010)_2`   | `(0.010_010_010...)_2` |
-/// | `2` | `(011)_2`   | `(0.011_011_011...)_2` |
-/// | `3` | `(100)_2`   | `(0.100_100_100...)_2` |
-/// | `4` | `(101)_2`   | `(0.101_101_101...)_2` |
-/// | `5` | `(110)_2`   | `(0.110_110_110...)_2` |
-/// | `6` | `(111)_2`   | `(0.111_111_111...)_2` |
-/// | `7` | `(001)_2`   | `(1.001_001_001...)_2` |
-/// | ... | ...         | ...                    |
-///
-/// Notice that the bits of `m * C` after the dot repeat indefinitely in groups
-/// of `3`.  Furthermore, the repeating group matches `m % 7 + 1`.
-///
-/// Based on the above, the algorithm multiplies `m` by `2^64 / 7` and extracts
-/// the `3`` highest bits of the product by shifiting `61` bits to the right.
-/// However, since `2^64 / 7` must be truncated, the result is an approximation
-/// that works provided that m is not too large but, still, large enough for our
-/// purposes.
+/// > In essence, the algorithm calculates `(n + offset) % 7 + 1` where `offset`
+/// > is such that `m := n + offset >= 0` and for `n = 0` it yields `4` (since
+/// > January 1st, 1970 was a Thursday). However, it uses a faster way to
+/// > evaluate `m % 7 + 1` based on the binary representation of the reciprocal
+/// > of `7`, namely, `C := (0.001_001_001...)_2`. The following table presents
+/// > the binary values of `m % 7 + 1` and `p := m * C` for `m = 0`, `2`, `...`:
+/// >
+/// > | `m` | `m % 7 + 1` | `(m + 1) * C`          |
+/// > | --- | ----------- | ---------------------- |
+/// > | `0` | `(001)_2`   | `(0.001_001_001...)_2` |
+/// > | `1` | `(010)_2`   | `(0.010_010_010...)_2` |
+/// > | `2` | `(011)_2`   | `(0.011_011_011...)_2` |
+/// > | `3` | `(100)_2`   | `(0.100_100_100...)_2` |
+/// > | `4` | `(101)_2`   | `(0.101_101_101...)_2` |
+/// > | `5` | `(110)_2`   | `(0.110_110_110...)_2` |
+/// > | `6` | `(111)_2`   | `(0.111_111_111...)_2` |
+/// > | `7` | `(001)_2`   | `(1.001_001_001...)_2` |
+/// > | ... | ...         | ...                    |
+/// >
+/// > Notice that the bits of `m * C` after the dot repeat indefinitely in
+/// > groups of `3`.  Furthermore, the repeating group matches `m % 7 + 1`.
+/// >
+/// > Based on the above, the algorithm multiplies `m` by `2^64 / 7` and
+/// > extracts the `3` highest bits of the product by shifiting `61` bits to the
+/// > right. However, since `2^64 / 7` must be truncated, the result is an
+/// > approximation that works provided that `m` is not too large but, still,
+/// > large enough for our purposes.
 #[inline]
 pub const fn rd_to_weekday(n: i32) -> u8 {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
