@@ -19,6 +19,10 @@ fn rand_date() -> (i32, u8, u8) {
     (y, m, d)
 }
 
+fn rand_packed() -> i32 {
+    datealgo::date_to_packed(rand_date())
+}
+
 fn rand_secs() -> i64 {
     fastrand::i64(datealgo::RD_SECONDS_MIN..=datealgo::RD_SECONDS_MAX)
 }
@@ -71,6 +75,12 @@ fn rand_iwd() -> (i32, u8, u8) {
 fn bench_basic(c: &mut Criterion) {
     c.bench_function("overhead", |b| {
         b.iter_custom(bencher(rand_date, |d| black_box(d)));
+    });
+    c.bench_function("date_to_packed", |b| {
+        b.iter_custom(bencher(rand_date, |d| datealgo::date_to_packed(black_box(d))))
+    });
+    c.bench_function("packed_to_date", |b| {
+        b.iter_custom(bencher(rand_packed, |p| datealgo::packed_to_date(black_box(p))))
     });
     c.bench_function("rd_to_date", |b| {
         b.iter_custom(bencher(rand_rd, |rd| datealgo::rd_to_date(black_box(rd))))

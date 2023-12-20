@@ -283,6 +283,42 @@ pub mod consts {
 // - if the addition of two i32 is positive and fits in u32, wrapping (default)
 //   semantics give us the correct results even if the sum is larger than i32::MAX
 
+#[inline]
+pub const fn date_to_packed((y, m, d): (i32, u8, u8)) -> i32 {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    y << 9 | (m as i32) << 5 | d as i32
+}
+
+#[inline]
+pub const fn date_to_packed_nonzero((y, m, d): (i32, u8, u8)) -> std::num::NonZeroI32 {
+    let p = date_to_packed((y, m, d));
+    if let Some(v) = std::num::NonZeroI32::new(p) {
+        v
+    } else {
+        unreachable!()
+    }
+}
+
+#[inline]
+pub const fn rd_to_date_packed(n: i32) -> std::num::NonZeroI32 {
+    debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
+    let (y, m, d) = rd_to_date(n);
+    date_to_packed_nonzero((y, m, d))
+}
+
+#[inline]
+pub const fn packed_to_date(n: i32) -> (i32, u8, u8) {
+    let y = n >> 9;
+    let m = ((n >> 5) & 0b1111) as u8;
+    let d = (n & 0b11111) as u8;
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    (y, m, d)
+}
+
 /// Convert Rata Die to Gregorian date
 ///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns a `(year,
