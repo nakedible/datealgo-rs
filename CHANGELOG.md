@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/nakedible/datealgo-rs/compare/v0.2.0...v0.2.1) - 2023-12-20
+
+### Added
+- Improve performance of `rd_to_weekday`
+
+### Other
+- Fix a couple errors in benchmark inputs
+- Update acknowledgements section
+- Tweak formatting of `rd_to_weekday` algo
+- Add a lot more checks to ci
+- Make two links into hyperlinks
+- Add couple clippy allows
+- Reformat
+- Remove old asm dumps and add new
+- Implement new way to dump asm
+- Update criterion to 0.5.1
+- Update iai to 0.9.0 and fix tests
+- Add old `rd_to_weekday` to compare benchmarks
+- Run benchmarks on pull requests again
+- fix typo in documentation.
+- Update benchmark disclaimer
+- Update benchmark snapshot in docs
+- More reliable benchmarks by array input
+- Create utility module for benches
+
 ## [0.2.0](https://github.com/nakedible/datealgo-rs/compare/v0.1.1...v0.2.0) - 2023-10-31
 
 ### Added
