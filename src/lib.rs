@@ -1245,3 +1245,79 @@ pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8,
     let secs = dhms_to_secs((days, hh, mm, ss));
     secs_to_systemtime((secs, nsec))
 }
+
+#[cfg(feature = "asmdump")]
+pub mod asm {
+    //! Non-inline wrappers for functions for dumping assembly with
+    //! cargo-show-asm
+    #[cfg(feature = "std")]
+    use std::time::SystemTime;
+
+    pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        super::rd_to_date(n)
+    }
+    pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        super::date_to_rd((y, m, d))
+    }
+    pub const fn rd_to_weekday(n: i32) -> u8 {
+        super::rd_to_weekday(n)
+    }
+    pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+        super::date_to_weekday((y, m, d))
+    }
+    pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        super::next_date((y, m, d))
+    }
+    pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        super::prev_date((y, m, d))
+    }
+    pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
+        super::secs_to_dhms(secs)
+    }
+    pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
+        super::dhms_to_secs((d, h, m, s))
+    }
+    pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+        super::secs_to_datetime(secs)
+    }
+    pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+        super::datetime_to_secs((y, m, d, hh, mm, ss))
+    }
+    pub const fn is_leap_year(y: i32) -> bool {
+        super::is_leap_year(y)
+    }
+    pub const fn days_in_month(y: i32, m: u8) -> u8 {
+        super::days_in_month(y, m)
+    }
+    pub const fn rd_to_isoweekdate(rd: i32) -> (i32, u8, u8) {
+        super::rd_to_isoweekdate(rd)
+    }
+    pub const fn isoweekdate_to_rd((y, w, d): (i32, u8, u8)) -> i32 {
+        super::isoweekdate_to_rd((y, w, d))
+    }
+    pub const fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        super::date_to_isoweekdate((y, m, d))
+    }
+    pub const fn isoweekdate_to_date((y, w, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        super::isoweekdate_to_date((y, w, d))
+    }
+    pub const fn isoweeks_in_year(y: i32) -> u8 {
+        super::isoweeks_in_year(y)
+    }
+    #[cfg(feature = "std")]
+    pub fn systemtime_to_secs(st: SystemTime) -> Option<(i64, u32)> {
+        super::systemtime_to_secs(st)
+    }
+    #[cfg(feature = "std")]
+    pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> Option<SystemTime> {
+        super::secs_to_systemtime((secs, nsecs))
+    }
+    #[cfg(feature = "std")]
+    pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
+        super::systemtime_to_datetime(st)
+    }
+    #[cfg(feature = "std")]
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> Option<SystemTime> {
+        super::datetime_to_systemtime((y, m, d, hh, mm, ss, nsec))
+    }
+}
