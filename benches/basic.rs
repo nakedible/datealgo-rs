@@ -26,7 +26,7 @@ fn rand_secs() -> i64 {
 fn rand_hms() -> (u8, u8, u8) {
     let h = fastrand::u8(0..=23);
     let m = fastrand::u8(0..=59);
-    let s = fastrand::u8(0..59);
+    let s = fastrand::u8(0..=59);
     (h, m, s)
 }
 

@@ -9,7 +9,7 @@ fn rand_year() -> i32 {
 }
 
 fn rand_rd() -> i32 {
-    fastrand::i32(datealgo::date_to_rd((1970, 1, 1))..=datealgo::date_to_rd((9999, 1, 1)))
+    fastrand::i32(datealgo::date_to_rd((1970, 1, 1))..=datealgo::date_to_rd((9999, 12, 31)))
 }
 
 fn rand_date() -> (i32, u8, u8) {
@@ -26,7 +26,7 @@ fn rand_secs() -> i64 {
 fn rand_hms() -> (u8, u8, u8) {
     let h = fastrand::u8(0..=23);
     let m = fastrand::u8(0..=59);
-    let s = fastrand::u8(0..59);
+    let s = fastrand::u8(0..=59);
     (h, m, s)
 }
 
