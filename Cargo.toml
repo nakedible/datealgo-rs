@@ -32,7 +32,7 @@ harness = false
 
 [dev-dependencies]
 chrono = "0.4.24"
-criterion = "0.4.0"
+criterion = "0.5.1"
 fastrand = "2.0.0"
 iai-callgrind = "0.9.0"
 quickcheck = "1.0.3"
