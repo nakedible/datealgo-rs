@@ -1,15 +1,26 @@
 name: Benchmark pull requests
 permissions:
   pull-requests: write
-on: [pull_request]
+on:
+  issue_comment:
+    types: [created]
 jobs:
   runBenchmark:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/bench')
     name: run benchmark
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - name: Checkout head branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          path: head
       - uses: boa-dev/criterion-compare-action@v3
         with:
           benchName: basic
-          # Needed. The name of the branch to compare with. This default uses the branch which is being pulled against
           branchName: ${{ github.base_ref }}
