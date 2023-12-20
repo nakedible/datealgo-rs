@@ -134,6 +134,7 @@
 //!   The newlib implementation has evolved significantly over time and has now
 //!   been updated based on the work by Howard Hinnant.
 #![forbid(unsafe_code)]
+#![allow(clippy::absurd_extreme_comparisons, clippy::manual_range_contains)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
