@@ -116,6 +116,11 @@ mod datealgo_alt {
     }
 
     #[inline]
+    pub const fn rd_to_weekday3(n: i32) -> u8 {
+        ((n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1) as u8
+    }
+
+    #[inline]
     pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
         let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
         let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
@@ -878,6 +883,9 @@ fn bench_rd_to_weekday(c: &mut Criterion) {
     });
     group.bench_function("datealgo_alt2", |b| {
         b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday2(black_box(rd))))
+    });
+    group.bench_function("datealgo_alt3", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| datealgo_alt::rd_to_weekday3(black_box(rd))))
     });
     group.finish();
 }
