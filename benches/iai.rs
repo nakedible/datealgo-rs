@@ -1,4 +1,4 @@
-use iai_callgrind::{black_box, main, library_benchmark_group, library_benchmark};
+use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[library_benchmark]
