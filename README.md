@@ -119,7 +119,9 @@ the real use case.
 
 ## Acknowledgements
 
-I do not claim original research on anything that is in this crate.
+This crate is based publicly available algorithms from many sources, but
+most notably Cassio Neri. He has directly contributed to this crate with
+novel algoritms and has provided valuable feedback and suggestions.
 
 - [Cassio Neri and Lorenz
   Schneider](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172):
