@@ -34,6 +34,6 @@ harness = false
 chrono = "0.4.24"
 criterion = "0.4.0"
 fastrand = "2.0.0"
-iai-callgrind = "0.6"
+iai-callgrind = "0.9.0"
 quickcheck = "1.0.3"
 time = { version = "0.3.21", features = ["quickcheck", "large-dates"] }
