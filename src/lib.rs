@@ -792,7 +792,7 @@ pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) 
 /// # Algorithm
 ///
 /// Algorithm is Neri-Schneider from C++now 2023 conference:
-/// > https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf
+/// > <https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf>
 #[inline]
 pub const fn is_leap_year(y: i32) -> bool {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
@@ -833,7 +833,7 @@ pub const fn is_leap_year(y: i32) -> bool {
 /// # Algorithm
 ///
 /// Algorithm is Neri-Schneider from C++now 2023 conference:
-/// > https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf
+/// > <https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf>
 #[inline]
 pub const fn days_in_month(y: i32, m: u8) -> u8 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
