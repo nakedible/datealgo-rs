@@ -440,7 +440,8 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// > January 1st, 1970 was a Thursday). However, it uses a faster way to
 /// > evaluate `m % 7 + 1` based on the binary representation of the reciprocal
 /// > of `7`, namely, `C := (0.001_001_001...)_2`. The following table presents
-/// > the binary values of `m % 7 + 1` and `p := m * C` for `m = 0`, `2`, `...`:
+/// > the binary values of `m % 7 + 1` and `p := (m + 1) * C` for `m = 0`, `2`,
+/// `...`:
 /// >
 /// > | `m` | `m % 7 + 1` | `(m + 1) * C`          |
 /// > | --- | ----------- | ---------------------- |
@@ -454,7 +455,7 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// > | `7` | `(001)_2`   | `(1.001_001_001...)_2` |
 /// > | ... | ...         | ...                    |
 /// >
-/// > Notice that the bits of `m * C` after the dot repeat indefinitely in
+/// > Notice that the bits of `(m + 1) * C` after the dot repeat indefinitely in
 /// > groups of `3`.  Furthermore, the repeating group matches `m % 7 + 1`.
 /// >
 /// > Based on the above, the algorithm multiplies `m` by `2^64 / 7` and
