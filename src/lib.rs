@@ -344,6 +344,25 @@ pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     (y, m as u8, d as u8)
 }
 
+/// Convert a Gregorian date to its Computational calendar's counterpart.
+#[inline]
+const fn greg_to_comp(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    let y = y.wrapping_add(YEAR_OFFSET) as u32;
+    let jf = (m < 3) as u32;
+    // year
+    let y = y - jf;
+    // century
+    let c = y / 100;
+    // month
+    let m = m as u32 + 12 * jf;
+    // day
+    let d = d as u32; // in Neri-Schneider's paper this is d - 1.
+    (c, y, m, d)
+}
+
 /// Convert Gregorian date to Rata Die
 ///
 /// Given a `(year, month, day)` tuple returns the days since Unix epoch
@@ -379,17 +398,8 @@ pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
 pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
-    let y = y.wrapping_add(YEAR_OFFSET) as u32;
-    // map
-    let jf = (m < 3) as u32;
-    let y = y - jf;
-    let m = m as u32 + 12 * jf;
-    let d = d as u32 - 1;
-    // century
-    let c = y / 100;
+    let (c, y, m, d) = greg_to_comp(y, m, d);
+    let d = d - 1;
     // year
     let y = 1461 * y / 4 - c + c / 4;
     // month
@@ -505,12 +515,19 @@ pub const fn rd_to_weekday(n: i32) -> u8 {
 ///
 /// # Algorithm
 ///
-/// Simply converts date to rata die and then rata die to weekday.
+/// Simple adaptation of `date_to_rd` to modulus 7 arithmetics.
 ///
 #[inline]
 pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
-    let rd = date_to_rd((y, m, d));
-    rd_to_weekday(rd)
+    let (c, y, m, d) = greg_to_comp(y, m, d);
+    // year
+    let y = 5 * y / 4 - c + c / 4;
+    // month
+    let m = (979 * m - 2855) / 32;
+    // result
+    let n = y + m + d;
+    const P32_OVER_SEVEN: u32 = ((1 << 31) / 7) << 1; // = (1 << 32) / 7
+    ((n.wrapping_mul(P32_OVER_SEVEN)) >> 29) as u8
 }
 
 /// Calculate next Gregorian date given a Gregorian date
