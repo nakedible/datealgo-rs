@@ -3,17 +3,15 @@ datealgo::asm::isoweeks_in_year:
 	imul rcx, rax, 1374389535
 	mov rdx, rcx
 	shr rdx, 37
-	imul eax, eax, 1461
+	lea eax, [rax + 4*rax]
 	shr eax, 2
 	shr rcx, 39
 	sub ecx, edx
-	add eax, ecx
-	inc eax
-	cdqe
-	movabs rcx, 2635249153387078802
-	imul rcx, rax
-	shr rcx, 61
-	cmp rcx, 3
+	add ecx, eax
+	imul ecx, ecx, 613566756
+	add ecx, 613566580
+	shr ecx, 29
+	cmp ecx, 3
 	je .LBB16_3
 	mov al, 52
 	cmp ecx, 4

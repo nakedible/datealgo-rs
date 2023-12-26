@@ -14,19 +14,16 @@ datealgo::asm::date_to_weekday:
 	imul rcx, rdi, 1374389535
 	mov rdx, rcx
 	shr rdx, 37
-	imul edi, edi, 1461
+	lea edi, [rdi + 4*rdi]
 	shr edi, 2
 	shr rcx, 39
 	imul esi, esi, 979
-	add esi, -2919
+	add esi, -2855
 	shr esi, 5
 	sub eax, edx
 	add ecx, edi
 	add ecx, eax
-	lea eax, [rsi + rcx]
-	add eax, -306
-	movsxd rcx, eax
-	movabs rax, 2635249153387078802
-	imul rax, rcx
-	shr rax, 61
+	add ecx, esi
+	imul eax, ecx, 613566756
+	shr eax, 29
 	ret
