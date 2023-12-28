@@ -346,7 +346,7 @@ pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
 
 /// Convert a Gregorian date to its Computational calendar's counterpart.
 #[inline]
-const fn greg_to_comp(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
+const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
@@ -398,7 +398,7 @@ const fn greg_to_comp(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
 pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-    let (c, y, m, d) = greg_to_comp(y, m, d);
+    let (c, y, m, d) = date_to_internal(y, m, d);
     let d = d - 1;
     // year
     let y = 1461 * y / 4 - c + c / 4;
@@ -519,7 +519,7 @@ pub const fn rd_to_weekday(n: i32) -> u8 {
 ///
 #[inline]
 pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
-    let (c, y, m, d) = greg_to_comp(y, m, d);
+    let (c, y, m, d) = date_to_internal(y, m, d);
     // year
     let y = 5 * y / 4 - c + c / 4;
     // month
