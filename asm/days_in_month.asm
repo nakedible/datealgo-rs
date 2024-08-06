@@ -13,7 +13,7 @@ datealgo::asm::days_in_month:
 	ret
 .LBB11_2:
 	mov eax, esi
-	shr al, 3
+	sar al, 3
 	xor al, sil
 	or al, 30
 	ret
