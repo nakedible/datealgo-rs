@@ -205,77 +205,77 @@ pub const RD_SECONDS_MAX: i64 = RD_MAX as i64 * SECS_IN_DAY + SECS_IN_DAY - 1;
 /// library and the values are wholly unremarkable.
 pub mod consts {
     /// Minimum value for week
-    pub const WEEK_MIN: u8 = 1;
+    pub const WEEK_MIN: i8 = 1;
     /// Maximum value for week
-    pub const WEEK_MAX: u8 = 53;
+    pub const WEEK_MAX: i8 = 53;
     /// Minimum value for month
-    pub const MONTH_MIN: u8 = 1;
+    pub const MONTH_MIN: i8 = 1;
     /// Maximum value for month
-    pub const MONTH_MAX: u8 = 12;
+    pub const MONTH_MAX: i8 = 12;
     /// Minimum value for day of month
-    pub const DAY_MIN: u8 = 1;
+    pub const DAY_MIN: i8 = 1;
     /// Maximum value for day of month
-    pub const DAY_MAX: u8 = 31;
+    pub const DAY_MAX: i8 = 31;
     /// Minimum value for day of week
-    pub const WEEKDAY_MIN: u8 = 1;
+    pub const WEEKDAY_MIN: i8 = 1;
     /// Maximum value for day of week
-    pub const WEEKDAY_MAX: u8 = 7;
+    pub const WEEKDAY_MAX: i8 = 7;
     /// Minimum value for hours
-    pub const HOUR_MIN: u8 = 0;
+    pub const HOUR_MIN: i8 = 0;
     /// Maximum value for hours
-    pub const HOUR_MAX: u8 = 23;
+    pub const HOUR_MAX: i8 = 23;
     /// Minimum value for minutes
-    pub const MINUTE_MIN: u8 = 0;
+    pub const MINUTE_MIN: i8 = 0;
     /// Maximum value for minutes
-    pub const MINUTE_MAX: u8 = 59;
+    pub const MINUTE_MAX: i8 = 59;
     /// Minimum value for seconds
-    pub const SECOND_MIN: u8 = 0;
+    pub const SECOND_MIN: i8 = 0;
     /// Maximum value for seconds
-    pub const SECOND_MAX: u8 = 59;
+    pub const SECOND_MAX: i8 = 59;
     /// Minimum value for nanoseconds
     pub const NANOSECOND_MIN: u32 = 0;
     /// Maximum value for nanoseconds
     pub const NANOSECOND_MAX: u32 = 999_999_999;
 
     /// January month value
-    pub const JANUARY: u8 = 1;
+    pub const JANUARY: i8 = 1;
     /// February month value
-    pub const FEBRUARY: u8 = 2;
+    pub const FEBRUARY: i8 = 2;
     /// March month value
-    pub const MARCH: u8 = 3;
+    pub const MARCH: i8 = 3;
     /// April month value
-    pub const APRIL: u8 = 4;
+    pub const APRIL: i8 = 4;
     /// May month value
-    pub const MAY: u8 = 5;
+    pub const MAY: i8 = 5;
     /// June month value
-    pub const JUNE: u8 = 6;
+    pub const JUNE: i8 = 6;
     /// July month value
-    pub const JULY: u8 = 7;
+    pub const JULY: i8 = 7;
     /// August month value
-    pub const AUGUST: u8 = 8;
+    pub const AUGUST: i8 = 8;
     /// September month value
-    pub const SEPTEMBER: u8 = 9;
+    pub const SEPTEMBER: i8 = 9;
     /// October month value
-    pub const OCTOBER: u8 = 10;
+    pub const OCTOBER: i8 = 10;
     /// November month value
-    pub const NOVEMBER: u8 = 11;
+    pub const NOVEMBER: i8 = 11;
     /// December month value
-    pub const DECEMBER: u8 = 12;
+    pub const DECEMBER: i8 = 12;
 
     /// Monday day of week value
-    pub const MONDAY: u8 = 1;
+    pub const MONDAY: i8 = 1;
     /// Tuesday day of week value
-    pub const TUESDAY: u8 = 2;
+    pub const TUESDAY: i8 = 2;
     /// Wednesday day of week value
-    pub const WEDNESDAY: u8 = 3;
+    pub const WEDNESDAY: i8 = 3;
     /// Thursday day of week value
-    pub const THURSDAY: u8 = 4;
+    pub const THURSDAY: i8 = 4;
     /// Friday day of week value
-    pub const FRIDAY: u8 = 5;
+    pub const FRIDAY: i8 = 5;
     /// Saturday day of week value
-    pub const SATURDAY: u8 = 6;
+    pub const SATURDAY: i8 = 6;
     /// Sunday day of week value
-    pub const SUNDAY: u8 = 7;
+    pub const SUNDAY: i8 = 7;
 }
 
 // OPTIMIZATION NOTES:
@@ -319,7 +319,7 @@ pub mod consts {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
+pub const fn rd_to_date(n: i32) -> (i32, i8, i8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     let n = n.wrapping_add(DAY_OFFSET) as u32;
     // century
@@ -341,12 +341,12 @@ pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     let y = (y as i32).wrapping_sub(YEAR_OFFSET);
     let m = if j { m - 12 } else { m };
     let d = d + 1;
-    (y, m as u8, d as u8)
+    (y, m as i8, d as i8)
 }
 
 /// Convert a Gregorian date to its Computational calendar's counterpart.
 #[inline]
-const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
+const fn date_to_internal(y: i32, m: i8, d: i8) -> (u32, u32, u32, u32) {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
@@ -397,7 +397,7 @@ const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+pub const fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
     let (c, y, m, d) = date_to_internal(y, m, d);
     let d = d - 1;
     // year
@@ -474,10 +474,10 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// > approximation that works provided that `m` is not too large but, still,
 /// > large enough for our purposes.
 #[inline]
-pub const fn rd_to_weekday(n: i32) -> u8 {
+pub const fn rd_to_weekday(n: i32) -> i8 {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     const P64_OVER_SEVEN: u64 = ((1 << 63) / 7) << 1; // = (1 << 64) / 7
-    (((n.wrapping_sub(RD_MIN) as u64 + 1).wrapping_mul(P64_OVER_SEVEN)) >> 61) as u8
+    (((n.wrapping_sub(RD_MIN) as u64 + 1).wrapping_mul(P64_OVER_SEVEN)) >> 61) as i8
 }
 
 /// Convert Gregorian date to day of week
@@ -518,7 +518,7 @@ pub const fn rd_to_weekday(n: i32) -> u8 {
 /// Simple adaptation of `date_to_rd` to modulus 7 arithmetics.
 ///
 #[inline]
-pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+pub const fn date_to_weekday((y, m, d): (i32, i8, i8)) -> i8 {
     let (c, y, m, d) = date_to_internal(y, m, d);
     // year
     let y = 5 * y / 4 - c + c / 4;
@@ -527,7 +527,7 @@ pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
     // result
     let n = y + m + d;
     const P32_OVER_SEVEN: u32 = ((1 << 31) / 7) << 1; // = (1 << 32) / 7
-    ((n.wrapping_mul(P32_OVER_SEVEN)) >> 29) as u8
+    ((n.wrapping_mul(P32_OVER_SEVEN)) >> 29) as i8
 }
 
 /// Calculate next Gregorian date given a Gregorian date
@@ -559,7 +559,7 @@ pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
 /// Simple incrementation with manual overflow checking and carry. Relatively
 /// speedy, but not fully optimized.
 #[inline]
-pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+pub const fn next_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
@@ -605,7 +605,7 @@ pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
 /// Simple decrementation with manual underflow checking and carry. Relatively
 /// speedy, but not fully optimized.
 #[inline]
-pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+pub const fn prev_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
@@ -653,7 +653,7 @@ pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
 /// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
 /// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
 #[inline]
-pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
+pub const fn secs_to_dhms(secs: i64) -> (i32, i8, i8, i8) {
     debug_assert!(
         secs >= RD_SECONDS_MIN && secs <= RD_SECONDS_MAX,
         "given seconds value is out of range"
@@ -678,7 +678,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
     let mm = (prd as u32) / 71582789; // mins % 60
 
     let days = (days as i32).wrapping_sub(DAY_OFFSET);
-    (days, hh as u8, mm as u8, ss as u8)
+    (days, hh as i8, mm as i8, ss as i8)
 }
 
 /// Combine days, hours, minutes and seconds to total seconds
@@ -711,7 +711,7 @@ pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
 ///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
-pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
+pub const fn dhms_to_secs((d, h, m, s): (i32, i8, i8, i8)) -> i64 {
     debug_assert!(d >= RD_MIN && d <= RD_MAX, "given rata die is out of range");
     debug_assert!(h >= consts::HOUR_MIN && h <= consts::HOUR_MAX, "given hour is out of range");
     debug_assert!(m >= consts::MINUTE_MIN && m <= consts::MINUTE_MAX, "given minute is out of range");
@@ -750,7 +750,7 @@ pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
 ///
 /// Combination of existing functions for convenience only.
 #[inline]
-pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+pub const fn secs_to_datetime(secs: i64) -> (i32, i8, i8, i8, i8, i8) {
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (y, m, s) = rd_to_date(days);
     (y, m, s, hh, mm, ss)
@@ -787,7 +787,7 @@ pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
 ///
 /// Algorithm is simple multiplication, method provided only as convenience.
 #[inline]
-pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, i8, i8, i8, i8, i8)) -> i64 {
     let days = date_to_rd((y, m, d));
     dhms_to_secs((days, hh, mm, ss))
 }
@@ -857,7 +857,7 @@ pub const fn is_leap_year(y: i32) -> bool {
 /// Algorithm is Neri-Schneider from C++now 2023 conference:
 /// > <https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf>
 #[inline]
-pub const fn days_in_month(y: i32, m: u8) -> u8 {
+pub const fn days_in_month(y: i32, m: i8) -> i8 {
     debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
     if m != 2 {
         30 | (m ^ (m >> 3))
@@ -903,14 +903,14 @@ pub const fn days_in_month(y: i32, m: u8) -> u8 {
 ///
 /// Algorithm is hand crafted and not significantly optimized.
 #[inline]
-pub const fn rd_to_isoweekdate(rd: i32) -> (i32, u8, u8) {
+pub const fn rd_to_isoweekdate(rd: i32) -> (i32, i8, i8) {
     debug_assert!(rd >= RD_MIN && rd <= RD_MAX, "given rata die is out of range");
     let wd = rd_to_weekday(rd);
     let rdt = rd + (4 - wd as i32) % 7;
     let (y, _, _) = rd_to_date(rdt);
     let ys = date_to_rd((y, 1, 1));
     let w = (rdt - ys) / 7 + 1;
-    (y, w as u8, wd)
+    (y, w as i8, wd)
 }
 
 /// Convert [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date) to Rata Die
@@ -951,7 +951,7 @@ pub const fn rd_to_isoweekdate(rd: i32) -> (i32, u8, u8) {
 ///
 /// Algorithm is hand crafted and not significantly optimized.
 #[inline]
-pub const fn isoweekdate_to_rd((y, w, d): (i32, u8, u8)) -> i32 {
+pub const fn isoweekdate_to_rd((y, w, d): (i32, i8, i8)) -> i32 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     debug_assert!(w >= consts::WEEK_MIN && w <= isoweeks_in_year(y), "given week is out of range");
     debug_assert!(
@@ -1000,7 +1000,7 @@ pub const fn isoweekdate_to_rd((y, w, d): (i32, u8, u8)) -> i32 {
 ///
 /// Simply converts date to rata die and then rata die to ISO week date.
 #[inline]
-pub const fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+pub const fn date_to_isoweekdate((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
     let rd = date_to_rd((y, m, d));
     rd_to_isoweekdate(rd)
 }
@@ -1042,7 +1042,7 @@ pub const fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
 ///
 /// Simply converts ISO week date to rata die and then rata die to date.
 #[inline]
-pub const fn isoweekdate_to_date((y, w, d): (i32, u8, u8)) -> (i32, u8, u8) {
+pub const fn isoweekdate_to_date((y, w, d): (i32, i8, i8)) -> (i32, i8, i8) {
     let rd = isoweekdate_to_rd((y, w, d));
     rd_to_date(rd)
 }
@@ -1075,7 +1075,7 @@ pub const fn isoweekdate_to_date((y, w, d): (i32, u8, u8)) -> (i32, u8, u8) {
 ///
 /// Algorithm is hand crafted and not significantly optimized.
 #[inline]
-pub const fn isoweeks_in_year(y: i32) -> u8 {
+pub const fn isoweeks_in_year(y: i32) -> i8 {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
     let wd = date_to_weekday((y, 1, 1));
     let l = is_leap_year(y);
@@ -1219,7 +1219,7 @@ pub fn secs_to_systemtime((secs, nsecs): (i64, u32)) -> Option<SystemTime> {
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
+pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, i8, i8, i8, i8, i8, u32)> {
     let (secs, nsecs) = systemtime_to_secs(st)?;
     let (days, hh, mm, ss) = secs_to_dhms(secs);
     let (year, month, day) = rd_to_date(days);
@@ -1263,7 +1263,7 @@ pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8
 /// Combination of existing functions for convenience only.
 #[cfg(feature = "std")]
 #[inline]
-pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> Option<SystemTime> {
+pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> Option<SystemTime> {
     let days = date_to_rd((y, m, d));
     let secs = dhms_to_secs((days, hh, mm, ss));
     secs_to_systemtime((secs, nsec))
@@ -1277,43 +1277,43 @@ pub mod asm {
     use std::time::SystemTime;
 
     #[inline(never)]
-    pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
+    pub const fn rd_to_date(n: i32) -> (i32, i8, i8) {
         super::rd_to_date(n)
     }
     #[inline(never)]
-    pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+    pub const fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
         super::date_to_rd((y, m, d))
     }
     #[inline(never)]
-    pub const fn rd_to_weekday(n: i32) -> u8 {
+    pub const fn rd_to_weekday(n: i32) -> i8 {
         super::rd_to_weekday(n)
     }
     #[inline(never)]
-    pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+    pub const fn date_to_weekday((y, m, d): (i32, i8, i8)) -> i8 {
         super::date_to_weekday((y, m, d))
     }
     #[inline(never)]
-    pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn next_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         super::next_date((y, m, d))
     }
     #[inline(never)]
-    pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn prev_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         super::prev_date((y, m, d))
     }
     #[inline(never)]
-    pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
+    pub const fn secs_to_dhms(secs: i64) -> (i32, i8, i8, i8) {
         super::secs_to_dhms(secs)
     }
     #[inline(never)]
-    pub const fn dhms_to_secs((d, h, m, s): (i32, u8, u8, u8)) -> i64 {
+    pub const fn dhms_to_secs((d, h, m, s): (i32, i8, i8, i8)) -> i64 {
         super::dhms_to_secs((d, h, m, s))
     }
     #[inline(never)]
-    pub const fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+    pub const fn secs_to_datetime(secs: i64) -> (i32, i8, i8, i8, i8, i8) {
         super::secs_to_datetime(secs)
     }
     #[inline(never)]
-    pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+    pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, i8, i8, i8, i8, i8)) -> i64 {
         super::datetime_to_secs((y, m, d, hh, mm, ss))
     }
     #[inline(never)]
@@ -1321,27 +1321,27 @@ pub mod asm {
         super::is_leap_year(y)
     }
     #[inline(never)]
-    pub const fn days_in_month(y: i32, m: u8) -> u8 {
+    pub const fn days_in_month(y: i32, m: i8) -> i8 {
         super::days_in_month(y, m)
     }
     #[inline(never)]
-    pub const fn rd_to_isoweekdate(rd: i32) -> (i32, u8, u8) {
+    pub const fn rd_to_isoweekdate(rd: i32) -> (i32, i8, i8) {
         super::rd_to_isoweekdate(rd)
     }
     #[inline(never)]
-    pub const fn isoweekdate_to_rd((y, w, d): (i32, u8, u8)) -> i32 {
+    pub const fn isoweekdate_to_rd((y, w, d): (i32, i8, i8)) -> i32 {
         super::isoweekdate_to_rd((y, w, d))
     }
     #[inline(never)]
-    pub const fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn date_to_isoweekdate((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         super::date_to_isoweekdate((y, m, d))
     }
     #[inline(never)]
-    pub const fn isoweekdate_to_date((y, w, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn isoweekdate_to_date((y, w, d): (i32, i8, i8)) -> (i32, i8, i8) {
         super::isoweekdate_to_date((y, w, d))
     }
     #[inline(never)]
-    pub const fn isoweeks_in_year(y: i32) -> u8 {
+    pub const fn isoweeks_in_year(y: i32) -> i8 {
         super::isoweeks_in_year(y)
     }
     #[cfg(feature = "std")]
@@ -1356,12 +1356,12 @@ pub mod asm {
     }
     #[cfg(feature = "std")]
     #[inline(never)]
-    pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
+    pub fn systemtime_to_datetime(st: SystemTime) -> Option<(i32, i8, i8, i8, i8, i8, u32)> {
         super::systemtime_to_datetime(st)
     }
     #[cfg(feature = "std")]
     #[inline(never)]
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> Option<SystemTime> {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> Option<SystemTime> {
         super::datetime_to_systemtime((y, m, d, hh, mm, ss, nsec))
     }
 }
