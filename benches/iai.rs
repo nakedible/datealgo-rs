@@ -2,7 +2,7 @@ use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main}
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[library_benchmark]
-fn iai_rd_to_date() -> (i32, u8, u8) {
+fn iai_rd_to_date() -> (i32, i8, i8) {
     datealgo::rd_to_date(black_box(19489))
 }
 
@@ -12,27 +12,27 @@ fn iai_date_to_rd() -> i32 {
 }
 
 #[library_benchmark]
-fn iai_rd_to_weekday() -> u8 {
+fn iai_rd_to_weekday() -> i8 {
     datealgo::rd_to_weekday(black_box(19489))
 }
 
 #[library_benchmark]
-fn iai_date_to_weekday() -> u8 {
+fn iai_date_to_weekday() -> i8 {
     datealgo::date_to_weekday(black_box((2023, 5, 12)))
 }
 
 #[library_benchmark]
-fn iai_next_date() -> (i32, u8, u8) {
+fn iai_next_date() -> (i32, i8, i8) {
     datealgo::next_date(black_box((2023, 5, 12)))
 }
 
 #[library_benchmark]
-fn iai_prev_date() -> (i32, u8, u8) {
+fn iai_prev_date() -> (i32, i8, i8) {
     datealgo::prev_date(black_box((2023, 5, 12)))
 }
 
 #[library_benchmark]
-fn iai_secs_to_dhms() -> (i32, u8, u8, u8) {
+fn iai_secs_to_dhms() -> (i32, i8, i8, i8) {
     datealgo::secs_to_dhms(black_box(1684574678i64))
 }
 
@@ -42,7 +42,7 @@ fn iai_dhms_to_secs() -> i64 {
 }
 
 #[library_benchmark]
-fn iai_secs_to_datetime() -> (i32, u8, u8, u8, u8, u8) {
+fn iai_secs_to_datetime() -> (i32, i8, i8, i8, i8, i8) {
     datealgo::secs_to_datetime(black_box(1684574678i64))
 }
 
@@ -57,7 +57,7 @@ fn iai_is_leap_year() -> bool {
 }
 
 #[library_benchmark]
-fn iai_days_in_month() -> u8 {
+fn iai_days_in_month() -> i8 {
     datealgo::days_in_month(black_box(2000), black_box(2))
 }
 
@@ -72,7 +72,7 @@ fn iai_secs_to_systemtime() -> Option<SystemTime> {
 }
 
 #[library_benchmark]
-fn iai_systemtime_to_datetime() -> Option<(i32, u8, u8, u8, u8, u8, u32)> {
+fn iai_systemtime_to_datetime() -> Option<(i32, i8, i8, i8, i8, i8, u32)> {
     datealgo::systemtime_to_datetime(black_box(UNIX_EPOCH + Duration::from_secs(1684574678)))
 }
 

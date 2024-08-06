@@ -12,10 +12,10 @@ fn rand_rd() -> i32 {
     fastrand::i32(datealgo::date_to_rd((1970, 1, 1))..=datealgo::date_to_rd((9999, 12, 31)))
 }
 
-fn rand_date() -> (i32, u8, u8) {
+fn rand_date() -> (i32, i8, i8) {
     let y = rand_year();
-    let m = fastrand::u8(1..=12);
-    let d = fastrand::u8(1..=datealgo::days_in_month(y, m));
+    let m = fastrand::i8(1..=12);
+    let d = fastrand::i8(1..=datealgo::days_in_month(y, m));
     (y, m, d)
 }
 
@@ -23,28 +23,28 @@ fn rand_secs() -> i64 {
     fastrand::i64(datealgo::datetime_to_secs((1970, 1, 1, 0, 0, 0))..=datealgo::datetime_to_secs((9999, 12, 31, 23, 59, 59)))
 }
 
-fn rand_hms() -> (u8, u8, u8) {
-    let h = fastrand::u8(0..=23);
-    let m = fastrand::u8(0..=59);
-    let s = fastrand::u8(0..=59);
+fn rand_hms() -> (i8, i8, i8) {
+    let h = fastrand::i8(0..=23);
+    let m = fastrand::i8(0..=59);
+    let s = fastrand::i8(0..=59);
     (h, m, s)
 }
 
-fn rand_dhms() -> (i32, u8, u8, u8) {
+fn rand_dhms() -> (i32, i8, i8, i8) {
     let rd = rand_rd();
     let (h, m, s) = rand_hms();
     (rd, h, m, s)
 }
 
-fn rand_dt() -> (i32, u8, u8, u8, u8, u8) {
+fn rand_dt() -> (i32, i8, i8, i8, i8, i8) {
     let (y, m, d) = rand_date();
     let (hh, mm, ss) = rand_hms();
     (y, m, d, hh, mm, ss)
 }
 
-fn rand_ym() -> (i32, u8) {
+fn rand_ym() -> (i32, i8) {
     let y = rand_year();
-    let m = fastrand::u8(1..=12);
+    let m = fastrand::i8(1..=12);
     (y, m)
 }
 
@@ -58,13 +58,13 @@ fn rand_st() -> SystemTime {
     datealgo::secs_to_systemtime(rand_sn()).unwrap()
 }
 
-fn rand_dtn() -> (i32, u8, u8, u8, u8, u8, u32) {
+fn rand_dtn() -> (i32, i8, i8, i8, i8, i8, u32) {
     let (y, m, d, hh, mm, ss) = rand_dt();
     let n = fastrand::u32(0..=999_999_999);
     (y, m, d, hh, mm, ss, n)
 }
 
-fn rand_iwd() -> (i32, u8, u8) {
+fn rand_iwd() -> (i32, i8, i8) {
     datealgo::rd_to_isoweekdate(rand_rd())
 }
 
@@ -77,7 +77,7 @@ mod datealgo_alt {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub const fn secs_to_dhms(secs: i64) -> (i32, u8, u8, u8) {
+    pub const fn secs_to_dhms(secs: i64) -> (i32, i8, i8, i8) {
         let secs = secs as u64;
         let ss = secs % 60;
         let secs = secs / 60;
@@ -85,11 +85,11 @@ mod datealgo_alt {
         let secs = secs / 60;
         let hh = secs % 24;
         let secs = secs / 24;
-        (secs as i32, hh as u8, mm as u8, ss as u8)
+        (secs as i32, hh as i8, mm as i8, ss as i8)
     }
 
     #[inline]
-    pub const fn secs_to_dhms2(secs: i64) -> (i32, u8, u8, u8) {
+    pub const fn secs_to_dhms2(secs: i64) -> (i32, i8, i8, i8) {
         let secs = if secs > datealgo::RD_SECONDS_MAX { 0 } else { secs }; // allows compiler to optimize more
         let secs = secs.wrapping_add(SECS_OFFSET) as u64;
         let days = (secs / SECS_IN_DAY as u64) as u32;
@@ -98,56 +98,56 @@ mod datealgo_alt {
         let mm = secs / 60 % 60;
         let hh = secs / 3600;
         let days = (days as i32).wrapping_sub(DAY_OFFSET);
-        (days, hh as u8, mm as u8, ss as u8)
+        (days, hh as i8, mm as i8, ss as i8)
     }
 
     #[inline]
-    pub const fn rd_to_weekday(n: i32) -> u8 {
-        (n + 4).rem_euclid(7) as u8
+    pub const fn rd_to_weekday(n: i32) -> i8 {
+        (n + 4).rem_euclid(7) as i8
     }
 
     #[inline]
-    pub const fn rd_to_weekday2(n: i32) -> u8 {
+    pub const fn rd_to_weekday2(n: i32) -> i8 {
         if n >= -4 {
-            ((n + 4) % 7) as u8
+            ((n + 4) % 7) as i8
         } else {
-            ((n + 5) % 7 + 6) as u8
+            ((n + 5) % 7 + 6) as i8
         }
     }
 
     #[inline]
-    pub const fn rd_to_weekday3(n: i32) -> u8 {
-        ((n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1) as u8
+    pub const fn rd_to_weekday3(n: i32) -> i8 {
+        ((n.wrapping_add(DAY_OFFSET) as u32 + 2) % 7 + 1) as i8
     }
 
     #[inline]
-    pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+    pub const fn date_to_weekday((y, m, d): (i32, i8, i8)) -> i8 {
         let y = y.wrapping_add(YEAR_OFFSET) as u32 - (m < 3) as u32;
         let t = [6u8, 2, 1, 4, 6, 2, 4, 0, 3, 5, 1, 3];
         let mut idx = m.wrapping_sub(1) as usize;
         if idx > 11 {
             idx = 0;
         } // ensure no bounds check
-        ((y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d as u32) % 7 + 1) as u8
+        ((y + y / 4 - y / 100 + y / 400 + t[idx] as u32 + d as u32) % 7 + 1) as i8
     }
 
     #[inline]
-    pub const fn date_to_weekday2((year, month, day): (i32, u8, u8)) -> u8 {
+    pub const fn date_to_weekday2((year, month, day): (i32, i8, i8)) -> i8 {
         let year = year.wrapping_add(YEAR_OFFSET) as u32;
         let adjustment = (14 - month) / 12;
         let mm = (month + 12 * adjustment - 2) as u32;
         let yy = year - adjustment as u32;
-        ((day as u32 + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1) as u8
+        ((day as u32 + (13 * mm - 1) / 5 + yy + yy / 4 - yy / 100 + yy / 400 + 6) % 7 + 1) as i8
     }
 
     #[inline]
-    pub const fn next_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn next_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         let rd = datealgo::date_to_rd((y, m, d));
         datealgo::rd_to_date(rd + 1)
     }
 
     #[inline]
-    pub const fn prev_date((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub const fn prev_date((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         let rd = datealgo::date_to_rd((y, m, d));
         datealgo::rd_to_date(rd - 1)
     }
@@ -183,14 +183,14 @@ mod datealgo_alt {
     }
 
     #[inline]
-    pub const fn days_in_month(y: i32, m: u8) -> u8 {
+    pub const fn days_in_month(y: i32, m: i8) -> i8 {
         // ensure compiler doesn't include a bounds check
         if m >= datealgo::consts::MONTH_MIN && m <= datealgo::consts::MONTH_MAX {
             let idx = m as usize - 1;
             if datealgo::is_leap_year(y) {
-                [31u8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+                [31i8, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
             } else {
-                [31u8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
+                [31i8, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][idx]
             }
         } else {
             0
@@ -198,7 +198,7 @@ mod datealgo_alt {
     }
 
     #[inline]
-    pub const fn days_in_month2(y: i32, m: u8) -> u8 {
+    pub const fn days_in_month2(y: i32, m: i8) -> i8 {
         if m == 2 {
             if datealgo::is_leap_year(y) {
                 29
@@ -229,7 +229,7 @@ mod httpdate {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+    pub fn rd_to_date(n: i32) -> (i32, i8, i8) {
         /* 2000-03-01 (mod 400 year, immediately after feb29 */
         const LEAPOCH: i64 = 11017;
         const DAYS_PER_400Y: i64 = 365 * 400 + 97;
@@ -283,11 +283,11 @@ mod httpdate {
             mon + 2
         };
 
-        (year as i32, mon as u8, mday as u8)
+        (year as i32, mon as i8, mday as i8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
         fn is_leap_year(y: u16) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -317,7 +317,7 @@ mod httpdate {
         days as i32
     }
 
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, i8, i8, i8, i8, i8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -386,16 +386,16 @@ mod httpdate {
         // };
         (
             year as i32,
-            mon as u8,
-            mday as u8,
-            (secs_of_day / 3600) as u8,
-            ((secs_of_day % 3600) / 60) as u8,
-            (secs_of_day % 60) as u8,
+            mon as i8,
+            mday as i8,
+            (secs_of_day / 3600) as i8,
+            ((secs_of_day % 3600) / 60) as i8,
+            (secs_of_day % 60) as i8,
             dur.subsec_nanos(),
         )
     }
 
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> SystemTime {
         fn is_leap_year(y: i32) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -429,7 +429,7 @@ mod humantime {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+    pub fn rd_to_date(n: i32) -> (i32, i8, i8) {
         /* 2000-03-01 (mod 400 year, immediately after feb29 */
         const LEAPOCH: i64 = 11017;
         const DAYS_PER_400Y: i64 = 365 * 400 + 97;
@@ -483,11 +483,11 @@ mod humantime {
             mon + 2
         };
 
-        (year as i32, mon as u8, mday as u8)
+        (year as i32, mon as i8, mday as i8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -521,7 +521,7 @@ mod humantime {
         days as i32
     }
 
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> SystemTime {
         fn is_leap_year(y: u64) -> bool {
             y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)
         }
@@ -565,7 +565,7 @@ mod humantime {
         UNIX_EPOCH + Duration::new(total_seconds, nsec)
     }
 
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, i8, i8, i8, i8, i8, u32) {
         let dur = v.duration_since(UNIX_EPOCH).expect("all times should be after the epoch");
         let secs_since_epoch = dur.as_secs();
 
@@ -626,10 +626,10 @@ mod humantime {
         (
             year as i32,
             mon,
-            mday as u8,
-            (secs_of_day / 3600) as u8,
-            (secs_of_day / 60 % 60) as u8,
-            (secs_of_day % 60) as u8,
+            mday as i8,
+            (secs_of_day / 3600) as i8,
+            (secs_of_day / 60 % 60) as i8,
+            (secs_of_day % 60) as i8,
             dur.subsec_nanos(),
         )
     }
@@ -655,34 +655,34 @@ mod chrono {
     }
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+    pub fn rd_to_date(n: i32) -> (i32, i8, i8) {
         let date = chrono::NaiveDate::from_num_days_from_ce_opt(n + 719162).unwrap();
-        (date.year(), date.month() as u8, date.day() as u8)
+        (date.year(), date.month() as i8, date.day() as i8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
         let days = chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap().num_days_from_ce();
         days - 719162
     }
 
     #[inline]
-    pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+    pub fn date_to_isoweekdate((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
         let date = chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap();
         let iw = date.iso_week();
         let (y, w, d) = (iw.year(), iw.week(), date.weekday().number_from_monday());
-        (y, w as u8, d as u8)
+        (y, w as i8, d as i8)
     }
 
     #[inline]
-    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
-        let wd = chrono::Weekday::try_from(wd - 1).unwrap();
+    pub fn isoweekdate_to_date((y, w, wd): (i32, i8, i8)) -> (i32, i8, i8) {
+        let wd = chrono::Weekday::try_from((wd - 1) as u8).unwrap();
         let date = chrono::NaiveDate::from_isoywd_opt(y, w as u32, wd).unwrap();
-        (date.year(), date.month() as u8, date.day() as u8)
+        (date.year(), date.month() as i8, date.day() as i8)
     }
 
     #[inline]
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> SystemTime {
         chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
             .unwrap()
             .and_hms_nano_opt(hh as u32, mm as u32, ss as u32, nsec)
@@ -693,15 +693,15 @@ mod chrono {
     }
 
     #[inline]
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, i8, i8, i8, i8, i8, u32) {
         let d: chrono::DateTime<chrono::Utc> = v.into();
         (
             d.year() as i32,
-            d.month() as u8,
-            d.day() as u8,
-            d.hour() as u8,
-            d.minute() as u8,
-            d.second() as u8,
+            d.month() as i8,
+            d.day() as i8,
+            d.hour() as i8,
+            d.minute() as i8,
+            d.second() as i8,
             d.nanosecond(),
         )
     }
@@ -714,7 +714,7 @@ mod time {
 
     pub fn rand_date() -> time::Date {
         let (y, m, d) = super::rand_date();
-        time::Date::from_calendar_date(y, m.try_into().unwrap(), d).unwrap()
+        time::Date::from_calendar_date(y, (m as u8).try_into().unwrap(), d as u8).unwrap()
     }
 
     #[inline]
@@ -728,13 +728,13 @@ mod time {
     }
 
     #[inline]
-    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+    pub fn rd_to_date(n: i32) -> (i32, i8, i8) {
         let date = time::Date::from_julian_day(n + UNIX_EPOCH_JULIAN_DAY).unwrap();
-        (date.year(), date.month() as u8, date.day() as u8)
+        (date.year(), date.month() as i8, date.day() as i8)
     }
 
     #[inline]
-    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn date_to_rd((y, m, d): (i32, i8, i8)) -> i32 {
         time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
             .unwrap()
             .to_julian_day()
@@ -742,45 +742,45 @@ mod time {
     }
 
     #[inline]
-    pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
-        let date = time::Date::from_calendar_date(y, m.try_into().unwrap(), d).unwrap();
+    pub fn date_to_isoweekdate((y, m, d): (i32, i8, i8)) -> (i32, i8, i8) {
+        let date = time::Date::from_calendar_date(y, (m as u8).try_into().unwrap(), d as u8).unwrap();
         let (y, w, wd) = date.to_iso_week_date();
-        (y, w as u8, wd.number_from_monday())
+        (y, w as i8, wd.number_from_monday() as i8)
     }
 
     #[inline]
-    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
-        let d = time::Date::from_iso_week_date(y, w, time::Weekday::Sunday.nth_next(wd)).unwrap();
-        (d.year(), d.month() as u8, d.day() as u8)
+    pub fn isoweekdate_to_date((y, w, wd): (i32, i8, i8)) -> (i32, i8, i8) {
+        let d = time::Date::from_iso_week_date(y, w as u8, time::Weekday::Sunday.nth_next(wd as u8)).unwrap();
+        (d.year(), d.month() as i8, d.day() as i8)
     }
 
     #[inline]
-    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, i8, i8, i8, i8, i8, u32)) -> SystemTime {
         time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
             .unwrap()
-            .with_hms_nano(hh, mm, ss, nsec)
+            .with_hms_nano(hh as u8, mm as u8, ss as u8, nsec)
             .unwrap()
             .assume_utc()
             .into()
     }
 
     #[inline]
-    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, i8, i8, i8, i8, i8, u32) {
         let d: time::OffsetDateTime = v.into();
         (
             d.year() as i32,
-            d.month() as u8,
-            d.day() as u8,
-            d.hour() as u8,
-            d.minute() as u8,
-            d.second() as u8,
+            d.month() as i8,
+            d.day() as i8,
+            d.hour() as i8,
+            d.minute() as i8,
+            d.second() as i8,
             d.nanosecond(),
         )
     }
 }
 
 mod hinnant {
-    pub fn days_from_civil((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn days_from_civil((y, m, d): (i32, i8, i8)) -> i32 {
         let y = y as i32 - (m <= 2) as i32;
         let era = y.div_euclid(400);
         let yoe = y.rem_euclid(400) as u32;
@@ -789,7 +789,7 @@ mod hinnant {
         era * 146097 + doe as i32 - 719468
     }
 
-    pub fn days_from_civil_u((y, m, d): (i32, u8, u8)) -> i32 {
+    pub fn days_from_civil_u((y, m, d): (i32, i8, i8)) -> i32 {
         let y = y as u32 - (m <= 2) as u32;
         let era = y.div_euclid(400);
         let yoe = y.rem_euclid(400) as u32;
@@ -798,7 +798,7 @@ mod hinnant {
         (era * 146097 + doe as u32 - 719468) as i32
     }
 
-    pub fn civil_from_days(n: i32) -> (i32, u8, u8) {
+    pub fn civil_from_days(n: i32) -> (i32, i8, i8) {
         let z = n + 719468;
         let era = z.div_euclid(146097);
         let doe = z.rem_euclid(146097) as u32;
@@ -808,10 +808,10 @@ mod hinnant {
         let mp = (5 * doy + 2) / 153;
         let d = doy - (153 * mp + 2) / 5 + 1;
         let m = if mp < 10 { mp + 3 } else { mp - 9 };
-        (y + (m <= 2) as i32, m as u8, d as u8)
+        (y + (m <= 2) as i32, m as i8, d as i8)
     }
 
-    pub fn civil_from_days_u(n: i32) -> (i32, u8, u8) {
+    pub fn civil_from_days_u(n: i32) -> (i32, i8, i8) {
         let z = (n + 719468) as u32;
         let era = z.div_euclid(146097);
         let doe = z.rem_euclid(146097) as u32;
@@ -821,7 +821,7 @@ mod hinnant {
         let mp = (5 * doy + 2) / 153;
         let d = doy - (153 * mp + 2) / 5 + 1;
         let m = if mp < 10 { mp + 3 } else { mp - 9 };
-        ((y + (m <= 2) as u32) as i32, m as u8, d as u8)
+        ((y + (m <= 2) as u32) as i32, m as i8, d as i8)
     }
 }
 
