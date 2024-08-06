@@ -451,7 +451,7 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// > evaluate `m % 7 + 1` based on the binary representation of the reciprocal
 /// > of `7`, namely, `C := (0.001_001_001...)_2`. The following table presents
 /// > the binary values of `m % 7 + 1` and `p := (m + 1) * C` for `m = 0`, `2`,
-/// `...`:
+/// > `...`:
 /// >
 /// > | `m` | `m % 7 + 1` | `(m + 1) * C`          |
 /// > | --- | ----------- | ---------------------- |
