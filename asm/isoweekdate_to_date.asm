@@ -1,33 +1,30 @@
 datealgo::asm::isoweekdate_to_date:
-	mov rax, rdi
-	shr rax, 32
-	mov rcx, rdi
-	shr rcx, 40
-	movzx ecx, cl
-	add edi, 1467999
-	imul rdx, rdi, 1374389535
-	mov rsi, rdx
-	shr rsi, 37
-	imul edi, edi, 1461
-	shr edi, 2
-	shr rdx, 39
-	sub edx, esi
-	movzx eax, al
-	lea esi, [8*rax]
-	sub esi, eax
-	add esi, ecx
-	add esi, edi
-	add esi, edx
-	lea eax, [rdx + rdi]
+	lea ecx, [rdi + 1467999]
+	imul rax, rcx, 1374389535
+	mov rdx, rax
+	shr rdx, 37
+	imul ecx, ecx, 1461
+	shr ecx, 2
+	shr rax, 39
+	sub eax, edx
+	mov rdx, rdi
+	shr rdx, 8
+	sar edx, 24
+	lea esi, [8*rdx]
+	sub esi, edx
+	shr rdi, 16
+	sar edi, 24
+	add edi, esi
+	add edi, ecx
+	add edi, eax
+	add eax, ecx
 	add eax, 4
 	cdqe
 	movabs rcx, 2635249153387078802
 	imul rcx, rax
 	shr rcx, 61
-	dec ecx
-	movzx eax, cl
-	sub esi, eax
-	lea eax, [4*rsi + 1207]
+	sub edi, ecx
+	lea eax, [4*rdi + 1211]
 	imul rcx, rax, 963315389
 	shr rcx, 47
 	imul edx, ecx, 146097

@@ -6,12 +6,12 @@ datealgo::asm::prev_date:
 	mov rdx, rdi
 	shr rdx, 40
 	cmp dl, 1
-	jbe .LBB5_1
+	jle .LBB5_1
 	dec dl
 	jmp .LBB5_6
 .LBB5_1:
 	cmp cl, 1
-	jbe .LBB5_2
+	jle .LBB5_2
 	dec cl
 	cmp cl, 2
 	jne .LBB5_5

@@ -1,35 +1,36 @@
 datealgo::asm::datetime_to_systemtime:
-	movzx eax, byte ptr [rdi + 4]
-	cmp eax, 3
-	mov ecx, dword ptr [rdi]
+	movsx ecx, byte ptr [rdi + 4]
+	lea esi, [rcx + 12]
+	xor r8d, r8d
+	cmp ecx, 3
+	setl r8b
+	movsx eax, byte ptr [rdi + 5]
+	mov r9d, dword ptr [rdi]
 	mov edx, dword ptr [rdi + 12]
-	sbb ecx, 0
-	lea esi, [rax + 12]
-	cmp eax, 3
-	cmovae esi, eax
-	movzx r8d, byte ptr [rdi + 5]
-	add ecx, 1468000
-	imul rax, rcx, 1374389535
-	mov r9, rax
-	shr r9, 37
-	imul r10d, ecx, 1461
-	shr r10d, 2
-	shr rax, 39
-	imul ecx, esi, 979
-	add ecx, -2919
-	shr ecx, 5
-	sub r8d, r9d
-	add eax, r10d
-	add eax, r8d
-	lea esi, [rcx + rax]
-	add esi, -307
-	cmp esi, 1073719447
+	cmovge esi, ecx
+	sub r9d, r8d
+	add r9d, 1468000
+	imul rcx, r9, 1374389535
+	mov r8, rcx
+	shr r8, 37
+	imul r9d, r9d, 1461
+	shr r9d, 2
+	shr rcx, 39
+	imul esi, esi, 979
+	add esi, -2919
+	shr esi, 5
+	sub eax, r8d
+	add ecx, r9d
+	add ecx, eax
+	lea eax, [rsi + rcx]
+	add eax, -307
+	cmp eax, 1073719447
 	ja .LBB20_1
-	add eax, ecx
+	lea eax, [rsi + rcx]
 	add eax, -536895459
-	movzx ecx, byte ptr [rdi + 8]
-	movzx esi, byte ptr [rdi + 7]
-	movzx edi, byte ptr [rdi + 6]
+	movsx rcx, byte ptr [rdi + 8]
+	movsx rsi, byte ptr [rdi + 7]
+	movsx rdi, byte ptr [rdi + 6]
 	cdqe
 	imul rax, rax, 86400
 	imul rdi, rdi, 3600
