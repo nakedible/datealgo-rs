@@ -39,10 +39,12 @@ datealgo::asm::datetime_to_systemtime:
 	add rsi, rdi
 	jns .LBB20_2
 	test edx, edx
-	je .LBB20_5
+	je .LBB20_10
 	not rsi
 	mov eax, 1000000000
 	sub eax, edx
+	cmp edx, 1000000001
+	jb .LBB20_9
 	mov ecx, eax
 	shr ecx, 9
 	imul rcx, rcx, 281475
@@ -50,12 +52,15 @@ datealgo::asm::datetime_to_systemtime:
 	add rsi, rcx
 	imul ecx, ecx, 1000000000
 	sub eax, ecx
+.LBB20_9:
 	lea rdi, [rip + .L__unnamed_1]
 	mov edx, eax
 	jmp qword ptr [rip + std::time::SystemTime::checked_sub@GOTPCREL]
 .LBB20_1:
 	xor esi, esi
 .LBB20_2:
+	cmp edx, 1000000000
+	jb .LBB20_4
 	mov eax, edx
 	shr eax, 9
 	imul rax, rax, 281475
@@ -63,9 +68,10 @@ datealgo::asm::datetime_to_systemtime:
 	add rsi, rax
 	imul eax, eax, 1000000000
 	sub edx, eax
+.LBB20_4:
 	lea rdi, [rip + .L__unnamed_1]
 	jmp qword ptr [rip + std::time::SystemTime::checked_add@GOTPCREL]
-.LBB20_5:
+.LBB20_10:
 	neg rsi
 	lea rdi, [rip + .L__unnamed_1]
 	xor edx, edx
