@@ -7,7 +7,19 @@ datealgo::asm::next_date:
 	mov rsi, rdi
 	shr rsi, 40
 	cmp sil, 28
-	jb .LBB4_3
+	jae .LBB4_1
+.LBB4_3:
+	add rdi, rcx
+	movabs rcx, 280375465082880
+	and rcx, rdi
+.LBB4_8:
+	movzx edx, dl
+	shl rdx, 32
+	mov eax, eax
+	or rax, rcx
+	or rax, rdx
+	ret
+.LBB4_1:
 	cmp dl, 2
 	jne .LBB4_2
 	imul r8d, edi, -1030792151
@@ -28,13 +40,7 @@ datealgo::asm::next_date:
 	xor r8b, dl
 	or r8b, 30
 	cmp r8b, sil
-	jbe .LBB4_4
-.LBB4_3:
-	add rdi, rcx
-	movabs rcx, 280375465082880
-	and rcx, rdi
-	jmp .LBB4_8
-.LBB4_4:
+	ja .LBB4_3
 	cmp dl, 12
 	jae .LBB4_5
 .LBB4_7:
@@ -43,10 +49,4 @@ datealgo::asm::next_date:
 .LBB4_5:
 	inc rax
 	mov edx, 1
-.LBB4_8:
-	movzx edx, dl
-	shl rdx, 32
-	mov eax, eax
-	or rax, rcx
-	or rax, rdx
-	ret
+	jmp .LBB4_8
