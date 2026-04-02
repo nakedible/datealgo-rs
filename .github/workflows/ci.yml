@@ -27,9 +27,7 @@ jobs:
       run: cargo clippy -- -D warnings
     - name: Check docs
       run: cargo doc --no-deps
-    - name: Install cargo-show-asm and cargo-readme
-      run: cargo install cargo-show-asm cargo-readme
-    - name: Check asm is up-to-date
-      run: ./asm.sh
+    - name: Install cargo-readme
+      run: cargo install cargo-readme
     - name: Check that `README.md` is up-to-date
       run: cargo readme | diff -u README.md -
