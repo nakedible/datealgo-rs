@@ -25,6 +25,10 @@ name = "compare"
 harness = false
 
 [[bench]]
+name = "compare_zen"
+harness = false
+
+[[bench]]
 name = "basic"
 harness = false
 
@@ -39,3 +43,4 @@ fastrand = "2.3.0"
 iai-callgrind = "0.16.1"
 quickcheck = "1.1.0"
 time = { version = "0.3.47", features = ["quickcheck", "large-dates"] }
+zenbench = "0.1.3"
