@@ -11,8 +11,8 @@ fn configure_compare_group(group: &mut BenchGroup) {
     group.baseline("datealgo");
     group
         .config()
-        .max_rounds(200)
-        .max_time(Duration::from_secs(10))
+        .max_rounds(20)
+        .max_time(Duration::from_millis(350))
         .baseline_only(true)
         .sort_by_speed(true);
 }

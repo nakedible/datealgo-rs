@@ -1,5 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::{hint::black_box, time::Duration};
+use std::hint::black_box;
+use std::time::Duration;
 
 mod util;
 use util::bencher;
