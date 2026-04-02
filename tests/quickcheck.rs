@@ -48,7 +48,7 @@ quickcheck! {
             return TestResult::discard();
         }
         let days_a = datealgo::days_in_month(y, m);
-        let days_b = time::util::days_in_year_month(y, m.try_into().unwrap());
+        let days_b = time::util::days_in_month(m.try_into().unwrap(), y);
         TestResult::from_bool(days_a == days_b)
     }
 
