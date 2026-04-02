@@ -27,17 +27,26 @@ will produce the same results as other known date libraries.
 Performance testing is important for all changes. Usually it is a good idea to
 benchmark the code against current released version.
 
+The default benchmark harness is Zenbench. Running `cargo bench` will execute
+the primary Zenbench suites.
+
 The common way to test performance changes:
 
 1. Checkout `master` branch.
-2. Run `cargo bench --bench basic -- --save-baseline master` to run benchmarks and save results. This is your baseline to compare against.
-3. Run `cargo bench --bench basic -- --baseline master` to run benchmarks again and compare. This is to verify your benchmarking setup doesn't have too much noise. All tests should have "No change in performance detected."
+2. Run `cargo bench --bench basic -- --save-baseline master` to run the Zenbench basic suite and save a baseline.
+3. Run `cargo bench --bench basic -- --baseline master` to rerun the Zenbench basic suite against that baseline. This is to verify your benchmarking setup doesn't have too much noise.
 4. Checkout the branch with your changes.
-5. Run `cargo bench --bench basic -- --baseline master`. It should report the change in performance. You can rerun this command after you make some changes to see how it affects performance.
+5. Run `cargo bench --bench basic -- --baseline master`. You can rerun this after changes to see how they affect performance.
+
+Criterion benchmarks are still available, but they are opt-in and not run by
+default:
+
+- `cargo bench --features criterion-benches --bench basic_criterion`
+- `cargo bench --features criterion-benches --bench compare_criterion`
 
 In addition to this it might be beneficial use `iai-callgrind` to benchmark how
 many instructions each method will use. This can be done with `cargo bench
---bench iai`. It will always compare against the last invocation and has no
+--features iai-bench --bench iai`. It will always compare against the last invocation and has no
 command-line options. Instruction counts are usually a good rough guide on
 performance, but in the case of this library they are nearly useless.
 
