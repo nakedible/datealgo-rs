@@ -1,5 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::time::{Duration, SystemTime};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::{
+    hint::black_box,
+    time::{Duration, SystemTime},
+};
 
 mod util;
 use util::bencher;

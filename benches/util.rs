@@ -1,5 +1,7 @@
-use criterion::black_box;
-use std::time::{Duration, Instant};
+use std::{
+    hint::black_box,
+    time::{Duration, Instant},
+};
 
 pub fn bencher<I: Copy, O>(s: impl Fn() -> I, f: impl Fn(I) -> O) -> impl Fn(u64) -> Duration {
     const ARR_SIZE: usize = 4096;

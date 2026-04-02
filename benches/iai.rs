@@ -1,5 +1,8 @@
-use iai_callgrind::{black_box, library_benchmark, library_benchmark_group, main};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use iai_callgrind::{library_benchmark, library_benchmark_group, main};
+use std::{
+    hint::black_box,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 #[library_benchmark]
 fn iai_rd_to_date() -> (i32, u8, u8) {
