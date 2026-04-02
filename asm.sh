@@ -2,7 +2,7 @@
 
 set -e
 
-funs="
+default_funs="
 rd_to_date
 date_to_rd
 rd_to_weekday
@@ -26,15 +26,16 @@ systemtime_to_datetime
 datetime_to_systemtime
 "
 
-if [ "$1" = "--update" ]; then
-    update=1
+if [ "$#" -gt 0 ]; then
+    funs="$*"
+else
+    funs="$default_funs"
 fi
+
+mkdir -p asm
 
 for fn in $funs
 do
-    if [ -n "$update" ]; then
-        cargo asm --features=asmdump --simplify --lib datealgo::asm::$fn | grep '\S' > asm/$fn.asm
-    else
-        cargo asm --features=asmdump --simplify --lib datealgo::asm::$fn | grep '\S' | diff -wu asm/$fn.asm -
-    fi
+    cargo asm --features=asmdump --simplify --lib datealgo::asm::$fn | grep '\S' > asm/$fn.asm
+    printf 'wrote asm/%s.asm\n' "$fn"
 done
