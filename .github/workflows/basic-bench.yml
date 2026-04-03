@@ -34,7 +34,7 @@ jobs:
           # reported change is backed by a more stable median on noisy runners.
           python3 scripts/verify_basic_bench.py \
             --git-ref "$BASE_SHA" \
-            --confirm-runs 9 \
+            --confirm-runs 11 \
             > basic-bench-report.txt
           status=$?
           set -e
