@@ -211,4 +211,15 @@ fn bench_basic(suite: &mut Suite) {
     });
 }
 
-zenbench::main!(bench_basic);
+fn main() {
+    let group_filter: Option<String> = std::env::args().find_map(|a| a.strip_prefix("--group=").map(String::from));
+
+    let result = zenbench::run_gated(GateConfig::disabled(), |suite: &mut Suite| {
+        if let Some(ref filter) = group_filter {
+            suite.set_group_filter(filter.clone());
+        }
+        bench_basic(suite);
+    });
+
+    zenbench::postprocess_result(&result);
+}
