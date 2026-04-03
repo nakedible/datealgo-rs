@@ -703,6 +703,42 @@ mod chrono {
     }
 }
 
+mod fasttime {
+    pub fn rand_date() -> fasttime::Date {
+        let (y, m, d) = super::rand_date();
+        fasttime::Date::from_ymd(y, m, d).unwrap()
+    }
+
+    #[inline]
+    pub fn next_date(d: fasttime::Date) -> fasttime::Date {
+        d.add_days(1).unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: fasttime::Date) -> fasttime::Date {
+        d.add_days(-1).unwrap()
+    }
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        let date = fasttime::Date::from_days_since_unix_epoch(n as i64).unwrap();
+        (date.year, date.month, date.day)
+    }
+
+    #[inline]
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        fasttime::Date::from_ymd(y, m, d).unwrap().days_since_unix_epoch() as i32
+    }
+
+    #[inline]
+    pub fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+        fasttime::Date::from_ymd(y, m, d)
+            .unwrap()
+            .weekday()
+            .number_from_monday()
+    }
+}
+
 mod time {
     use std::time::SystemTime;
 

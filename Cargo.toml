@@ -53,6 +53,7 @@ required-features = ["iai-bench"]
 chrono = "0.4.44"
 criterion = "0.8.2"
 fastrand = "2.3.0"
+fasttime = "0.2.3"
 iai-callgrind = "0.16.1"
 quickcheck = "1.1.0"
 time = { version = "0.3.47", features = ["quickcheck", "large-dates"] }

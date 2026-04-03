@@ -48,6 +48,7 @@ fn bench_rd_to_date(suite: &mut Suite) {
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::rd_to_date);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::rd_to_date);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::rd_to_date);
+        bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::rd_to_date);
         bench_from_inputs(group, "time", inputs, time::rd_to_date);
     });
 }
@@ -63,6 +64,7 @@ fn bench_date_to_rd(suite: &mut Suite) {
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::date_to_rd);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::date_to_rd);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::date_to_rd);
+        bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_rd);
         bench_from_inputs(group, "time", inputs, time::date_to_rd);
     });
 }
@@ -77,6 +79,9 @@ fn bench_next_date(suite: &mut Suite) {
 
         let chrono_inputs = seeded_inputs(chrono::rand_date);
         bench_from_inputs(group, "chrono", chrono_inputs, chrono::next_date);
+
+        let fasttime_inputs = seeded_inputs(fasttime::rand_date);
+        bench_from_inputs(group, "fasttime", fasttime_inputs, fasttime::next_date);
 
         let time_inputs = seeded_inputs(time::rand_date);
         bench_from_inputs(group, "time", time_inputs, time::next_date);
@@ -93,6 +98,9 @@ fn bench_prev_date(suite: &mut Suite) {
 
         let chrono_inputs = seeded_inputs(chrono::rand_date);
         bench_from_inputs(group, "chrono", chrono_inputs, chrono::prev_date);
+
+        let fasttime_inputs = seeded_inputs(fasttime::rand_date);
+        bench_from_inputs(group, "fasttime", fasttime_inputs, fasttime::prev_date);
 
         let time_inputs = seeded_inputs(time::rand_date);
         bench_from_inputs(group, "time", time_inputs, time::prev_date);
