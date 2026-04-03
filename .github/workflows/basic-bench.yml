@@ -30,7 +30,12 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set +e
-          python3 scripts/verify_basic_bench.py --git-ref "$BASE_SHA" > basic-bench-report.txt
+          # CI gets a heavier confirmation pass than local use so that a
+          # reported change is backed by a more stable median on noisy runners.
+          python3 scripts/verify_basic_bench.py \
+            --git-ref "$BASE_SHA" \
+            --confirm-runs 9 \
+            > basic-bench-report.txt
           status=$?
           set -e
 
