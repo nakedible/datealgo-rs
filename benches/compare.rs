@@ -27,6 +27,9 @@ fn bench_rd_to_date(c: &mut Criterion) {
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(rand_rd, |rd| chrono::rd_to_date(black_box(rd))))
     });
+    group.bench_function("fasttime", |b| {
+        b.iter_custom(bencher(rand_rd, |rd| fasttime::rd_to_date(black_box(rd))))
+    });
     group.bench_function("time", |b| b.iter_custom(bencher(rand_rd, |rd| time::rd_to_date(black_box(rd)))));
     group.finish();
 }
@@ -50,6 +53,9 @@ fn bench_date_to_rd(c: &mut Criterion) {
     });
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(rand_date, |d| chrono::date_to_rd(black_box(d))))
+    });
+    group.bench_function("fasttime", |b| {
+        b.iter_custom(bencher(rand_date, |d| fasttime::date_to_rd(black_box(d))))
     });
     group.bench_function("time", |b| b.iter_custom(bencher(rand_date, |d| time::date_to_rd(black_box(d)))));
     group.finish();
@@ -83,6 +89,9 @@ fn bench_date_to_weekday(c: &mut Criterion) {
     group.bench_function("datealgo_alt2", |b| {
         b.iter_custom(bencher(rand_date, |d| datealgo_alt::date_to_weekday2(black_box(d))))
     });
+    group.bench_function("fasttime", |b| {
+        b.iter_custom(bencher(rand_date, |d| fasttime::date_to_weekday(black_box(d))))
+    });
     group.finish();
 }
 
@@ -96,6 +105,9 @@ fn bench_next_date(c: &mut Criterion) {
     });
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(chrono::rand_date, |d| chrono::next_date(black_box(d))))
+    });
+    group.bench_function("fasttime", |b| {
+        b.iter_custom(bencher(fasttime::rand_date, |d| fasttime::next_date(black_box(d))))
     });
     group.bench_function("time", |b| {
         b.iter_custom(bencher(time::rand_date, |d| time::next_date(black_box(d))))
@@ -113,6 +125,9 @@ fn bench_prev_date(c: &mut Criterion) {
     });
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(chrono::rand_date, |d| chrono::prev_date(black_box(d))))
+    });
+    group.bench_function("fasttime", |b| {
+        b.iter_custom(bencher(fasttime::rand_date, |d| fasttime::prev_date(black_box(d))))
     });
     group.bench_function("time", |b| {
         b.iter_custom(bencher(time::rand_date, |d| time::prev_date(black_box(d))))
