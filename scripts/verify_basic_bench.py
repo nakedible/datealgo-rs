@@ -6,7 +6,8 @@ The built-in `zenbench self-compare` flow is useful for exploration, but for
 these nanosecond-scale microbenchmarks it is too noisy to use as a release gate.
 This helper compares one basic benchmark group at a time, pins execution to a
 single CPU core, primes both sides, and only confirms changes that still clear a
-5% threshold after repeated measurement.
+5% threshold after interleaved repeated measurement with strong directional
+agreement.
 """
 
 from __future__ import annotations
@@ -32,6 +33,8 @@ DEFAULT_PRIME_RUNS = 1
 DEFAULT_MEASURE_RUNS = 1
 DEFAULT_CONFIRM_RUNS = 3
 DEFAULT_THRESHOLD_PCT = 5.0
+DEFAULT_CONFIRM_AGREEMENT_NUM = 4
+DEFAULT_CONFIRM_AGREEMENT_DEN = 5
 
 
 @dataclass
@@ -57,6 +60,10 @@ class GroupResult:
         if self.baseline_median == 0.0:
             return 0.0
         return self.delta_ns / self.baseline_median * 100.0
+
+    @property
+    def pair_deltas(self) -> list[float]:
+        return [cand - base for base, cand in zip(self.baseline_runs, self.candidate_runs)]
 
 
 def run(
@@ -149,8 +156,81 @@ def compare_group(
     return GroupResult(group, baseline_runs, candidate_runs)
 
 
+def compare_group_paired(
+    baseline_cwd: pathlib.Path,
+    candidate_cwd: pathlib.Path,
+    tmp_dir: pathlib.Path,
+    cpu: int,
+    group: str,
+    prime_runs: int,
+    measure_runs: int,
+) -> GroupResult:
+    for i in range(prime_runs):
+        if i % 2 == 0:
+            bench_group(baseline_cwd, cpu, group, bench_json_path(tmp_dir, group, "base", "prime", i))
+            bench_group(candidate_cwd, cpu, group, bench_json_path(tmp_dir, group, "cand", "prime", i))
+        else:
+            bench_group(candidate_cwd, cpu, group, bench_json_path(tmp_dir, group, "cand", "prime", i))
+            bench_group(baseline_cwd, cpu, group, bench_json_path(tmp_dir, group, "base", "prime", i))
+
+    baseline_runs = []
+    candidate_runs = []
+    for i in range(measure_runs):
+        if i % 2 == 0:
+            baseline = bench_group(
+                baseline_cwd,
+                cpu,
+                group,
+                bench_json_path(tmp_dir, group, "base", "confirm", i),
+            )
+            candidate = bench_group(
+                candidate_cwd,
+                cpu,
+                group,
+                bench_json_path(tmp_dir, group, "cand", "confirm", i),
+            )
+        else:
+            candidate = bench_group(
+                candidate_cwd,
+                cpu,
+                group,
+                bench_json_path(tmp_dir, group, "cand", "confirm", i),
+            )
+            baseline = bench_group(
+                baseline_cwd,
+                cpu,
+                group,
+                bench_json_path(tmp_dir, group, "base", "confirm", i),
+            )
+        baseline_runs.append(baseline)
+        candidate_runs.append(candidate)
+
+    return GroupResult(group, baseline_runs, candidate_runs)
+
+
 def exceeds_threshold(result: GroupResult, pct_threshold: float) -> bool:
     return abs(result.delta_pct) >= pct_threshold
+
+
+def confirm_agreement_required(confirm_runs: int) -> int:
+    return max(
+        1,
+        (confirm_runs * DEFAULT_CONFIRM_AGREEMENT_NUM + (DEFAULT_CONFIRM_AGREEMENT_DEN - 1))
+        // DEFAULT_CONFIRM_AGREEMENT_DEN,
+    )
+
+
+def has_directional_agreement(result: GroupResult, required: int) -> bool:
+    if result.delta_ns == 0.0:
+        return False
+
+    expected_positive = result.delta_ns > 0.0
+    agreeing_pairs = sum(
+        (delta > 0.0) == expected_positive
+        for delta in result.pair_deltas
+        if delta != 0.0
+    )
+    return agreeing_pairs >= required
 
 
 def print_result(result: GroupResult, status: str) -> None:
@@ -229,9 +309,11 @@ def main() -> int:
     try:
         print(f"baseline  {args.git_ref} ({git_short_hash_for_ref(ROOT, args.git_ref)})")
         print(f"candidate HEAD ({git_short_hash(candidate_cwd)})")
+        confirm_required = confirm_agreement_required(args.confirm_runs)
         print(
             f"policy    core={args.cpu} threshold={args.threshold_pct:.1f}% "
-            f"prime={args.prime_runs} initial={args.measure_runs} confirm={args.confirm_runs}"
+            f"prime={args.prime_runs} initial={args.measure_runs} "
+            f"confirm={args.confirm_runs} paired>={confirm_required}/{args.confirm_runs}"
         )
         print()
 
@@ -261,7 +343,7 @@ def main() -> int:
             print()
 
         for result in provisional:
-            confirmed_result = compare_group(
+            confirmed_result = compare_group_paired(
                 baseline_cwd,
                 candidate_cwd,
                 tmp_dir,
@@ -270,7 +352,10 @@ def main() -> int:
                 args.prime_runs,
                 args.confirm_runs,
             )
-            if exceeds_threshold(confirmed_result, args.threshold_pct):
+            if exceeds_threshold(confirmed_result, args.threshold_pct) and has_directional_agreement(
+                confirmed_result,
+                confirm_required,
+            ):
                 confirmed.append(confirmed_result)
                 print_result(confirmed_result, "confirmed")
             else:
