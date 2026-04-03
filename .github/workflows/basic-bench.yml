@@ -1,0 +1,101 @@
+name: Verify basic benchmark
+
+on:
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  verify-basic-bench:
+    name: verify basic benchmark
+    runs-on: ubuntu-latest
+    concurrency:
+      group: basic-bench-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Run benchmark verification
+        id: verify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set +e
+          python3 scripts/verify_basic_bench.py --git-ref "$BASE_SHA" > basic-bench-report.txt
+          status=$?
+          set -e
+
+          cat basic-bench-report.txt
+
+          case "$status" in
+            0|1) ;;
+            *) exit "$status" ;;
+          esac
+
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Add pull request comment
+        uses: actions/github-script@v7
+        env:
+          VERIFY_STATUS: ${{ steps.verify.outputs.status }}
+        with:
+          script: |
+            const fs = require("fs");
+
+            const marker = "<!-- verify-basic-bench -->";
+            const report = fs.readFileSync("basic-bench-report.txt", "utf8").trimEnd();
+            const status = process.env.VERIFY_STATUS;
+            const headline = status === "0"
+              ? "No meaningful `basic` benchmark changes detected."
+              : "Meaningful `basic` benchmark changes detected.";
+
+            const body = [
+              marker,
+              "## Basic benchmark verification",
+              "",
+              headline,
+              "",
+              "Compared this pull request head against its base commit with `./scripts/verify_basic_bench.py`.",
+              "",
+              "```text",
+              report,
+              "```",
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user?.type === "Bot" && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }

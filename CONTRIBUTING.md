@@ -30,7 +30,17 @@ benchmark the code against current released version.
 The default benchmark harness is Zenbench. Running `cargo bench` will execute
 the primary Zenbench suites.
 
-The common way to test performance changes:
+For the primary `basic` suite, use the verification helper:
+
+1. Checkout the branch with your changes.
+2. Run `python3 scripts/verify_basic_bench.py --git-ref origin/master`.
+
+This compares the current worktree against `origin/master` one benchmark group
+at a time, pins the benchmark process to one CPU core, and reruns only the
+groups that initially look meaningfully different. A change is reported only if
+it still differs by at least `5%` after confirmation.
+
+For ad hoc local exploration, the common Zenbench workflow is:
 
 1. Checkout `master` branch.
 2. Run `cargo bench --bench basic -- --save-baseline master` to run the Zenbench basic suite and save a baseline.

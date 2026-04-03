@@ -27,3 +27,4 @@ Cargo.lock
 /Cargo.lock
 
 /asm/*.asm
+/scripts/__pycache__/
