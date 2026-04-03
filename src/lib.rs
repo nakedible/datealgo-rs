@@ -312,34 +312,31 @@ pub mod consts {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
-/// Affine Functions:
+/// Algorithm currently used is Ben Joffe's 32-bit overflow-safe bucketed
+/// Gregorian days-to-date conversion:
 ///
-/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
-/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
-/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
+/// > Ben Joffe. "*A New Faster Overflow-Safe Date Algorithm*".
+/// > <https://www.benjoffe.com/safe-date>
 #[inline]
 pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
-    let n = (n + DAY_OFFSET) as u32;
-    // century
-    let n = 4 * n + 3;
-    let c = n / 146097;
-    let r = n % 146097;
-    // year
-    let n = r | 3;
-    let p = 2939745 * n as u64;
-    let z = (p / 2u64.pow(32)) as u32;
-    let n = (p % 2u64.pow(32)) as u32 / 2939745 / 4;
-    let j = n >= 306;
-    let y = 100 * c + z + j as u32;
-    // month and day
-    let n = 2141 * n + 197913;
-    let m = n / 2u32.pow(16);
-    let d = n % 2u32.pow(16) / 2141;
-    // map
-    let y = (y as i32) - YEAR_OFFSET;
-    let m = if j { m - 12 } else { m };
+    let days = (n as u32).wrapping_add(0x8000_0000);
+    let bckt = days >> 20;
+    let bday = days - bckt * 1_022_679;
+
+    let qday = bday * 4 + 524_943;
+    let cent = qday / 146_097;
+    let qjul = qday - (cent & !3) + cent * 4;
+    let year = qjul / 1461;
+    let yday = (qjul % 1461) / 4;
+
+    let n = yday * 2141 + 197_913;
+    let m = n / 65_536;
+    let d = n % 65_536 / 2141;
+    let bump = yday >= 306;
+
+    let y = year as i32 + bckt as i32 * 2800 - 5_878_000 + bump as i32;
+    let m = if bump { m - 12 } else { m };
     let d = d + 1;
     (y, m as u8, d as u8)
 }
@@ -390,23 +387,28 @@ const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
-/// Affine Functions:
+/// Algorithm currently used is Ben Joffe's modified inverse civil-to-days
+/// conversion:
 ///
-/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
-/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
-/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
+/// > Ben Joffe. "*The Julian Map: A Faster technique for Gregorian Date Conversion*".
+/// > <https://www.benjoffe.com/fast-date>
 #[inline]
 pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-    let (c, y, m, d) = date_to_internal(y, m, d);
-    let d = d - 1;
-    // year
-    let y = 1461 * y / 4 - c + c / 4;
-    // month
-    let m = (979 * m - 2919) / 32;
-    // result
-    let n = y + m + d;
-    (n as i32) - DAY_OFFSET
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    const S: i64 = 5_368_710;
+    const YEAR_SHIFT: i64 = 400 * S;
+    const RATA_SHIFT: i64 = 719_468 + 146_097 * S + 1;
+
+    let bump = m <= 2;
+    let year = y as i64 + YEAR_SHIFT - bump as i64;
+    let cent = year / 100;
+    let phase = if bump { 8_829 } else { -2_919 };
+
+    let y_days = year * 365 + year / 4 - cent + cent / 4;
+    let m_days = (979 * m as i64 + phase) / 32;
+    (y_days + m_days + d as i64 - RATA_SHIFT) as i32
 }
 
 /// Convert Rata Die to day of week
