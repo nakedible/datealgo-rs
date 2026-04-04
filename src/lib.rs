@@ -150,14 +150,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 const ERA_OFFSET: i32 = 3670;
 /// Every era has 146097 days
 const DAYS_IN_ERA: i32 = 146097;
-/// Every era has 400 years
-const YEARS_IN_ERA: i32 = 400;
 /// Number of days from 0000-03-01 to Unix epoch 1970-01-01
 const DAYS_TO_UNIX_EPOCH: i32 = 719468;
 /// Offset to be added to given day values
 const DAY_OFFSET: i32 = ERA_OFFSET * DAYS_IN_ERA + DAYS_TO_UNIX_EPOCH;
-/// Offset to be added to given year values
-const YEAR_OFFSET: i32 = ERA_OFFSET * YEARS_IN_ERA;
 /// Seconds in a single 24 hour calendar day
 const SECS_IN_DAY: i64 = 86400;
 /// Offset to be added to given second values
@@ -312,55 +308,41 @@ pub mod consts {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
-/// Affine Functions:
+/// Algorithm currently used is Ben Joffe's fast Gregorian days-to-date
+/// conversion for x86-64:
 ///
-/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
-/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
-/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
+/// > Ben Joffe. "*A Very Fast 64-bit Date Algorithm*".
+/// > <https://www.benjoffe.com/fast-date-64>
 #[inline]
 pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
-    let n = (n + DAY_OFFSET) as u32;
-    // century
-    let n = 4 * n + 3;
-    let c = n / 146097;
-    let r = n % 146097;
-    // year
-    let n = r | 3;
-    let p = 2939745 * n as u64;
-    let z = (p / 2u64.pow(32)) as u32;
-    let n = (p % 2u64.pow(32)) as u32 / 2939745 / 4;
-    let j = n >= 306;
-    let y = 100 * c + z + j as u32;
-    // month and day
-    let n = 2141 * n + 197913;
-    let m = n / 2u32.pow(16);
-    let d = n % 2u32.pow(16) / 2141;
-    // map
-    let y = (y as i32) - YEAR_OFFSET;
-    let m = if j { m - 12 } else { m };
-    let d = d + 1;
-    (y, m as u8, d as u8)
-}
+    const ERAS: u32 = 14_704;
+    const D_SHIFT: u32 = 146_097 * ERAS - 719_469;
+    const Y_SHIFT: u32 = 400 * ERAS - 1;
+    const SCALE: u32 = 32;
+    const SHIFT_0: u32 = 30_556 * SCALE;
+    const SHIFT_1: u32 = 5_980 * SCALE;
+    const C1: u64 = 505_054_698_555_331;
+    const C2: u64 = 50_504_432_782_230_121;
+    const C3: u64 = 8_619_973_866_219_416;
 
-/// Convert a Gregorian date to its Computational calendar's counterpart.
-#[inline]
-const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
-    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
-    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
-    let y = (y + YEAR_OFFSET) as u32;
-    let jf = (m < 3) as u32;
-    // year
-    let y = y - jf;
-    // century
-    let c = y / 100;
-    // month
-    let m = m as u32 + 12 * jf;
-    // day
-    let d = d as u32; // in Neri-Schneider's paper this is d - 1.
-    (c, y, m, d)
+    let rev = D_SHIFT.wrapping_sub(n as u32);
+    let cen = (((C1 as u128) * rev as u128) >> 64) as u32;
+    let jul = rev.wrapping_sub(cen / 4).wrapping_add(cen);
+
+    let num = (C2 as u128) * jul as u128;
+    let yrs = Y_SHIFT.wrapping_sub((num >> 64) as u32);
+    let low = num as u64;
+    let ypt = ((((24_451 * SCALE) as u128) * low as u128) >> 64) as u32;
+
+    let bump = ypt < (3_952 * SCALE);
+    let phase = if bump { SHIFT_1 } else { SHIFT_0 };
+    let n = (yrs % 4) * (16 * SCALE) + phase - ypt;
+    let m = n / (2_048 * SCALE);
+    let d = (((C3 as u128) * (n % (2_048 * SCALE)) as u128) >> 64) as u8 + 1;
+    let y = yrs.wrapping_add(bump as u32) as i32;
+
+    (y, m as u8, d)
 }
 
 /// Convert Gregorian date to Rata Die
@@ -390,23 +372,31 @@ const fn date_to_internal(y: i32, m: u8, d: u8) -> (u32, u32, u32, u32) {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
-/// Affine Functions:
+/// Algorithm currently used is Ben Joffe's modified inverse civil-to-days
+/// conversion:
 ///
-/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
-/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
-/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
+/// > Ben Joffe. "*A Very Fast 64-bit Date Algorithm*".
+/// > <https://www.benjoffe.com/fast-date-64>
 #[inline]
 pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-    let (c, y, m, d) = date_to_internal(y, m, d);
-    let d = d - 1;
-    // year
-    let y = 1461 * y / 4 - c + c / 4;
-    // month
-    let m = (979 * m - 2919) / 32;
-    // result
-    let n = y + m + d;
-    (n as i32) - DAY_OFFSET
+    debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
+    debug_assert!(m >= consts::MONTH_MIN && m <= consts::MONTH_MAX, "given month is out of range");
+    debug_assert!(d >= consts::DAY_MIN && d <= days_in_month(y, m), "given day is out of range");
+    const YEAR_SHIFT: u32 = 5_880_000;
+    const RATA_SHIFT: u32 = 2_148_345_369;
+
+    let bump = (m <= 2) as u32;
+    let year = ((y).wrapping_add(YEAR_SHIFT as i32)) as u32 - bump;
+    let cent = year / 100;
+    let phase = if bump != 0 { 8_829 } else { -2_919 };
+
+    let year_days = year
+        .wrapping_mul(365)
+        .wrapping_add(year / 4)
+        .wrapping_sub(cent)
+        .wrapping_add(cent / 4);
+    let month_days = ((979 * m as i32 + phase) / 32) as u32;
+    year_days.wrapping_add(month_days).wrapping_add(d as u32).wrapping_sub(RATA_SHIFT) as i32
 }
 
 /// Convert Rata Die to day of week
@@ -513,21 +503,9 @@ pub const fn rd_to_weekday(n: i32) -> u8 {
 /// assert_eq!(date_to_weekday((2023, 5, 12)) % 7, 5);
 /// ```
 ///
-/// # Algorithm
-///
-/// Simple adaptation of `date_to_rd` to modulus 7 arithmetics.
-///
 #[inline]
 pub const fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
-    let (c, y, m, d) = date_to_internal(y, m, d);
-    // year
-    let y = 5 * y / 4 - c + c / 4;
-    // month
-    let m = (979 * m - 2855) / 32;
-    // result
-    let n = y + m + d;
-    const P32_OVER_SEVEN: u32 = ((1 << 31) / 7) << 1; // = (1 << 32) / 7
-    ((n.wrapping_mul(P32_OVER_SEVEN)) >> 29) as u8
+    rd_to_weekday(date_to_rd((y, m, d)))
 }
 
 /// Calculate next Gregorian date given a Gregorian date
