@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/nakedible/datealgo-rs/compare/v0.2.1...v0.2.2) - 2026-04-04
+
+### Added
+
+- Improve performance of date_to_weekday.
+
+### Fixed
+
+- Remove pointless wrapping operations
+- Add stricter debug assert for end of range
+
+### Other
+
+- Show asm diffs in pull request comments
+- Add fasttime comparison benchmarks
+- Add asm comparison workflow
+- Add a confirmation time budget for basic benchmarks
+- Pair basic benchmark confirmation runs
+- Show compared commits in benchmark comment
+- Make basic benchmark confirmation more conservative
+- Add basic benchmark verification workflow
+- Fix basic zenbench runner
+- Make zenbench the default benchmark harness
+- Add zenbench compare benchmark target
+- Update dev dependencies and bench compatibility
+- Pin time dev dependency
+- Remove asm snapshots and PR benchmark workflow
+- Add quickcheck that tests full value ranges
+- Add extreme values to all tests
+- Fix doc error caught by clippy
+- Update asm dumps to latest rustc
+- Add inline never to asm methods to ensure they get dumped
+- Rename internal helper
+- Update asm
+- Fix typos in rd_to_weekday documentation.
+
 ## [0.2.1](https://github.com/nakedible/datealgo-rs/compare/v0.2.0...v0.2.1) - 2023-12-20
 
 ### Added
