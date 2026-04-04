@@ -22,6 +22,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 
 
@@ -32,6 +33,7 @@ DEFAULT_CPU = 0
 DEFAULT_PRIME_RUNS = 1
 DEFAULT_MEASURE_RUNS = 1
 DEFAULT_CONFIRM_RUNS = 3
+DEFAULT_CONFIRM_SECONDS = 0.0
 DEFAULT_THRESHOLD_PCT = 5.0
 DEFAULT_CONFIRM_AGREEMENT_NUM = 4
 DEFAULT_CONFIRM_AGREEMENT_DEN = 5
@@ -176,36 +178,79 @@ def compare_group_paired(
     baseline_runs = []
     candidate_runs = []
     for i in range(measure_runs):
-        if i % 2 == 0:
-            baseline = bench_group(
-                baseline_cwd,
-                cpu,
-                group,
-                bench_json_path(tmp_dir, group, "base", "confirm", i),
-            )
-            candidate = bench_group(
-                candidate_cwd,
-                cpu,
-                group,
-                bench_json_path(tmp_dir, group, "cand", "confirm", i),
-            )
-        else:
-            candidate = bench_group(
-                candidate_cwd,
-                cpu,
-                group,
-                bench_json_path(tmp_dir, group, "cand", "confirm", i),
-            )
-            baseline = bench_group(
-                baseline_cwd,
-                cpu,
-                group,
-                bench_json_path(tmp_dir, group, "base", "confirm", i),
-            )
+        baseline, candidate = run_group_pair(
+            baseline_cwd,
+            candidate_cwd,
+            tmp_dir,
+            cpu,
+            group,
+            "confirm",
+            i,
+        )
         baseline_runs.append(baseline)
         candidate_runs.append(candidate)
 
     return GroupResult(group, baseline_runs, candidate_runs)
+
+
+def run_group_pair(
+    baseline_cwd: pathlib.Path,
+    candidate_cwd: pathlib.Path,
+    tmp_dir: pathlib.Path,
+    cpu: int,
+    group: str,
+    kind: str,
+    idx: int,
+) -> tuple[float, float]:
+    if idx % 2 == 0:
+        baseline = bench_group(
+            baseline_cwd,
+            cpu,
+            group,
+            bench_json_path(tmp_dir, group, "base", kind, idx),
+        )
+        candidate = bench_group(
+            candidate_cwd,
+            cpu,
+            group,
+            bench_json_path(tmp_dir, group, "cand", kind, idx),
+        )
+    else:
+        candidate = bench_group(
+            candidate_cwd,
+            cpu,
+            group,
+            bench_json_path(tmp_dir, group, "cand", kind, idx),
+        )
+        baseline = bench_group(
+            baseline_cwd,
+            cpu,
+            group,
+            bench_json_path(tmp_dir, group, "base", kind, idx),
+        )
+
+    return baseline, candidate
+
+
+def extend_group_result_paired(
+    result: GroupResult,
+    baseline_cwd: pathlib.Path,
+    candidate_cwd: pathlib.Path,
+    tmp_dir: pathlib.Path,
+    cpu: int,
+) -> None:
+    idx = len(result.baseline_runs)
+    baseline, candidate = run_group_pair(
+        baseline_cwd,
+        candidate_cwd,
+        tmp_dir,
+        cpu,
+        result.name,
+        "confirm",
+        idx,
+    )
+    result.baseline_runs.append(baseline)
+    result.candidate_runs.append(candidate)
 
 
 def exceeds_threshold(result: GroupResult, pct_threshold: float) -> bool:
@@ -275,6 +320,12 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Measured runs per side for suspect groups. Default: {DEFAULT_CONFIRM_RUNS}.",
     )
     parser.add_argument(
+        "--confirm-seconds",
+        type=float,
+        default=DEFAULT_CONFIRM_SECONDS,
+        help="Extra shared confirmation time budget for suspect groups after the minimum paired runs.",
+    )
+    parser.add_argument(
         "--threshold-pct",
         type=float,
         default=DEFAULT_THRESHOLD_PCT,
@@ -313,7 +364,8 @@ def main() -> int:
         print(
             f"policy    core={args.cpu} threshold={args.threshold_pct:.1f}% "
             f"prime={args.prime_runs} initial={args.measure_runs} "
-            f"confirm={args.confirm_runs} paired>={confirm_required}/{args.confirm_runs}"
+            f"confirm>={args.confirm_runs} paired>={confirm_required}/{args.confirm_runs} "
+            f"budget={args.confirm_seconds:.0f}s"
         )
         print()
 
@@ -342,6 +394,7 @@ def main() -> int:
             print("confirming flagged groups...")
             print()
 
+        confirmation_results: list[GroupResult] = []
         for result in provisional:
             confirmed_result = compare_group_paired(
                 baseline_cwd,
@@ -352,9 +405,29 @@ def main() -> int:
                 args.prime_runs,
                 args.confirm_runs,
             )
+            confirmation_results.append(confirmed_result)
+
+        if confirmation_results and args.confirm_seconds > 0.0:
+            deadline = time.monotonic() + args.confirm_seconds
+            active = [result for result in confirmation_results if exceeds_threshold(result, args.threshold_pct)]
+            while active and time.monotonic() < deadline:
+                for result in list(active):
+                    if time.monotonic() >= deadline:
+                        break
+                    extend_group_result_paired(
+                        result,
+                        baseline_cwd,
+                        candidate_cwd,
+                        tmp_dir,
+                        args.cpu,
+                    )
+                active = [result for result in confirmation_results if exceeds_threshold(result, args.threshold_pct)]
+
+        for confirmed_result in confirmation_results:
+            required = confirm_agreement_required(len(confirmed_result.baseline_runs))
             if exceeds_threshold(confirmed_result, args.threshold_pct) and has_directional_agreement(
                 confirmed_result,
-                confirm_required,
+                required,
             ):
                 confirmed.append(confirmed_result)
                 print_result(confirmed_result, "confirmed")
