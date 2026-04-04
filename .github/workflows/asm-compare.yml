@@ -35,7 +35,6 @@ jobs:
           set +e
           python3 scripts/compare_asm_against_ref.py \
             --git-ref "$BASE_SHA" \
-            --summary-only \
             > asm-compare-report.txt
           status=$?
           set -e
@@ -61,6 +60,7 @@ jobs:
           COMPARE_STATUS: ${{ steps.compare.outputs.status }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
             const fs = require("fs");
@@ -70,11 +70,11 @@ jobs:
             const status = process.env.COMPARE_STATUS;
             const baseSha = process.env.BASE_SHA;
             const headSha = process.env.HEAD_SHA;
+            const runUrl = process.env.RUN_URL;
             const headline = status === "0"
               ? "No asm differences detected."
               : "Asm differences detected.";
-
-            const body = [
+            const prefix = [
               marker,
               "## Asm comparison",
               "",
@@ -82,11 +82,21 @@ jobs:
               "",
               "Compared this pull request branch head against its base commit with `./scripts/compare_asm_against_ref.py`.",
               `Compared commits: ${baseSha} -> ${headSha}`,
+              `Actions run: ${runUrl}`,
               "",
-              "```text",
-              report,
-              "```",
             ].join("\n");
+
+            const MAX_BODY_CHARS = 60000;
+            let body = `${prefix}\n\`\`\`text\n${report}\n\`\`\``;
+            if (body.length > MAX_BODY_CHARS) {
+              const suffix = [
+                "",
+                "_Asm diff truncated in the comment. See the Actions run log above for the full diff output._",
+              ].join("\n");
+              const available = MAX_BODY_CHARS - prefix.length - suffix.length - "\n```text\n\n```".length;
+              const truncatedReport = report.slice(0, Math.max(0, available));
+              body = `${prefix}\n\`\`\`text\n${truncatedReport}\n\`\`\`${suffix}`;
+            }
 
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;
