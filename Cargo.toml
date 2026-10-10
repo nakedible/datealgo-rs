@@ -59,4 +59,4 @@ fasttime = "0.2.3"
 iai-callgrind = "0.16.1"
 quickcheck = "1.1.0"
 time = { version = "0.3.47", features = ["quickcheck", "large-dates"] }
-zenbench = "0.1.3"
+zenbench = "0.1.10"
