@@ -776,6 +776,28 @@ mod icu {
     }
 }
 
+// temporal_rs (the Temporal implementation in Boa and V8) does its date
+// arithmetic in the utils module of its timezone_provider crate. The module is
+// public but hidden from the docs.
+mod temporal {
+    use timezone_provider::utils::{iso_days_in_month, neri_schneider};
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        neri_schneider::ymd_from_epoch_days(n)
+    }
+
+    #[inline]
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        neri_schneider::epoch_days_from_gregorian_date(y, m, d) as i32
+    }
+
+    #[inline]
+    pub fn days_in_month((y, m): (i32, u8)) -> u8 {
+        iso_days_in_month(y, m)
+    }
+}
+
 mod fasttime {
     pub fn rand_date() -> fasttime::Date {
         let (y, m, d) = super::rand_date();

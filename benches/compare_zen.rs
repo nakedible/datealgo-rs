@@ -56,6 +56,7 @@ fn bench_rd_to_date(suite: &mut Suite) {
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::rd_to_date);
         bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::rd_to_date);
         bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::rd_to_date);
+        bench_from_inputs(group, "temporal", Arc::clone(&inputs), temporal::rd_to_date);
         bench_from_inputs(group, "time", inputs, time::rd_to_date);
     });
 }
@@ -74,6 +75,7 @@ fn bench_date_to_rd(suite: &mut Suite) {
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_rd);
         bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::date_to_rd);
         bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::date_to_rd);
+        bench_from_inputs(group, "temporal", Arc::clone(&inputs), temporal::date_to_rd);
         bench_from_inputs(group, "time", inputs, time::date_to_rd);
     });
 }
@@ -159,6 +161,7 @@ fn bench_days_in_month(suite: &mut Suite) {
         bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), |(y, m)| {
             datealgo_alt::days_in_month2(y, m)
         });
+        bench_from_inputs(group, "temporal", Arc::clone(&inputs), temporal::days_in_month);
         bench_from_inputs(group, "icu", inputs, icu::days_in_month);
     });
 }

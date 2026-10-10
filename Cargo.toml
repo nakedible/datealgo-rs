@@ -61,4 +61,5 @@ gungraun = "0.20.0"
 icu_calendar = { version = "2.3.0", default-features = false }
 quickcheck = "1.1.0"
 time = { version = "0.3.55", features = ["quickcheck", "large-dates"] }
+timezone_provider = "0.2.6"
 zenbench = "0.1.10"
