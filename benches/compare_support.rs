@@ -655,14 +655,13 @@ mod chrono {
 
     #[inline]
     pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
-        let date = chrono::NaiveDate::from_num_days_from_ce_opt(n + 719162).unwrap();
+        let date = chrono::NaiveDate::from_epoch_days(n).unwrap();
         (date.year(), date.month() as u8, date.day() as u8)
     }
 
     #[inline]
     pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-        let days = chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap().num_days_from_ce();
-        days - 719162
+        chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32).unwrap().to_epoch_days()
     }
 
     #[inline]
@@ -686,8 +685,7 @@ mod chrono {
             .unwrap()
             .and_hms_nano_opt(hh as u32, mm as u32, ss as u32, nsec)
             .unwrap()
-            .and_local_timezone(chrono::Utc)
-            .unwrap()
+            .and_utc()
             .into()
     }
 
