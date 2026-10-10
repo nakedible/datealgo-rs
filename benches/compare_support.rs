@@ -704,6 +704,78 @@ mod chrono {
     }
 }
 
+// ICU4X: the low-level calendrical_calculations crate and the Date<Iso> type of
+// icu_calendar built on it. Rata die there counts 0001-01-01 as day 1.
+const ICU_UNIX_EPOCH_FIXED: i64 = 719_163;
+
+mod icu_calc {
+    use calendrical_calculations::{gregorian, rata_die::RataDie};
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        gregorian::gregorian_from_fixed(RataDie::new(n as i64 + super::ICU_UNIX_EPOCH_FIXED)).unwrap()
+    }
+
+    #[inline]
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        (gregorian::fixed_from_gregorian(y, m, d).to_i64_date() - super::ICU_UNIX_EPOCH_FIXED) as i32
+    }
+
+    #[inline]
+    pub fn is_leap_year(y: i32) -> bool {
+        gregorian::is_leap_year(y)
+    }
+}
+
+mod icu {
+    use icu_calendar::{options::DateAddOptions, types::DateDuration, types::RataDie, Date, Iso};
+
+    pub fn rand_date() -> Date<Iso> {
+        let (y, m, d) = super::rand_date();
+        Date::try_new_iso(y, m, d).unwrap()
+    }
+
+    #[inline]
+    pub fn next_date(d: Date<Iso>) -> Date<Iso> {
+        d.try_added_with_options(DateDuration::for_days(1), DateAddOptions::default())
+            .unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: Date<Iso>) -> Date<Iso> {
+        d.try_added_with_options(DateDuration::for_days(-1), DateAddOptions::default())
+            .unwrap()
+    }
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        let date = Date::from_rata_die(RataDie::new(n as i64 + super::ICU_UNIX_EPOCH_FIXED), Iso);
+        (date.year().extended_year(), date.month().ordinal, date.day_of_month().0)
+    }
+
+    #[inline]
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        (Date::try_new_iso(y, m, d).unwrap().to_rata_die().to_i64_date() - super::ICU_UNIX_EPOCH_FIXED) as i32
+    }
+
+    #[inline]
+    pub fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+        Date::try_new_iso(y, m, d).unwrap().weekday() as u8
+    }
+
+    #[inline]
+    pub fn days_in_month((y, m): (i32, u8)) -> u8 {
+        Date::try_new_iso(y, m, 1).unwrap().days_in_month()
+    }
+
+    #[inline]
+    pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
+        let date = Date::try_new_iso(y, m, d).unwrap();
+        let week = date.week_of_year();
+        (week.iso_year, week.week_number, date.weekday() as u8)
+    }
+}
+
 mod fasttime {
     pub fn rand_date() -> fasttime::Date {
         let (y, m, d) = super::rand_date();
