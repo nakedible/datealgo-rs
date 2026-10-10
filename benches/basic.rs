@@ -1,3 +1,6 @@
+// Benchmarks need a newer compiler than the library MSRV.
+#![allow(clippy::incompatible_msrv)]
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::{
     hint::black_box,
