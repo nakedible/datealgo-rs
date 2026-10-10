@@ -694,11 +694,15 @@ fn bench<C: Calendar + 'static>(group: &mut BenchGroup, name: &str, app: &Arc<Ap
         let mut start = 0;
         let mut acc = 0;
         b.iter(move || {
-            acc = match start / CHUNK % 4 {
+            acc = match start / CHUNK % 8 {
                 0 => app.run::<Placed<C, 0>>(start, acc),
                 1 => app.run::<Placed<C, 1>>(start, acc),
                 2 => app.run::<Placed<C, 2>>(start, acc),
-                _ => app.run::<Placed<C, 3>>(start, acc),
+                3 => app.run::<Placed<C, 3>>(start, acc),
+                4 => app.run::<Placed<C, 4>>(start, acc),
+                5 => app.run::<Placed<C, 5>>(start, acc),
+                6 => app.run::<Placed<C, 6>>(start, acc),
+                _ => app.run::<Placed<C, 7>>(start, acc),
             };
             start = (start + CHUNK) % EVENTS;
             acc
