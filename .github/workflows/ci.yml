@@ -58,4 +58,4 @@ jobs:
     # Dev-dependencies need a much newer compiler, so only the library is
     # built on the minimum supported Rust version.
     - name: Build on minimum supported Rust version
-      run: cargo hack build --rust-version --no-dev-deps --feature-powerset --exclude-features criterion-benches,iai-bench
+      run: cargo hack build --rust-version --no-dev-deps --feature-powerset --exclude-features criterion-benches,gungraun-bench
