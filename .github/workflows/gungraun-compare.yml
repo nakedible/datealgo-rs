@@ -17,19 +17,33 @@ jobs:
       cancel-in-progress: true
 
     steps:
+      # Check out the merge commit, which pull requests do by default, so that
+      # comparing against the base commit shows only this pull request's
+      # changes even when the branch is behind its base.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      - name: Check for gungraun benchmarks
+        id: check
+        run: |
+          if [ -f benches/gungraun.rs ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No gungraun benchmarks in this commit, skipping the comparison."
+          fi
+
       - uses: actions-rust-lang/setup-rust-toolchain@v2
+        if: steps.check.outputs.present == 'true'
 
       # Installs Valgrind and the gungraun-runner version that matches the
       # gungraun library in Cargo.lock.
       - uses: gungraun/setup-gungraun@v1
+        if: steps.check.outputs.present == 'true'
 
       - name: Run instruction count comparison
         id: compare
+        if: steps.check.outputs.present == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -50,17 +64,20 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
       - name: Upload instruction count comparison report
+        if: steps.check.outputs.present == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: gungraun-compare-report
           path: gungraun-compare-report.txt
 
       - name: Add pull request comment
+        if: steps.check.outputs.present == 'true'
         uses: actions/github-script@v9
         env:
           COMPARE_STATUS: ${{ steps.compare.outputs.status }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
@@ -71,6 +88,7 @@ jobs:
             const status = process.env.COMPARE_STATUS;
             const baseSha = process.env.BASE_SHA;
             const headSha = process.env.HEAD_SHA;
+            const mergeSha = process.env.MERGE_SHA;
             const runUrl = process.env.RUN_URL;
             const headline = {
               "0": "No instruction count changes detected.",
@@ -83,8 +101,8 @@ jobs:
               "",
               headline,
               "",
-              "Compared this pull request branch head against its base commit with `./scripts/compare_gungraun_against_ref.py`.",
-              `Compared commits: ${baseSha} -> ${headSha}`,
+              "Compared this pull request, merged into its base, against the base commit with `./scripts/compare_gungraun_against_ref.py`.",
+              `Compared commits: ${baseSha} -> ${mergeSha} (merge of ${headSha})`,
               `Actions run: ${runUrl}`,
               "",
             ].join("\n");
