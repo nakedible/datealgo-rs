@@ -15,7 +15,7 @@ content you contribute may be provided under the project license.
 - Checking for invalid inputs in release builds should be done only to improve compiler performance or to avoid panics
 - Use the smallest datatypes that fit the values, unless performance loss is unpalatable
 - Use `#[inline]` on all methods, as the idea is that the methods are wrapped by some other library
-- Ensure documentation is commprehensive
+- Ensure documentation is comprehensive
 
 ## Testing your change
 
