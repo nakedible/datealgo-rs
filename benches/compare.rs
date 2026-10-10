@@ -38,6 +38,9 @@ fn bench_rd_to_date(c: &mut Criterion) {
         b.iter_custom(bencher(rand_rd, |x| icu_calc::rd_to_date(black_box(x))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(rand_rd, |x| icu::rd_to_date(black_box(x)))));
+    group.bench_function("temporal", |b| {
+        b.iter_custom(bencher(rand_rd, |x| temporal::rd_to_date(black_box(x))))
+    });
     group.finish();
 }
 
@@ -69,6 +72,9 @@ fn bench_date_to_rd(c: &mut Criterion) {
         b.iter_custom(bencher(rand_date, |x| icu_calc::date_to_rd(black_box(x))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(rand_date, |x| icu::date_to_rd(black_box(x)))));
+    group.bench_function("temporal", |b| {
+        b.iter_custom(bencher(rand_date, |x| temporal::date_to_rd(black_box(x))))
+    });
     group.finish();
 }
 
@@ -222,6 +228,9 @@ fn bench_days_in_month(c: &mut Criterion) {
         b.iter_custom(bencher(rand_ym, |(y, m)| datealgo_alt::days_in_month2(black_box(y), black_box(m))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(rand_ym, |x| icu::days_in_month(black_box(x)))));
+    group.bench_function("temporal", |b| {
+        b.iter_custom(bencher(rand_ym, |x| temporal::days_in_month(black_box(x))))
+    });
     group.finish();
 }
 
