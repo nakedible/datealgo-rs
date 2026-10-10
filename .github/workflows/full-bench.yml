@@ -26,6 +26,7 @@ on:
           - criterion
           - both
           - experiments
+          - libraries
         default: zenbench
       criterion-args:
         description: Extra arguments for Criterion
@@ -86,6 +87,18 @@ jobs:
             taskset -c 0 cargo bench --locked --features experiments --bench exp -- --format=md \
             > results/zenbench-exp.md
           cat results/zenbench-exp.md >> "$GITHUB_STEP_SUMMARY"
+
+      # The application benchmark comparing datealgo with other libraries
+      # (benches/app_libs.rs).
+      - name: Run library comparison
+        if: inputs.harness == 'libraries'
+        env:
+          APP_BENCH_CPU: "0"
+          APP_BENCH_SECS: "300"
+        run: |
+          mkdir -p results
+          scripts/app_libs.sh | tee results/app_libs.txt
+          { echo '```'; cat results/app_libs.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Criterion suites
         if: inputs.harness == 'criterion' || inputs.harness == 'both'
