@@ -3,7 +3,7 @@
 ![Crates.io](https://img.shields.io/crates/l/datealgo)
 ![Crates.io](https://img.shields.io/crates/d/datealgo)
 [![GitHub Workflow Status](https://github.com/nakedible/datealgo-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/nakedible/datealgo-rs/actions/workflows/ci.yml)
-![Maintenance](https://img.shields.io/maintenance/yes/2023)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
 
 # {{crate}}
 
