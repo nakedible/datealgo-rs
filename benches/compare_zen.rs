@@ -133,6 +133,7 @@ fn bench_date_to_weekday(suite: &mut Suite) {
         bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), datealgo_alt::date_to_weekday);
         bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), datealgo_alt::date_to_weekday2);
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_weekday);
+        bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::date_to_weekday);
         bench_from_inputs(group, "icu", inputs, icu::date_to_weekday);
     });
 }
@@ -174,6 +175,7 @@ fn bench_secs_to_datetime(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_secs);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::secs_to_datetime);
+        bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::secs_to_datetime);
         bench_from_inputs(group, "speedate", inputs, speedate::secs_to_datetime);
     });
 }
@@ -184,6 +186,7 @@ fn bench_datetime_to_secs(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_dt);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::datetime_to_secs);
+        bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::datetime_to_secs);
         bench_from_inputs(group, "speedate", inputs, speedate::datetime_to_secs);
     });
 }
@@ -220,6 +223,7 @@ fn bench_systemtime_to_datetime(suite: &mut Suite) {
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::systemtime_to_datetime);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::systemtime_to_datetime);
         bench_from_inputs(group, "time", Arc::clone(&inputs), time::systemtime_to_datetime);
+        bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::systemtime_to_datetime);
         bench_from_inputs(group, "chrono", inputs, chrono::systemtime_to_datetime);
     });
 }
@@ -233,6 +237,7 @@ fn bench_datetime_to_systemtime(suite: &mut Suite) {
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::datetime_to_systemtime);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::datetime_to_systemtime);
         bench_from_inputs(group, "time", Arc::clone(&inputs), time::datetime_to_systemtime);
+        bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::datetime_to_systemtime);
         bench_from_inputs(group, "chrono", inputs, chrono::datetime_to_systemtime);
     });
 }

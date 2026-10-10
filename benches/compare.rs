@@ -116,6 +116,9 @@ fn bench_date_to_weekday(c: &mut Criterion) {
         b.iter_custom(bencher(rand_date, |d| fasttime::date_to_weekday(black_box(d))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(rand_date, |x| icu::date_to_weekday(black_box(x)))));
+    group.bench_function("hifitime", |b| {
+        b.iter_custom(bencher(rand_date, |x| hifitime::date_to_weekday(black_box(x))))
+    });
     group.finish();
 }
 
@@ -191,6 +194,9 @@ fn bench_secs_to_datetime(c: &mut Criterion) {
     group.bench_function("speedate", |b| {
         b.iter_custom(bencher(rand_secs, |x| speedate::secs_to_datetime(black_box(x))))
     });
+    group.bench_function("hifitime", |b| {
+        b.iter_custom(bencher(rand_secs, |x| hifitime::secs_to_datetime(black_box(x))))
+    });
     group.finish();
 }
 
@@ -201,6 +207,9 @@ fn bench_datetime_to_secs(c: &mut Criterion) {
     });
     group.bench_function("speedate", |b| {
         b.iter_custom(bencher(rand_dt, |x| speedate::datetime_to_secs(black_box(x))))
+    });
+    group.bench_function("hifitime", |b| {
+        b.iter_custom(bencher(rand_dt, |x| hifitime::datetime_to_secs(black_box(x))))
     });
     group.finish();
 }
@@ -313,6 +322,9 @@ fn bench_systemtime_to_datetime(c: &mut Criterion) {
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(rand_st, |st| chrono::systemtime_to_datetime(black_box(st))))
     });
+    group.bench_function("hifitime", |b| {
+        b.iter_custom(bencher(rand_st, |x| hifitime::systemtime_to_datetime(black_box(x))))
+    });
     group.finish();
 }
 
@@ -332,6 +344,9 @@ fn bench_datetime_to_systemtime(c: &mut Criterion) {
     });
     group.bench_function("chrono", |b| {
         b.iter_custom(bencher(rand_dtn, |dtn| chrono::datetime_to_systemtime(black_box(dtn))))
+    });
+    group.bench_function("hifitime", |b| {
+        b.iter_custom(bencher(rand_dtn, |x| hifitime::datetime_to_systemtime(black_box(x))))
     });
     group.finish();
 }
