@@ -10,10 +10,18 @@ permissions:
 
 jobs:
   verify-basic-bench:
-    name: verify basic benchmark
-    runs-on: ubuntu-latest
+    name: verify basic benchmark (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
     concurrency:
-      group: basic-bench-${{ github.event.pull_request.number }}
+      group: basic-bench-${{ github.event.pull_request.number }}-${{ matrix.arch }}
       cancel-in-progress: true
 
     steps:
@@ -48,18 +56,22 @@ jobs:
           esac
 
           echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "cpu=$(lscpu | sed -n 's/^Model name: *//p' | head -n 1)" >> "$GITHUB_OUTPUT"
 
       - name: Add pull request comment
         uses: actions/github-script@v9
         env:
           VERIFY_STATUS: ${{ steps.verify.outputs.status }}
+          ARCH: ${{ matrix.arch }}
+          CPU: ${{ steps.verify.outputs.cpu }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         with:
           script: |
             const fs = require("fs");
 
-            const marker = "<!-- verify-basic-bench -->";
+            const arch = process.env.ARCH;
+            const marker = `<!-- verify-basic-bench ${arch} -->`;
             const report = fs.readFileSync("basic-bench-report.txt", "utf8").trimEnd();
             const status = process.env.VERIFY_STATUS;
             const baseSha = process.env.BASE_SHA;
@@ -70,12 +82,13 @@ jobs:
 
             const body = [
               marker,
-              "## Basic benchmark verification",
+              `## Basic benchmark verification (${arch})`,
               "",
               headline,
               "",
               "Compared this pull request branch head against its base commit with `./scripts/verify_basic_bench.py`.",
               `Compared commits: ${baseSha} -> ${headSha}`,
+              `Runner CPU: ${process.env.CPU}`,
               "",
               "```text",
               report,
@@ -91,8 +104,12 @@ jobs:
               per_page: 100,
             });
 
+            // Comments from before the arch-specific markers belong to x86_64.
+            const legacyMarker = "<!-- verify-basic-bench -->";
+            const isOurs = (body) =>
+              body?.includes(marker) || (arch === "x86_64" && body?.startsWith(legacyMarker));
             const existing = comments.find((comment) =>
-              comment.user?.type === "Bot" && comment.body?.includes(marker)
+              comment.user?.type === "Bot" && isOurs(comment.body)
             );
 
             if (existing) {

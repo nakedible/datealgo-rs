@@ -10,10 +10,18 @@ permissions:
 
 jobs:
   compare-asm:
-    name: compare asm
-    runs-on: ubuntu-latest
+    name: compare asm (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
     concurrency:
-      group: asm-compare-${{ github.event.pull_request.number }}
+      group: asm-compare-${{ github.event.pull_request.number }}-${{ matrix.arch }}
       cancel-in-progress: true
 
     steps:
@@ -51,13 +59,14 @@ jobs:
       - name: Upload asm comparison report
         uses: actions/upload-artifact@v7
         with:
-          name: asm-compare-report
+          name: asm-compare-report-${{ matrix.arch }}
           path: asm-compare-report.txt
 
       - name: Add pull request comment
         uses: actions/github-script@v9
         env:
           COMPARE_STATUS: ${{ steps.compare.outputs.status }}
+          ARCH: ${{ matrix.arch }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -65,7 +74,8 @@ jobs:
           script: |
             const fs = require("fs");
 
-            const marker = "<!-- compare-asm -->";
+            const arch = process.env.ARCH;
+            const marker = `<!-- compare-asm ${arch} -->`;
             const report = fs.readFileSync("asm-compare-report.txt", "utf8").trimEnd();
             const status = process.env.COMPARE_STATUS;
             const baseSha = process.env.BASE_SHA;
@@ -76,7 +86,7 @@ jobs:
               : "Asm differences detected.";
             const prefix = [
               marker,
-              "## Asm comparison",
+              `## Asm comparison (${arch})`,
               "",
               headline,
               "",
@@ -107,8 +117,12 @@ jobs:
               per_page: 100,
             });
 
+            // Comments from before the arch-specific markers belong to x86_64.
+            const legacyMarker = "<!-- compare-asm -->";
+            const isOurs = (body) =>
+              body?.includes(marker) || (arch === "x86_64" && body?.startsWith(legacyMarker));
             const existing = comments.find((comment) =>
-              comment.user?.type === "Bot" && comment.body?.includes(marker)
+              comment.user?.type === "Bot" && isOurs(comment.body)
             );
 
             if (existing) {
