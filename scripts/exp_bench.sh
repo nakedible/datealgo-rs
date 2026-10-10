@@ -9,5 +9,5 @@ ZENBENCH_NO_BUSY_GATE=1 taskset -c "$cpu" cargo bench -q --features experiments 
   ${1:+--group=$1} --format=csv 2>/dev/null |
   awk -F, 'NR > 1 && $1 != "group" {
     ci = ($18 == "") ? "baseline" : sprintf("[%+6.1f%% %+6.1f%%]", $18, $19)
-    printf "%-28s %-14s %7.2f ns  %s\n", $1, $2, $4, ci
+    printf "%-28s %-14s %7.3f ns  %s\n", $1, $2, $4 / 64, ci
   }'

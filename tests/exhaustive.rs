@@ -86,3 +86,31 @@ fn isoweekdates_round_trip() {
         isoweekdate_to_rd(iwd) == n && date_to_isoweekdate(rd_to_date(n)) == iwd
     });
 }
+
+#[cfg(feature = "experiments")]
+#[test]
+#[ignore]
+fn candidates() {
+    use datealgo::experiments as x;
+    check("leap", YEAR_MIN as i64, YEAR_MAX as i64, |y| {
+        let y = y as i32;
+        let e = is_leap_year(y);
+        x::is_leap_year_h64(y) == e && x::is_leap_year_abs(y) == e && x::is_leap_year_u25(y) == e
+    });
+    check("dim", YEAR_MIN as i64, YEAR_MAX as i64, |y| {
+        let y = y as i32;
+        (1..=12).all(|m| {
+            let e = days_in_month(y, m);
+            x::days_in_month_h64(y, m) == e && x::days_in_month_bl(y, m) == e && x::days_in_month_bits(y, m) == e
+        })
+    });
+    check("next/prev", RD_MIN as i64, RD_MAX as i64 - 1, |n| {
+        let n = n as i32;
+        let (a, b) = (rd_to_date(n), rd_to_date(n + 1));
+        x::next_date_h64(a) == b
+            && x::next_date_bl(a) == b
+            && x::next_date_fast(a) == b
+            && x::prev_date_h64(b) == a
+            && x::prev_date_bl(b) == a
+    });
+}
