@@ -433,6 +433,7 @@ fn hash_date((y, m, d): Date) -> u64 {
 /// Format a timestamp as RFC 3339, as for a log line or a serialized value
 #[inline(never)]
 fn format<C: Calendar>(secs: i64) -> u64 {
+    black_box(C::SALT);
     let (y, m, d, hh, mm, ss) = C::to_datetime(secs);
     let mut buf = *b"0000-00-00T00:00:00Z";
     put2(&mut buf[0..2], (y / 100) as u8);
@@ -442,12 +443,13 @@ fn format<C: Calendar>(secs: i64) -> u64 {
     put2(&mut buf[11..13], hh);
     put2(&mut buf[14..16], mm);
     put2(&mut buf[17..19], ss);
-    hash_bytes(&buf) ^ C::SALT
+    hash_bytes(&buf)
 }
 
 /// Parse and validate an RFC 3339 timestamp, as from a request or a file
 #[inline(never)]
 fn parse<C: Calendar>(s: &[u8; 20]) -> u64 {
+    black_box(C::SALT);
     let parsed = (|| {
         if s[4] != b'-' || s[7] != b'-' || s[10] != b'T' || s[13] != b':' || s[16] != b':' || s[19] != b'Z' {
             return None;
@@ -463,33 +465,36 @@ fn parse<C: Calendar>(s: &[u8; 20]) -> u64 {
         );
         C::from_datetime(dt)
     })();
-    parsed.map_or(0x5eed, |secs| secs as u64) ^ C::SALT
+    parsed.map_or(0x5eed, |secs| secs as u64)
 }
 
 /// Decode a column of timestamps, as from a database
 #[inline(never)]
 fn decode<C: Calendar>(column: &[i64]) -> u64 {
+    black_box(C::SALT);
     let mut h = 0u64;
     for &secs in column {
         let (y, m, d, hh, mm, ss) = C::to_datetime(secs);
         h = h.wrapping_mul(31) ^ hash_date((y, m, d)) ^ (hh as u64) << 40 ^ (mm as u64) << 48 ^ (ss as u64) << 56;
     }
-    h ^ C::SALT
+    h
 }
 
 /// Find a date some days from a timestamp, as for a due date
 #[inline(never)]
 fn shift<C: Calendar>(secs: i64, days: i32) -> u64 {
+    black_box(C::SALT);
     let (date, wd) = C::shift(secs, days);
-    hash_date(date) ^ (wd as u64) << 32 ^ C::SALT
+    hash_date(date) ^ (wd as u64) << 32
 }
 
 /// List the dates of a week from a timestamp, as for a calendar view
 #[inline(never)]
 fn week<C: Calendar>(secs: i64) -> u64 {
+    black_box(C::SALT);
     let mut dates = [(0, 0, 0); 7];
     let wd = C::week(secs, &mut dates);
-    dates.iter().fold(wd as u64, |h, &d| h.rotate_left(9) ^ hash_date(d)) ^ C::SALT
+    dates.iter().fold(wd as u64, |h, &d| h.rotate_left(9) ^ hash_date(d))
 }
 
 // The rest of the application
@@ -687,7 +692,7 @@ impl App {
                 SHIFT => shift::<C>(e.arg + flip as i64, e.days),
                 _ => week::<C>(e.arg + flip as i64),
             };
-            acc = acc.rotate_left(7) ^ h ^ C::SALT;
+            acc = acc.rotate_left(7) ^ h;
             acc ^= OTHERS[e.other as usize](&self.mem, acc, e.lines as u32);
         }
         acc
