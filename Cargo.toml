@@ -17,12 +17,18 @@ include = ["/src/", "/README.md", "/CHANGELOG.md", "/LICENSE-APACHE", "/LICENSE-
 default = ["std"]
 std = []
 asmdump = []
+experiments = []
 criterion-benches = []
 gungraun-bench = []
 
 [lib]
 path = "src/lib.rs"
 bench = false
+
+[[bench]]
+name = "exp"
+harness = false
+required-features = ["experiments"]
 
 [[bench]]
 name = "compare"
