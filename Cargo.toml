@@ -35,6 +35,10 @@ name = "app_libs"
 harness = false
 
 [[bench]]
+name = "app_ab"
+harness = false
+
+[[bench]]
 name = "compare"
 path = "benches/compare_zen.rs"
 harness = false
@@ -70,8 +74,10 @@ fasttime = "0.3.0"
 gungraun = "0.20.0"
 hifitime = "4.3.1"
 icu_calendar = { version = "2.3.0", default-features = false }
+libc = "0.2.190"
 quickcheck = "1.1.0"
 speedate = "0.17.0"
+tango-bench = "0.8.0"
 time = { version = "0.3.55", features = ["quickcheck", "large-dates"] }
 timezone_provider = "0.2.6"
 zenbench = "0.1.10"
