@@ -66,6 +66,9 @@ the `gungraun` dev-dependency in `Cargo.lock`, for example
 
 - `cargo bench --features gungraun-bench --bench gungraun` runs the benchmarks
   and compares against the previous run.
+- `python3 scripts/compare_gungraun_against_ref.py --git-ref origin/master`
+  compares the current worktree against `origin/master`. Pull requests get the
+  same comparison as a comment.
 - `cargo bench --features gungraun-bench --bench gungraun -- --save-baseline=master`
   and `-- --baseline=master` save and compare against a named baseline, like
   with Zenbench. Instruction counts don't vary between runs with the same
