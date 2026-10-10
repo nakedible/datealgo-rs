@@ -74,6 +74,39 @@ the `gungraun` dev-dependency in `Cargo.lock`, for example
   with Zenbench. Instruction counts don't vary between runs with the same
   compiler, so this comparison stays reliable even when the runs are far apart.
 
+## Trying out a faster algorithm
+
+The experiment tooling makes it quick to compare candidate implementations of a
+function against the current one, from static analysis to measurements on both
+x86-64 and AArch64:
+
+1. Add each candidate to `src/experiments.rs` (enabled by the `experiments`
+   feature) as an `#[inline] pub const fn` next to the current function, with a
+   non-inlined wrapper in its `asm` module. Candidates then compile the same way
+   as the real function.
+2. Look at the assembly and llvm-mca's estimates for Zen 2, Zen 3 and
+   Neoverse-N2 (GitHub's x86-64 and AArch64 runners):
+   `scripts/asm_mca.sh [--asm] datealgo::asm::rd_to_date datealgo::experiments::asm::<candidate>`.
+   It needs cargo-show-asm, llvm-mca and the AArch64 target
+   (`rustup target add aarch64-unknown-linux-gnu`). The tooling builds the
+   AArch64 code without running it, so no ARM machine is needed.
+3. Check the candidate against the current function over the whole supported
+   range with `check` in `tests/exhaustive.rs`, and run
+   `cargo test --release --features experiments --test exhaustive -- --ignored`.
+   These tests take seconds, and CI runs the ones for the current functions.
+4. Add a row for the candidate in `benches/exp.rs` and run
+   `scripts/exp_bench.sh`. It compares all rows interleaved in the same rounds,
+   for several input distributions, both with the result returned as a whole
+   and with its fields consumed separately, and prints each row's 95%
+   confidence interval against the current function. A run takes seconds.
+5. Push the branch and run the experiment suite on GitHub's x86-64 and AArch64
+   runners: `gh workflow run full-bench.yml --ref <branch> -f runner=all -f harness=experiments`.
+   Results are in the run summary. A candidate that only wins on one
+   architecture is usually not worth it.
+6. Replace the function with the winner and open a pull request without the
+   experiment code. The pull request checks verify the benchmark, compare
+   assembly and count instructions on both architectures.
+
 ## Commit messages
 
 Commit messages must conform to Conventional Commits. Changelog is automatically

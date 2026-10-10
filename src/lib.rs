@@ -1291,6 +1291,10 @@ pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8,
     secs_to_systemtime((secs, nsec))
 }
 
+#[cfg(feature = "experiments")]
+#[doc(hidden)]
+pub mod experiments;
+
 #[cfg(feature = "asmdump")]
 pub mod asm {
     //! Non-inline wrappers for functions for dumping assembly with

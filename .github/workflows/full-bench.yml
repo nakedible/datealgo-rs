@@ -25,6 +25,7 @@ on:
           - zenbench
           - criterion
           - both
+          - experiments
         default: zenbench
       criterion-args:
         description: Extra arguments for Criterion
@@ -72,6 +73,19 @@ jobs:
               > "results/zenbench-$bench.md"
             cat "results/zenbench-$bench.md" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      # The experiment suite (benches/exp.rs) compares candidates from
+      # src/experiments.rs, so it is mostly useful on experiment branches.
+      - name: Run experiment suite
+        if: inputs.harness == 'experiments'
+        env:
+          ZENBENCH_NO_BUSY_GATE: "1"
+        run: |
+          mkdir -p results
+          ZENBENCH_RESULT_PATH="$PWD/results/zenbench-exp.json" \
+            taskset -c 0 cargo bench --locked --features experiments --bench exp -- --format=md \
+            > results/zenbench-exp.md
+          cat results/zenbench-exp.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Criterion suites
         if: inputs.harness == 'criterion' || inputs.harness == 'both'
