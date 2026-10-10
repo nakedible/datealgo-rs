@@ -41,6 +41,9 @@ fn bench_rd_to_date(c: &mut Criterion) {
     group.bench_function("temporal", |b| {
         b.iter_custom(bencher(rand_rd, |x| temporal::rd_to_date(black_box(x))))
     });
+    group.bench_function("speedate", |b| {
+        b.iter_custom(bencher(rand_rd, |x| speedate::rd_to_date(black_box(x))))
+    });
     group.finish();
 }
 
@@ -74,6 +77,9 @@ fn bench_date_to_rd(c: &mut Criterion) {
     group.bench_function("icu", |b| b.iter_custom(bencher(rand_date, |x| icu::date_to_rd(black_box(x)))));
     group.bench_function("temporal", |b| {
         b.iter_custom(bencher(rand_date, |x| temporal::date_to_rd(black_box(x))))
+    });
+    group.bench_function("speedate", |b| {
+        b.iter_custom(bencher(rand_date, |x| speedate::date_to_rd(black_box(x))))
     });
     group.finish();
 }
@@ -182,6 +188,9 @@ fn bench_secs_to_datetime(c: &mut Criterion) {
     group.bench_function("datealgo", |b| {
         b.iter_custom(bencher(rand_secs, |s| datealgo::secs_to_datetime(black_box(s))))
     });
+    group.bench_function("speedate", |b| {
+        b.iter_custom(bencher(rand_secs, |x| speedate::secs_to_datetime(black_box(x))))
+    });
     group.finish();
 }
 
@@ -189,6 +198,9 @@ fn bench_datetime_to_secs(c: &mut Criterion) {
     let mut group = c.benchmark_group("compare_datetime_to_secs");
     group.bench_function("datealgo", |b| {
         b.iter_custom(bencher(rand_dt, |dt| datealgo::datetime_to_secs(black_box(dt))))
+    });
+    group.bench_function("speedate", |b| {
+        b.iter_custom(bencher(rand_dt, |x| speedate::datetime_to_secs(black_box(x))))
     });
     group.finish();
 }

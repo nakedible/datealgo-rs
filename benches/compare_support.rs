@@ -798,6 +798,75 @@ mod temporal {
     }
 }
 
+// speedate, the date and time parser of pydantic. Its timestamps default to
+// inferring seconds or milliseconds from their size, so the adapters set the
+// unit to seconds explicitly.
+mod speedate {
+    use speedate::{
+        Date, DateConfig, DateTime, DateTimeConfig, MicrosecondsPrecisionOverflowBehavior, Time, TimeConfig,
+        TimestampUnit,
+    };
+
+    const DATE_CONFIG: DateConfig = DateConfig {
+        timestamp_unit: TimestampUnit::Second,
+    };
+    const DATETIME_CONFIG: DateTimeConfig = DateTimeConfig {
+        timestamp_unit: TimestampUnit::Second,
+        time_config: TimeConfig {
+            microseconds_precision_overflow_behavior: MicrosecondsPrecisionOverflowBehavior::Error,
+            unix_timestamp_offset: None,
+        },
+    };
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        let date = Date::from_timestamp(n as i64 * 86400, true, &DATE_CONFIG).unwrap();
+        (date.year as i32, date.month, date.day)
+    }
+
+    #[inline]
+    pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
+        let date = Date {
+            year: y as u16,
+            month: m,
+            day: d,
+        };
+        (date.timestamp() / 86400) as i32
+    }
+
+    #[inline]
+    pub fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+        let dt = DateTime::from_timestamp_with_config(secs, 0, &DATETIME_CONFIG).unwrap();
+        (
+            dt.date.year as i32,
+            dt.date.month,
+            dt.date.day,
+            dt.time.hour,
+            dt.time.minute,
+            dt.time.second,
+        )
+    }
+
+    #[inline]
+    pub fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+        let dt = DateTime {
+            date: Date {
+                year: y as u16,
+                month: m,
+                day: d,
+            },
+            time: Time {
+                hour: hh,
+                minute: mm,
+                second: ss,
+                microsecond: 0,
+                tz_offset: None,
+            },
+        };
+        dt.timestamp()
+    }
+}
+
 mod fasttime {
     pub fn rand_date() -> fasttime::Date {
         let (y, m, d) = super::rand_date();
