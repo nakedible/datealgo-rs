@@ -34,6 +34,10 @@ fn bench_rd_to_date(c: &mut Criterion) {
         b.iter_custom(bencher(rand_rd, |rd| fasttime::rd_to_date(black_box(rd))))
     });
     group.bench_function("time", |b| b.iter_custom(bencher(rand_rd, |rd| time::rd_to_date(black_box(rd)))));
+    group.bench_function("icu_calc", |b| {
+        b.iter_custom(bencher(rand_rd, |x| icu_calc::rd_to_date(black_box(x))))
+    });
+    group.bench_function("icu", |b| b.iter_custom(bencher(rand_rd, |x| icu::rd_to_date(black_box(x)))));
     group.finish();
 }
 
@@ -61,6 +65,10 @@ fn bench_date_to_rd(c: &mut Criterion) {
         b.iter_custom(bencher(rand_date, |d| fasttime::date_to_rd(black_box(d))))
     });
     group.bench_function("time", |b| b.iter_custom(bencher(rand_date, |d| time::date_to_rd(black_box(d)))));
+    group.bench_function("icu_calc", |b| {
+        b.iter_custom(bencher(rand_date, |x| icu_calc::date_to_rd(black_box(x))))
+    });
+    group.bench_function("icu", |b| b.iter_custom(bencher(rand_date, |x| icu::date_to_rd(black_box(x)))));
     group.finish();
 }
 
@@ -95,6 +103,7 @@ fn bench_date_to_weekday(c: &mut Criterion) {
     group.bench_function("fasttime", |b| {
         b.iter_custom(bencher(rand_date, |d| fasttime::date_to_weekday(black_box(d))))
     });
+    group.bench_function("icu", |b| b.iter_custom(bencher(rand_date, |x| icu::date_to_weekday(black_box(x)))));
     group.finish();
 }
 
@@ -115,6 +124,7 @@ fn bench_next_date(c: &mut Criterion) {
     group.bench_function("time", |b| {
         b.iter_custom(bencher(time::rand_date, |d| time::next_date(black_box(d))))
     });
+    group.bench_function("icu", |b| b.iter_custom(bencher(icu::rand_date, |x| icu::next_date(black_box(x)))));
     group.finish();
 }
 
@@ -135,6 +145,7 @@ fn bench_prev_date(c: &mut Criterion) {
     group.bench_function("time", |b| {
         b.iter_custom(bencher(time::rand_date, |d| time::prev_date(black_box(d))))
     });
+    group.bench_function("icu", |b| b.iter_custom(bencher(icu::rand_date, |x| icu::prev_date(black_box(x)))));
     group.finish();
 }
 
@@ -193,6 +204,9 @@ fn bench_is_leap_year(c: &mut Criterion) {
     group.bench_function("datealgo_alt4", |b| {
         b.iter_custom(bencher(rand_year, |y| datealgo_alt::is_leap_year4(black_box(y))))
     });
+    group.bench_function("icu_calc", |b| {
+        b.iter_custom(bencher(rand_year, |x| icu_calc::is_leap_year(black_box(x))))
+    });
     group.finish();
 }
 
@@ -207,6 +221,7 @@ fn bench_days_in_month(c: &mut Criterion) {
     group.bench_function("datealgo_alt2", |b| {
         b.iter_custom(bencher(rand_ym, |(y, m)| datealgo_alt::days_in_month2(black_box(y), black_box(m))))
     });
+    group.bench_function("icu", |b| b.iter_custom(bencher(rand_ym, |x| icu::days_in_month(black_box(x)))));
     group.finish();
 }
 
@@ -220,6 +235,9 @@ fn bench_date_to_isoweekdate(c: &mut Criterion) {
     });
     group.bench_function("time", |b| {
         b.iter_custom(bencher(rand_date, |d| time::date_to_isoweekdate(black_box(d))))
+    });
+    group.bench_function("icu", |b| {
+        b.iter_custom(bencher(rand_date, |x| icu::date_to_isoweekdate(black_box(x))))
     });
     group.finish();
 }

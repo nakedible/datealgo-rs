@@ -54,6 +54,8 @@ fn bench_rd_to_date(suite: &mut Suite) {
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::rd_to_date);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::rd_to_date);
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::rd_to_date);
+        bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::rd_to_date);
+        bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::rd_to_date);
         bench_from_inputs(group, "time", inputs, time::rd_to_date);
     });
 }
@@ -70,6 +72,8 @@ fn bench_date_to_rd(suite: &mut Suite) {
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::date_to_rd);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::date_to_rd);
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_rd);
+        bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::date_to_rd);
+        bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::date_to_rd);
         bench_from_inputs(group, "time", inputs, time::date_to_rd);
     });
 }
@@ -90,6 +94,8 @@ fn bench_next_date(suite: &mut Suite) {
 
         let time_inputs = seeded_inputs(time::rand_date);
         bench_from_inputs(group, "time", time_inputs, time::next_date);
+        let icu_inputs = seeded_inputs(icu::rand_date);
+        bench_from_inputs(group, "icu", icu_inputs, icu::next_date);
     });
 }
 
@@ -109,6 +115,51 @@ fn bench_prev_date(suite: &mut Suite) {
 
         let time_inputs = seeded_inputs(time::rand_date);
         bench_from_inputs(group, "time", time_inputs, time::prev_date);
+        let icu_inputs = seeded_inputs(icu::rand_date);
+        bench_from_inputs(group, "icu", icu_inputs, icu::prev_date);
+    });
+}
+
+fn bench_date_to_weekday(suite: &mut Suite) {
+    suite.group("compare_date_to_weekday", |group| {
+        configure_compare_group(group);
+
+        let inputs = seeded_inputs(rand_date);
+        bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::date_to_weekday);
+        bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), datealgo_alt::date_to_weekday);
+        bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), datealgo_alt::date_to_weekday2);
+        bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_weekday);
+        bench_from_inputs(group, "icu", inputs, icu::date_to_weekday);
+    });
+}
+
+fn bench_is_leap_year(suite: &mut Suite) {
+    suite.group("compare_is_leap_year", |group| {
+        configure_compare_group(group);
+
+        let inputs = seeded_inputs(rand_year);
+        bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::is_leap_year);
+        bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), datealgo_alt::is_leap_year);
+        bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), datealgo_alt::is_leap_year2);
+        bench_from_inputs(group, "datealgo_alt3", Arc::clone(&inputs), datealgo_alt::is_leap_year3);
+        bench_from_inputs(group, "datealgo_alt4", Arc::clone(&inputs), datealgo_alt::is_leap_year4);
+        bench_from_inputs(group, "icu_calc", inputs, icu_calc::is_leap_year);
+    });
+}
+
+fn bench_days_in_month(suite: &mut Suite) {
+    suite.group("compare_days_in_month", |group| {
+        configure_compare_group(group);
+
+        let inputs = seeded_inputs(rand_ym);
+        bench_from_inputs(group, "datealgo", Arc::clone(&inputs), |(y, m)| datealgo::days_in_month(y, m));
+        bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), |(y, m)| {
+            datealgo_alt::days_in_month(y, m)
+        });
+        bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), |(y, m)| {
+            datealgo_alt::days_in_month2(y, m)
+        });
+        bench_from_inputs(group, "icu", inputs, icu::days_in_month);
     });
 }
 
@@ -119,6 +170,7 @@ fn bench_date_to_isoweekdate(suite: &mut Suite) {
         let inputs = seeded_inputs(rand_date);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::date_to_isoweekdate);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::date_to_isoweekdate);
+        bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::date_to_isoweekdate);
         bench_from_inputs(group, "time", inputs, time::date_to_isoweekdate);
     });
 }
@@ -165,6 +217,9 @@ zenbench::main!(
     bench_date_to_rd,
     bench_next_date,
     bench_prev_date,
+    bench_date_to_weekday,
+    bench_is_leap_year,
+    bench_days_in_month,
     bench_date_to_isoweekdate,
     bench_isoweekdate_to_date,
     bench_systemtime_to_datetime,
