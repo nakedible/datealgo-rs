@@ -58,6 +58,7 @@ criterion = "0.8.2"
 fastrand = "2.5.0"
 fasttime = "0.3.0"
 gungraun = "0.20.0"
+hifitime = "4.3.1"
 icu_calendar = { version = "2.3.0", default-features = false }
 quickcheck = "1.1.0"
 speedate = "0.17.0"

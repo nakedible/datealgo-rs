@@ -867,6 +867,48 @@ mod speedate {
     }
 }
 
+// hifitime, a scientific time library that works in TAI and applies leap
+// seconds when converting from and to UTC.
+mod hifitime {
+    use hifitime::{Duration, Epoch};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    const NANOS_PER_SEC: i128 = 1_000_000_000;
+
+    #[inline]
+    pub fn date_to_weekday((y, m, d): (i32, u8, u8)) -> u8 {
+        Epoch::from_gregorian_utc_at_midnight(y, m, d).weekday_utc() as u8 + 1
+    }
+
+    #[inline]
+    pub fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+        let epoch = Epoch::from_unix_duration(Duration::from_total_nanoseconds(secs as i128 * NANOS_PER_SEC));
+        let (y, m, d, hh, mm, ss, _) = epoch.to_gregorian_utc();
+        (y, m, d, hh, mm, ss)
+    }
+
+    #[inline]
+    pub fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+        let epoch = Epoch::from_gregorian_utc(y, m, d, hh, mm, ss, 0);
+        (epoch.to_unix_duration().total_nanoseconds() / NANOS_PER_SEC) as i64
+    }
+
+    #[inline]
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let since_epoch = v.duration_since(UNIX_EPOCH).unwrap();
+        Epoch::from_unix_duration(since_epoch.into()).to_gregorian_utc()
+    }
+
+    #[inline]
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+        let nanos = Epoch::from_gregorian_utc(y, m, d, hh, mm, ss, nsec)
+            .to_unix_duration()
+            .total_nanoseconds();
+        let since_epoch = std::time::Duration::new((nanos / NANOS_PER_SEC) as u64, (nanos % NANOS_PER_SEC) as u32);
+        UNIX_EPOCH + since_epoch
+    }
+}
+
 mod fasttime {
     pub fn rand_date() -> fasttime::Date {
         let (y, m, d) = super::rand_date();
