@@ -98,14 +98,21 @@ x86-64 and AArch64:
    `scripts/exp_bench.sh`. It compares all rows interleaved in the same rounds,
    for several input distributions, both with the result returned as a whole
    and with its fields consumed separately, and prints each row's 95%
-   confidence interval against the current function. A run takes seconds.
-5. Push the branch and run the experiment suite on GitHub's x86-64 and AArch64
-   runners: `gh workflow run full-bench.yml --ref <branch> -f runner=all -f harness=experiments`.
-   Results are in the run summary. A candidate that only wins on one
-   architecture is usually not worth it.
-6. Replace the function with the winner and open a pull request without the
-   experiment code. The pull request checks verify the benchmark, compare
-   assembly and count instructions on both architectures.
+   confidence interval against the current function. A run takes seconds, and
+   `gh workflow run full-bench.yml --ref <branch> -f runner=all -f harness=experiments`
+   runs it on GitHub's x86-64 and AArch64 runners. It measures the function on
+   its own in a hot loop, which shows where its time goes but favors tables and
+   code that needs warm caches.
+5. Decide with the application benchmark, which measures the change the way it
+   would run in software using the library: replace the function in
+   `src/lib.rs` and run `scripts/app_ab.sh`, which compares the working tree
+   with `origin/master`, or with a given git ref. It prints how much the time
+   spent in calendar code per event changed, with a 95% confidence interval,
+   and pull requests run it on GitHub's x86-64 and AArch64 runners. A change is
+   better if it is better on both architectures.
+6. Open a pull request with the winner and without the experiment code. The
+   pull request checks run the application benchmark, verify the basic
+   benchmark, compare assembly and count instructions on both architectures.
 
 ## Commit messages
 

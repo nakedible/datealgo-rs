@@ -1,0 +1,131 @@
+name: Application benchmark
+
+# Compares the datealgo of a pull request with that of its base in the
+# application benchmark (benches/app_ab.rs), with scripts/app_ab.sh. It can
+# also be run on demand against any ref, for example:
+#
+#   gh workflow run app-ab.yml --ref my-branch -f base=master
+
+on:
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Ref to compare against
+        type: string
+        default: master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  app-ab:
+    name: application benchmark (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    concurrency:
+      group: app-ab-${{ github.event.pull_request.number || github.ref }}-${{ matrix.arch }}
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
+
+      # The x86-64 Linux target links with LLD already, and scripts/app_ab.sh
+      # needs it to shuffle the functions elsewhere
+      - name: Install LLD
+        if: runner.arch != 'X64'
+        run: sudo apt-get install -y lld
+
+      - name: Run application benchmark
+        id: run
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
+          APP_AB_PAIRS: "40"
+        run: |
+          git rev-parse --verify "$BASE^{commit}" >/dev/null 2>&1 || BASE="origin/$BASE"
+          scripts/app_ab.sh "$BASE" | tee app-ab-report.txt
+          {
+            echo '```text'
+            cat app-ab-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "cpu=$(lscpu | sed -n 's/^Model name: *//p' | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload measurements
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-ab-${{ matrix.arch }}
+          path: target/app-ab/dump
+
+      # Pull requests from forks get a token that cannot comment, so their
+      # report is only in the job summary
+      - name: Add pull request comment
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v9
+        env:
+          ARCH: ${{ matrix.arch }}
+          CPU: ${{ steps.run.outputs.cpu }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const fs = require("fs");
+
+            const arch = process.env.ARCH;
+            const marker = `<!-- app-ab ${arch} -->`;
+            const report = fs.readFileSync("app-ab-report.txt", "utf8").trimEnd();
+
+            const body = [
+              marker,
+              `## Application benchmark (${arch})`,
+              "",
+              "Compared this pull request with its base in the application benchmark with `./scripts/app_ab.sh`.",
+              `Compared commits: ${process.env.BASE_SHA} -> ${process.env.HEAD_SHA}`,
+              `Runner CPU: ${process.env.CPU}`,
+              "",
+              "```text",
+              report,
+              "```",
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) =>
+              comment.user?.type === "Bot" && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
