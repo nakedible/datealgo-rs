@@ -9,3 +9,4 @@
 
 /asm/*.asm
 /scripts/__pycache__/
+/.zenbench/
