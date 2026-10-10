@@ -120,3 +120,9 @@ fn date_to_rd_t2() {
 fn date_to_rd_t3() {
     check_date_to_rd("t3", datealgo::experiments::date_to_rd_t3);
 }
+
+#[test]
+#[ignore]
+fn date_to_rd_s3() {
+    check_date_to_rd("s3", datealgo::experiments::date_to_rd_s3);
+}

@@ -105,6 +105,20 @@ pub const fn date_to_rd_t3((y, m, d): (i32, u8, u8)) -> i32 {
     y.wrapping_add(m).wrapping_add(d as u32) as i32
 }
 
+/// Joffe's per-range month constant, with `- 1 - DAY_OFFSET` folded into the
+/// month term by doing its division in 64 bits. No table.
+#[inline]
+pub const fn date_to_rd_s3((y, m, d): (i32, u8, u8)) -> i32 {
+    const K: u64 = 32 * ((-1 - DAY_OFFSET) as u32 as u64);
+    let jf = m < 3;
+    let y = (y + YEAR_OFFSET) as u32 - jf as u32;
+    let c = y / 100;
+    let shift: u64 = if jf { 8829 + K } else { K - 2919 };
+    let y = 1461 * y / 4 - c + c / 4;
+    let m = ((979 * m as u64 + shift) >> 5) as u32;
+    y.wrapping_add(m).wrapping_add(d as u32) as i32
+}
+
 /// Non-inlined wrappers of the candidates for dumping their assembly.
 #[cfg(feature = "asmdump")]
 pub mod asm {
@@ -127,5 +141,9 @@ pub mod asm {
     #[inline(never)]
     pub const fn date_to_rd_t3(d: (i32, u8, u8)) -> i32 {
         super::date_to_rd_t3(d)
+    }
+    #[inline(never)]
+    pub const fn date_to_rd_s3(d: (i32, u8, u8)) -> i32 {
+        super::date_to_rd_s3(d)
     }
 }

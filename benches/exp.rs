@@ -138,6 +138,7 @@ fn exp(suite: &mut Suite) {
             ("t", datealgo::experiments::date_to_rd_t),
             ("t2", datealgo::experiments::date_to_rd_t2),
             ("t3", datealgo::experiments::date_to_rd_t3),
+            ("s3", datealgo::experiments::date_to_rd_s3),
         ],
     );
     compare(
