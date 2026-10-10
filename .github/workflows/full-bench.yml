@@ -89,19 +89,16 @@ jobs:
           cat results/zenbench-exp.md >> "$GITHUB_STEP_SUMMARY"
 
       # The application benchmark (benches/app.rs) ranks implementations by
-      # how fast a synthetic application runs with each of them. Functions and
-      # loops are aligned as in scripts/app_bench.sh.
+      # how fast a synthetic application runs with each of them.
       - name: Run application benchmark
         if: inputs.harness == 'application'
         env:
-          RUSTFLAGS: -C llvm-args=-align-loops=64 -C llvm-args=-align-all-functions=6
-          ZENBENCH_NO_BUSY_GATE: "1"
+          APP_BENCH_CPU: "0"
+          APP_BENCH_SECS: "300"
         run: |
           mkdir -p results
-          ZENBENCH_RESULT_PATH="$PWD/results/zenbench-app.json" \
-            taskset -c 0 cargo bench --locked --features experiments --bench app -- --format=md \
-            > results/zenbench-app.md
-          cat results/zenbench-app.md >> "$GITHUB_STEP_SUMMARY"
+          scripts/app_bench.sh | tee results/app.txt
+          { echo '```'; cat results/app.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Criterion suites
         if: inputs.harness == 'criterion' || inputs.harness == 'both'

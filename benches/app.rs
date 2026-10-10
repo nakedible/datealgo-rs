@@ -729,10 +729,12 @@ fn app(suite: &mut Suite) {
     let app = Arc::new(App::new());
     suite.group("app", |group| {
         group.baseline("datealgo");
+        // Seconds to measure for, 30 by default
+        let secs = std::env::var("APP_BENCH_SECS").map_or(30, |s| s.parse().unwrap());
         group
             .config()
-            .max_rounds(50)
-            .max_time(Duration::from_secs(30))
+            .max_rounds(1000)
+            .max_time(Duration::from_secs(secs))
             .baseline_only(true);
         group.throughput(Throughput::Elements(CHUNK as u64)).throughput_unit("events");
         rows!(

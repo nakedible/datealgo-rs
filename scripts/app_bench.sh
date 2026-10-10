@@ -6,6 +6,9 @@
 #
 # usage: scripts/app_bench.sh
 #
+# APP_BENCH_SECS sets how many seconds to measure for, 30 by default, and
+# APP_BENCH_CPU the CPU core to run on.
+#
 # Functions and loops are aligned to 64 bytes, so that where the code of each
 # row happens to be placed affects the results less. This needs its own target
 # directory, as the flags rebuild everything.
@@ -13,7 +16,7 @@ set -euo pipefail
 cpu=${APP_BENCH_CPU:-2}
 export CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-target/exp}
 export RUSTFLAGS="${RUSTFLAGS:-} -C llvm-args=-align-loops=64 -C llvm-args=-align-all-functions=6"
-ZENBENCH_NO_BUSY_GATE=1 taskset -c "$cpu" cargo bench -q --features experiments --bench app -- --format=csv 2>/dev/null |
+ZENBENCH_NO_BUSY_GATE=1 taskset -c "$cpu" cargo bench -q --locked --features experiments --bench app -- --format=csv 2>/dev/null |
   awk -F, '
     NR > 1 && $1 != "group" {
       p = substr($16, 1, 1)
