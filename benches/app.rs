@@ -29,6 +29,10 @@ type DateTime = (i32, u8, u8, u8, u8, u8);
 /// the primitives, which default to datealgo. A candidate implementation
 /// overrides a primitive, and a library overrides what it provides.
 trait Calendar {
+    /// Mixed into the results of the event handlers, so that the handlers of
+    /// each implementation are distinct code that the compiler cannot merge
+    const SALT: u64 = 0;
+
     fn rd_to_date(n: i32) -> Date {
         datealgo::rd_to_date(n)
     }
@@ -105,11 +109,17 @@ mod candidates {
     }
 
     pub struct Copy1;
-    impl Calendar for Copy1 {}
+    impl Calendar for Copy1 {
+        const SALT: u64 = 1;
+    }
     pub struct Copy2;
-    impl Calendar for Copy2 {}
+    impl Calendar for Copy2 {
+        const SALT: u64 = 2;
+    }
     pub struct Copy3;
-    impl Calendar for Copy3 {}
+    impl Calendar for Copy3 {
+        const SALT: u64 = 3;
+    }
 
     pub struct Leap;
     impl Calendar for Leap {
@@ -128,7 +138,14 @@ struct NoCalendar;
 impl Calendar for NoCalendar {
     fn to_datetime(secs: i64) -> DateTime {
         let n = secs as u64;
-        (2026, (n & 7) as u8 + 1, (n >> 3 & 15) as u8 + 1, (n >> 7 & 15) as u8, (n >> 11 & 31) as u8, (n >> 16 & 31) as u8)
+        (
+            2026,
+            (n & 7) as u8 + 1,
+            (n >> 3 & 15) as u8 + 1,
+            (n >> 7 & 15) as u8,
+            (n >> 11 & 31) as u8,
+            (n >> 16 & 31) as u8,
+        )
     }
 
     fn from_datetime((y, m, d, hh, mm, ss): DateTime) -> Option<i64> {
@@ -167,7 +184,14 @@ mod libs {
         fn to_datetime(secs: i64) -> DateTime {
             use chrono::{Datelike, Timelike};
             let t = chrono::DateTime::from_timestamp(secs, 0).unwrap();
-            (t.year(), t.month() as u8, t.day() as u8, t.hour() as u8, t.minute() as u8, t.second() as u8)
+            (
+                t.year(),
+                t.month() as u8,
+                t.day() as u8,
+                t.hour() as u8,
+                t.minute() as u8,
+                t.second() as u8,
+            )
         }
 
         fn from_datetime((y, m, d, hh, mm, ss): DateTime) -> Option<i64> {
@@ -418,7 +442,7 @@ fn format<C: Calendar>(secs: i64) -> u64 {
     put2(&mut buf[11..13], hh);
     put2(&mut buf[14..16], mm);
     put2(&mut buf[17..19], ss);
-    hash_bytes(&buf)
+    hash_bytes(&buf) ^ C::SALT
 }
 
 /// Parse and validate an RFC 3339 timestamp, as from a request or a file
@@ -429,13 +453,17 @@ fn parse<C: Calendar>(s: &[u8; 20]) -> u64 {
             return None;
         }
         let y = get2(&s[0..2])? as i32 * 100 + get2(&s[2..4])? as i32;
-        let dt = (y, get2(&s[5..7])?, get2(&s[8..10])?, get2(&s[11..13])?, get2(&s[14..16])?, get2(&s[17..19])?);
+        let dt = (
+            y,
+            get2(&s[5..7])?,
+            get2(&s[8..10])?,
+            get2(&s[11..13])?,
+            get2(&s[14..16])?,
+            get2(&s[17..19])?,
+        );
         C::from_datetime(dt)
     })();
-    match parsed {
-        Some(secs) => secs as u64,
-        None => 0x5eed,
-    }
+    parsed.map_or(0x5eed, |secs| secs as u64) ^ C::SALT
 }
 
 /// Decode a column of timestamps, as from a database
@@ -446,14 +474,14 @@ fn decode<C: Calendar>(column: &[i64]) -> u64 {
         let (y, m, d, hh, mm, ss) = C::to_datetime(secs);
         h = h.wrapping_mul(31) ^ hash_date((y, m, d)) ^ (hh as u64) << 40 ^ (mm as u64) << 48 ^ (ss as u64) << 56;
     }
-    h
+    h ^ C::SALT
 }
 
 /// Find a date some days from a timestamp, as for a due date
 #[inline(never)]
 fn shift<C: Calendar>(secs: i64, days: i32) -> u64 {
     let (date, wd) = C::shift(secs, days);
-    hash_date(date) ^ (wd as u64) << 32
+    hash_date(date) ^ (wd as u64) << 32 ^ C::SALT
 }
 
 /// List the dates of a week from a timestamp, as for a calendar view
@@ -461,7 +489,7 @@ fn shift<C: Calendar>(secs: i64, days: i32) -> u64 {
 fn week<C: Calendar>(secs: i64) -> u64 {
     let mut dates = [(0, 0, 0); 7];
     let wd = C::week(secs, &mut dates);
-    dates.iter().fold(wd as u64, |h, &d| h.rotate_left(9) ^ hash_date(d))
+    dates.iter().fold(wd as u64, |h, &d| h.rotate_left(9) ^ hash_date(d)) ^ C::SALT
 }
 
 // The rest of the application
@@ -617,7 +645,14 @@ impl App {
                         (log, 0)
                     }
                     PARSE | DECODE => (fastrand::usize(0..POOL) as i64, 0),
-                    SHIFT => (near_now(), if fastrand::bool() { fastrand::i32(1..=30) } else { fastrand::i32(-400..=400) }),
+                    SHIFT => (
+                        near_now(),
+                        if fastrand::bool() {
+                            fastrand::i32(1..=30)
+                        } else {
+                            fastrand::i32(-400..=400)
+                        },
+                    ),
                     _ => (near_now(), 0),
                 };
                 Event {
@@ -652,15 +687,30 @@ impl App {
                 SHIFT => shift::<C>(e.arg + flip as i64, e.days),
                 _ => week::<C>(e.arg + flip as i64),
             };
-            acc = acc.rotate_left(7) ^ h;
+            acc = acc.rotate_left(7) ^ h ^ C::SALT;
             acc ^= OTHERS[e.other as usize](&self.mem, acc, e.lines as u32);
         }
         acc
     }
 
+    /// Process `CHUNK` events like `run`, with one of the placed copies of the
+    /// implementation in turn
+    fn run_placed<C: Calendar>(&self, start: usize, acc: u64) -> u64 {
+        match start / CHUNK % 8 {
+            0 => self.run::<Placed<C, 0>>(start, acc),
+            1 => self.run::<Placed<C, 1>>(start, acc),
+            2 => self.run::<Placed<C, 2>>(start, acc),
+            3 => self.run::<Placed<C, 3>>(start, acc),
+            4 => self.run::<Placed<C, 4>>(start, acc),
+            5 => self.run::<Placed<C, 5>>(start, acc),
+            6 => self.run::<Placed<C, 6>>(start, acc),
+            _ => self.run::<Placed<C, 7>>(start, acc),
+        }
+    }
+
     /// Hash of the results of the whole trace
     fn checksum<C: Calendar>(&self) -> u64 {
-        (0..EVENTS).step_by(CHUNK).fold(0, |acc, start| self.run::<C>(start, acc))
+        (0..EVENTS).step_by(CHUNK).fold(0, |acc, start| self.run_placed::<C>(start, acc))
     }
 }
 
@@ -670,6 +720,8 @@ impl App {
 /// results less.
 struct Placed<C, const K: usize>(PhantomData<C>);
 impl<C: Calendar, const K: usize> Calendar for Placed<C, K> {
+    const SALT: u64 = C::SALT << 8 | K as u64;
+
     fn to_datetime(secs: i64) -> DateTime {
         C::to_datetime(secs)
     }
@@ -694,16 +746,7 @@ fn bench<C: Calendar + 'static>(group: &mut BenchGroup, name: &str, app: &Arc<Ap
         let mut start = 0;
         let mut acc = 0;
         b.iter(move || {
-            acc = match start / CHUNK % 8 {
-                0 => app.run::<Placed<C, 0>>(start, acc),
-                1 => app.run::<Placed<C, 1>>(start, acc),
-                2 => app.run::<Placed<C, 2>>(start, acc),
-                3 => app.run::<Placed<C, 3>>(start, acc),
-                4 => app.run::<Placed<C, 4>>(start, acc),
-                5 => app.run::<Placed<C, 5>>(start, acc),
-                6 => app.run::<Placed<C, 6>>(start, acc),
-                _ => app.run::<Placed<C, 7>>(start, acc),
-            };
+            acc = app.run_placed::<C>(start, acc);
             start = (start + CHUNK) % EVENTS;
             acc
         })
