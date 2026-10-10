@@ -406,9 +406,9 @@ checksum = "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223"
 
 [[package]]
 name = "fasttime"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb93f992bf9419638ed9539002bc5570b35f368f521bc5678812fd3c3ae5ecab"
+checksum = "7e7255715eb3eb493129c4f45fb1582ea39bb13ad42013f026bd8502848cd4af"
 
 [[package]]
 name = "find-msvc-tools"

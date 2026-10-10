@@ -55,7 +55,7 @@ required-features = ["gungraun-bench"]
 chrono = "0.4.45"
 criterion = "0.8.2"
 fastrand = "2.5.0"
-fasttime = "0.2.3"
+fasttime = "0.3.0"
 gungraun = "0.20.0"
 quickcheck = "1.1.0"
 time = { version = "0.3.47", features = ["quickcheck", "large-dates"] }
