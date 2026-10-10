@@ -99,6 +99,8 @@ x86-64 and AArch64:
    for several input distributions, both with the result returned as a whole
    and with its fields consumed separately, and prints each row's 95%
    confidence interval against the current function. A run takes seconds.
+   Where each row's code lands in memory can still shift results by a few
+   percent, so check the assembly before trusting a small difference.
 5. Push the branch and run the experiment suite on GitHub's x86-64 and AArch64
    runners: `gh workflow run full-bench.yml --ref <branch> -f runner=all -f harness=experiments`.
    Results are in the run summary. A candidate that only wins on one
