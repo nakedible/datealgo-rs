@@ -57,6 +57,8 @@ functions also work in constant contexts.
 
 - `std` (default): Include `SystemTime` conversions
 
+The minimum supported Rust version is 1.57.
+
 ## Background
 
 There are many date and time libraries for Rust for varying use cases as the

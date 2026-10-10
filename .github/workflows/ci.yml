@@ -43,3 +43,19 @@ jobs:
         tool: cargo-readme
     - name: Check that `README.md` is up-to-date
       run: cargo readme | diff -u README.md -
+
+  msrv:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions-rust-lang/setup-rust-toolchain@v2
+    - name: Install cargo-hack
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-hack
+    # Dev-dependencies need a much newer compiler, so only the library is
+    # built on the minimum supported Rust version.
+    - name: Build on minimum supported Rust version
+      run: cargo hack build --rust-version --no-dev-deps --feature-powerset --exclude-features criterion-benches,iai-bench
