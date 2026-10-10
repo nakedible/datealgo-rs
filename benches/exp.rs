@@ -61,12 +61,15 @@ where
         let inputs = Arc::clone(&inputs);
         let mut i = 0usize;
         b.iter(|| {
+            // The inputs are runtime data, so they need no black_box. Leaving
+            // it out lets tuples reach the function field by field, as from a
+            // caller, instead of packed into one register.
             let x = inputs[i & (N - 1)];
             i = i.wrapping_add(1);
             if fields {
-                f(black_box(x)).consume();
+                f(x).consume();
             } else {
-                black_box(f(black_box(x)));
+                black_box(f(x));
             }
         })
     });
