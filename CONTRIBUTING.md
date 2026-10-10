@@ -54,11 +54,22 @@ default:
 - `cargo bench --features criterion-benches --bench basic_criterion`
 - `cargo bench --features criterion-benches --bench compare_criterion`
 
-In addition to this it might be beneficial use `iai-callgrind` to benchmark how
-many instructions each method will use. This can be done with `cargo bench
---features iai-bench --bench iai`. It will always compare against the last invocation and has no
-command-line options. Instruction counts are usually a good rough guide on
+In addition to this it might be beneficial to use
+[Gungraun](https://gungraun.github.io/gungraun/) to count how many instructions
+each method executes. Instruction counts are usually a good rough guide on
 performance, but in the case of this library they are nearly useless.
+
+Gungraun needs Valgrind and a `gungraun-runner` binary of the same version as
+the `gungraun` dev-dependency in `Cargo.lock`, for example
+`cargo binstall gungraun-runner@0.20.0`. Reinstall the runner whenever the
+`gungraun` dependency is updated.
+
+- `cargo bench --features gungraun-bench --bench gungraun` runs the benchmarks
+  and compares against the previous run.
+- `cargo bench --features gungraun-bench --bench gungraun -- --save-baseline=master`
+  and `-- --baseline=master` save and compare against a named baseline, like
+  with Zenbench. Instruction counts don't vary between runs with the same
+  compiler, so this comparison stays reliable even when the runs are far apart.
 
 ## Commit messages
 
