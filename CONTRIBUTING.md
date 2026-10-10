@@ -43,10 +43,10 @@ it still differs by at least `5%` after confirmation.
 For ad hoc local exploration, the common Zenbench workflow is:
 
 1. Checkout `master` branch.
-2. Run `cargo bench --bench basic -- --save-baseline master` to run the Zenbench basic suite and save a baseline.
-3. Run `cargo bench --bench basic -- --baseline master` to rerun the Zenbench basic suite against that baseline. This is to verify your benchmarking setup doesn't have too much noise.
+2. Run `cargo bench --bench basic -- --save-baseline=master` to run the Zenbench basic suite and save a baseline.
+3. Run `cargo bench --bench basic -- --baseline=master` to rerun the Zenbench basic suite against that baseline. This is to verify your benchmarking setup doesn't have too much noise.
 4. Checkout the branch with your changes.
-5. Run `cargo bench --bench basic -- --baseline master`. You can rerun this after changes to see how they affect performance.
+5. Run `cargo bench --bench basic -- --baseline=master`. You can rerun this after changes to see how they affect performance.
 
 Criterion benchmarks are still available, but they are opt-in and not run by
 default:

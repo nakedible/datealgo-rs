@@ -121,6 +121,9 @@ def bench_group(cwd: pathlib.Path, cpu: int, group: str, out_path: pathlib.Path)
 
     env = os.environ.copy()
     env["ZENBENCH_RESULT_PATH"] = str(out_path)
+    # Baseline and candidate runs are paired here, so zenbench's resource gate
+    # would only add waits between rounds.
+    env["ZENBENCH_NO_BUSY_GATE"] = "1"
     run(
         ["taskset", "-c", str(cpu), "cargo", "bench", "--bench", "basic", "--", f"--group={group}"],
         cwd=cwd,
