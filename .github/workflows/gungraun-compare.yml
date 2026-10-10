@@ -10,10 +10,22 @@ permissions:
 
 jobs:
   compare-instructions:
-    name: compare instruction counts
-    runs-on: ubuntu-latest
+    name: compare instruction counts (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+            valgrind-strategy: builder,source,system
+          # gungraun/valgrind-builder only has x86_64 builds, so use Ubuntu's
+          # Valgrind instead of building it from source.
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+            valgrind-strategy: system
     concurrency:
-      group: gungraun-compare-${{ github.event.pull_request.number }}
+      group: gungraun-compare-${{ github.event.pull_request.number }}-${{ matrix.arch }}
       cancel-in-progress: true
 
     steps:
@@ -27,6 +39,8 @@ jobs:
       # Installs Valgrind and the gungraun-runner version that matches the
       # gungraun library in Cargo.lock.
       - uses: gungraun/setup-gungraun@v1
+        with:
+          valgrind-strategy: ${{ matrix.valgrind-strategy }}
 
       - name: Run instruction count comparison
         id: compare
@@ -52,13 +66,14 @@ jobs:
       - name: Upload instruction count comparison report
         uses: actions/upload-artifact@v7
         with:
-          name: gungraun-compare-report
+          name: gungraun-compare-report-${{ matrix.arch }}
           path: gungraun-compare-report.txt
 
       - name: Add pull request comment
         uses: actions/github-script@v9
         env:
           COMPARE_STATUS: ${{ steps.compare.outputs.status }}
+          ARCH: ${{ matrix.arch }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -66,7 +81,8 @@ jobs:
           script: |
             const fs = require("fs");
 
-            const marker = "<!-- compare-gungraun -->";
+            const arch = process.env.ARCH;
+            const marker = `<!-- compare-gungraun ${arch} -->`;
             const report = fs.readFileSync("gungraun-compare-report.txt", "utf8").trimEnd();
             const status = process.env.COMPARE_STATUS;
             const baseSha = process.env.BASE_SHA;
@@ -79,7 +95,7 @@ jobs:
             }[status];
             const prefix = [
               marker,
-              "## Instruction count comparison",
+              `## Instruction count comparison (${arch})`,
               "",
               headline,
               "",
@@ -110,8 +126,12 @@ jobs:
               per_page: 100,
             });
 
+            // Comments from before the arch-specific markers belong to x86_64.
+            const legacyMarker = "<!-- compare-gungraun -->";
+            const isOurs = (body) =>
+              body?.includes(marker) || (arch === "x86_64" && body?.startsWith(legacyMarker));
             const existing = comments.find((comment) =>
-              comment.user?.type === "Bot" && comment.body?.includes(marker)
+              comment.user?.type === "Bot" && isOurs(comment.body)
             );
 
             if (existing) {
