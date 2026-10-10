@@ -31,6 +31,10 @@ harness = false
 required-features = ["experiments"]
 
 [[bench]]
+name = "app"
+harness = false
+
+[[bench]]
 name = "compare"
 path = "benches/compare_zen.rs"
 harness = false
