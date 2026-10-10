@@ -6,7 +6,11 @@ use std::{
 };
 use zenbench::prelude::*;
 
+// A power of two, so inputs can be indexed with a mask. Indexing with `%` by a
+// runtime length costs a division per iteration, which hides the cheapest
+// functions behind it.
 const INPUT_SET_SIZE: usize = 4096;
+const _: () = assert!(INPUT_SET_SIZE.is_power_of_two());
 
 fn configure_basic_group(group: &mut BenchGroup) {
     group.config().max_rounds(20).max_time(Duration::from_millis(350));
@@ -25,7 +29,7 @@ where
         let inputs = Arc::clone(&inputs);
         let mut index = 0usize;
         b.iter(|| {
-            let input = inputs[index % inputs.len()].clone();
+            let input = inputs[index & (INPUT_SET_SIZE - 1)].clone();
             index = index.wrapping_add(1);
             run(black_box(input))
         })
