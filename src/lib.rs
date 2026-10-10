@@ -430,7 +430,7 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// Convert Rata Die to day of week
 ///
 /// Given a day counting from Unix epoch (January 1st, 1970) returns the day of
-/// week. Day of week is given as `u32` number between 1 and 7, with `1` meaning
+/// week. Day of week is given as `u8` number between 1 and 7, with `1` meaning
 /// Monday and `7` meaning Sunday.
 ///
 /// # Panics
@@ -487,7 +487,7 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 /// > groups of `3`.  Furthermore, the repeating group matches `m % 7 + 1`.
 /// >
 /// > Based on the above, the algorithm multiplies `m` by `2^64 / 7` and
-/// > extracts the `3` highest bits of the product by shifiting `61` bits to the
+/// > extracts the `3` highest bits of the product by shifting `61` bits to the
 /// > right. However, since `2^64 / 7` must be truncated, the result is an
 /// > approximation that works provided that `m` is not too large but, still,
 /// > large enough for our purposes.
@@ -501,7 +501,7 @@ pub const fn rd_to_weekday(n: i32) -> u8 {
 /// Convert Gregorian date to day of week
 ///
 /// Given a `(year, month, day)` tuple returns the day of week. Day of week is
-/// given as `u32` number between 1 and 7, with `1` meaning Monday and `7`
+/// given as `u8` number between 1 and 7, with `1` meaning Monday and `7`
 /// meaning Sunday.
 ///
 /// # Panics
