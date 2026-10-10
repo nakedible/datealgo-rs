@@ -57,6 +57,7 @@ fn bench_rd_to_date(suite: &mut Suite) {
         bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::rd_to_date);
         bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::rd_to_date);
         bench_from_inputs(group, "temporal", Arc::clone(&inputs), temporal::rd_to_date);
+        bench_from_inputs(group, "speedate", Arc::clone(&inputs), speedate::rd_to_date);
         bench_from_inputs(group, "time", inputs, time::rd_to_date);
     });
 }
@@ -76,6 +77,7 @@ fn bench_date_to_rd(suite: &mut Suite) {
         bench_from_inputs(group, "icu_calc", Arc::clone(&inputs), icu_calc::date_to_rd);
         bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::date_to_rd);
         bench_from_inputs(group, "temporal", Arc::clone(&inputs), temporal::date_to_rd);
+        bench_from_inputs(group, "speedate", Arc::clone(&inputs), speedate::date_to_rd);
         bench_from_inputs(group, "time", inputs, time::date_to_rd);
     });
 }
@@ -166,6 +168,26 @@ fn bench_days_in_month(suite: &mut Suite) {
     });
 }
 
+fn bench_secs_to_datetime(suite: &mut Suite) {
+    suite.group("compare_secs_to_datetime", |group| {
+        configure_compare_group(group);
+
+        let inputs = seeded_inputs(rand_secs);
+        bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::secs_to_datetime);
+        bench_from_inputs(group, "speedate", inputs, speedate::secs_to_datetime);
+    });
+}
+
+fn bench_datetime_to_secs(suite: &mut Suite) {
+    suite.group("compare_datetime_to_secs", |group| {
+        configure_compare_group(group);
+
+        let inputs = seeded_inputs(rand_dt);
+        bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::datetime_to_secs);
+        bench_from_inputs(group, "speedate", inputs, speedate::datetime_to_secs);
+    });
+}
+
 fn bench_date_to_isoweekdate(suite: &mut Suite) {
     suite.group("compare_date_to_isoweekdate", |group| {
         configure_compare_group(group);
@@ -223,6 +245,8 @@ zenbench::main!(
     bench_date_to_weekday,
     bench_is_leap_year,
     bench_days_in_month,
+    bench_secs_to_datetime,
+    bench_datetime_to_secs,
     bench_date_to_isoweekdate,
     bench_isoweekdate_to_date,
     bench_systemtime_to_datetime,
