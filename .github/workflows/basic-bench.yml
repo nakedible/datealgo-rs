@@ -17,12 +17,12 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v2
 
       - name: Run benchmark verification
         id: verify
@@ -50,7 +50,7 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
 
       - name: Add pull request comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           VERIFY_STATUS: ${{ steps.verify.outputs.status }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}

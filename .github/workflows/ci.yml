@@ -15,19 +15,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rust-lang/setup-rust-toolchain@v1
+    - uses: actions/checkout@v7
+    - uses: actions-rust-lang/setup-rust-toolchain@v2
+      with:
+        components: clippy, rustfmt
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --locked --verbose
+    - name: Build without std
+      run: cargo build --locked --verbose --no-default-features
+    - name: Build with asmdump
+      run: cargo build --locked --verbose --features asmdump
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --locked --verbose
     - name: Check format
       run: cargo fmt -- --check
     - name: Check clippy
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --locked --all-targets --all-features -- -D warnings
+    - name: Check clippy without std
+      run: cargo clippy --locked --lib --no-default-features --features asmdump -- -D warnings
     - name: Check docs
-      run: cargo doc --no-deps
+      run: cargo doc --locked --no-deps
+      env:
+        RUSTDOCFLAGS: -D warnings
     - name: Install cargo-readme
-      run: cargo install cargo-readme
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-readme
     - name: Check that `README.md` is up-to-date
       run: cargo readme | diff -u README.md -
