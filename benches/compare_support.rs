@@ -793,13 +793,13 @@ mod time {
             .unwrap()
             .with_hms_nano(hh, mm, ss, nsec)
             .unwrap()
-            .assume_utc()
+            .as_utc()
             .into()
     }
 
     #[inline]
     pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let d: time::OffsetDateTime = v.into();
+        let d: time::UtcDateTime = v.into();
         (
             d.year(),
             d.month() as u8,

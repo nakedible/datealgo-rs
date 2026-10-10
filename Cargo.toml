@@ -58,5 +58,5 @@ fastrand = "2.5.0"
 fasttime = "0.3.0"
 gungraun = "0.20.0"
 quickcheck = "1.1.0"
-time = { version = "0.3.47", features = ["quickcheck", "large-dates"] }
+time = { version = "0.3.55", features = ["quickcheck", "large-dates"] }
 zenbench = "0.1.10"
