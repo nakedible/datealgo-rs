@@ -64,6 +64,7 @@ fn rand_iwd() -> (i32, u8, u8) {
     datealgo::rd_to_isoweekdate(rand_rd())
 }
 
+#[allow(clippy::manual_is_multiple_of)] // benchmarked implementations are kept as written
 mod datealgo_alt {
     const YEAR_OFFSET: i32 = 3670 * 400;
     const DAY_OFFSET: i32 = 3670 * 146097 + 719468;
@@ -221,6 +222,7 @@ mod datealgo_alt {
     }
 }
 
+#[allow(clippy::manual_is_multiple_of)] // benchmarked implementations are kept as written
 mod httpdate {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -421,6 +423,7 @@ mod httpdate {
     }
 }
 
+#[allow(clippy::manual_is_multiple_of)] // benchmarked implementations are kept as written
 mod humantime {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -679,7 +682,7 @@ mod chrono {
 
     #[inline]
     pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
-        chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
+        chrono::NaiveDate::from_ymd_opt(y, m as u32, d as u32)
             .unwrap()
             .and_hms_nano_opt(hh as u32, mm as u32, ss as u32, nsec)
             .unwrap()
@@ -692,7 +695,7 @@ mod chrono {
     pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let d: chrono::DateTime<chrono::Utc> = v.into();
         (
-            d.year() as i32,
+            d.year(),
             d.month() as u8,
             d.day() as u8,
             d.hour() as u8,
@@ -762,12 +765,12 @@ mod time {
     #[inline]
     pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
         let date = time::Date::from_julian_day(n + UNIX_EPOCH_JULIAN_DAY).unwrap();
-        (date.year(), date.month() as u8, date.day() as u8)
+        (date.year(), date.month() as u8, date.day())
     }
 
     #[inline]
     pub fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
-        time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
+        time::Date::from_calendar_date(y, time::Month::try_from(m).unwrap(), d)
             .unwrap()
             .to_julian_day()
             - UNIX_EPOCH_JULIAN_DAY
@@ -777,18 +780,18 @@ mod time {
     pub fn date_to_isoweekdate((y, m, d): (i32, u8, u8)) -> (i32, u8, u8) {
         let date = time::Date::from_calendar_date(y, m.try_into().unwrap(), d).unwrap();
         let (y, w, wd) = date.to_iso_week_date();
-        (y, w as u8, wd.number_from_monday())
+        (y, w, wd.number_from_monday())
     }
 
     #[inline]
     pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
         let d = time::Date::from_iso_week_date(y, w, time::Weekday::Sunday.nth_next(wd)).unwrap();
-        (d.year(), d.month() as u8, d.day() as u8)
+        (d.year(), d.month() as u8, d.day())
     }
 
     #[inline]
     pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, nsec): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
-        time::Date::from_calendar_date(y, time::Month::try_from(m as u8).unwrap(), d as u8)
+        time::Date::from_calendar_date(y, time::Month::try_from(m).unwrap(), d)
             .unwrap()
             .with_hms_nano(hh, mm, ss, nsec)
             .unwrap()
@@ -800,12 +803,12 @@ mod time {
     pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
         let d: time::OffsetDateTime = v.into();
         (
-            d.year() as i32,
+            d.year(),
             d.month() as u8,
-            d.day() as u8,
-            d.hour() as u8,
-            d.minute() as u8,
-            d.second() as u8,
+            d.day(),
+            d.hour(),
+            d.minute(),
+            d.second(),
             d.nanosecond(),
         )
     }
@@ -813,7 +816,7 @@ mod time {
 
 mod hinnant {
     pub fn days_from_civil((y, m, d): (i32, u8, u8)) -> i32 {
-        let y = y as i32 - (m <= 2) as i32;
+        let y = y - (m <= 2) as i32;
         let era = y.div_euclid(400);
         let yoe = y.rem_euclid(400) as u32;
         let doy = (153 * if m > 2 { (m - 3) as u32 } else { (m + 9) as u32 } + 2) / 5 + d as u32 - 1;
@@ -824,10 +827,10 @@ mod hinnant {
     pub fn days_from_civil_u((y, m, d): (i32, u8, u8)) -> i32 {
         let y = y as u32 - (m <= 2) as u32;
         let era = y.div_euclid(400);
-        let yoe = y.rem_euclid(400) as u32;
+        let yoe = y.rem_euclid(400);
         let doy = (153 * if m > 2 { (m - 3) as u32 } else { (m + 9) as u32 } + 2) / 5 + d as u32 - 1;
         let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-        (era * 146097 + doe as u32 - 719468) as i32
+        (era * 146097 + doe - 719468) as i32
     }
 
     pub fn civil_from_days(n: i32) -> (i32, u8, u8) {
@@ -846,9 +849,9 @@ mod hinnant {
     pub fn civil_from_days_u(n: i32) -> (i32, u8, u8) {
         let z = (n + 719468) as u32;
         let era = z.div_euclid(146097);
-        let doe = z.rem_euclid(146097) as u32;
+        let doe = z.rem_euclid(146097);
         let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-        let y = (yoe as u32) + era * 400;
+        let y = yoe + era * 400;
         let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
         let mp = (5 * doy + 2) / 153;
         let d = doy - (153 * mp + 2) / 5 + 1;

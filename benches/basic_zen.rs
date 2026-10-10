@@ -100,7 +100,7 @@ fn bench_basic(suite: &mut Suite) {
     suite.group("overhead", |group| {
         configure_basic_group(group);
         let inputs = seeded_inputs(rand_date);
-        bench_from_inputs(group, "overhead", inputs, |d| black_box(d));
+        bench_from_inputs(group, "overhead", inputs, black_box);
     });
     suite.group("rd_to_date", |group| {
         configure_basic_group(group);

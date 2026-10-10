@@ -1,3 +1,5 @@
+#![allow(clippy::absurd_extreme_comparisons, clippy::manual_range_contains)]
+
 use std::time::SystemTime;
 
 use quickcheck::{quickcheck, Arbitrary, Gen, TestResult};

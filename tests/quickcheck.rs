@@ -1,3 +1,5 @@
+#![allow(clippy::manual_range_contains)]
+
 use datealgo::*;
 
 use quickcheck::{quickcheck, TestResult};
@@ -6,12 +8,12 @@ quickcheck! {
     fn quickcheck_rd_to_date(d: time::Date) -> TestResult {
         let rd = d.to_julian_day() - 2440588;
         let a = rd_to_date(rd);
-        let b = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let b = (d.year(), d.month() as u8, d.day());
         TestResult::from_bool(a == b)
     }
 
     fn quickcheck_date_to_rd(d: time::Date) -> TestResult {
-        let a = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let a = (d.year(), d.month() as u8, d.day());
         let rd = date_to_rd(a);
         TestResult::from_bool(rd == d.to_julian_day() - 2440588)
     }
@@ -56,10 +58,10 @@ quickcheck! {
         if d == time::Date::MAX {
             return TestResult::discard();
         }
-        let date = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let date = (d.year(), d.month() as u8, d.day());
         let next_date = datealgo::next_date(date);
         let nd = d + time::Duration::days(1);
-        let expected_date = (nd.year() as i32, nd.month() as u8, nd.day() as u8);
+        let expected_date = (nd.year(), nd.month() as u8, nd.day());
         TestResult::from_bool(next_date == expected_date)
     }
 
@@ -67,10 +69,10 @@ quickcheck! {
         if d == time::Date::MIN {
             return TestResult::discard();
         }
-        let date = (d.year() as i32, d.month() as u8, d.day() as u8);
+        let date = (d.year(), d.month() as u8, d.day());
         let prev_date = datealgo::prev_date(date);
         let pd = d - time::Duration::days(1);
-        let expected_date = (pd.year() as i32, pd.month() as u8, pd.day() as u8);
+        let expected_date = (pd.year(), pd.month() as u8, pd.day());
         TestResult::from_bool(prev_date == expected_date)
     }
 
@@ -78,12 +80,12 @@ quickcheck! {
         let rd = d.to_julian_day() - 2440588;
         let a = rd_to_isoweekdate(rd);
         let (y, w, wd) = d.to_iso_week_date();
-        TestResult::from_bool(a == (y, w as u8, wd.number_from_monday()))
+        TestResult::from_bool(a == (y, w, wd.number_from_monday()))
     }
 
     fn quickcheck_isoweekdate_to_rd(d: time::Date) -> TestResult {
         let (y, w, wd) = d.to_iso_week_date();
-        let rd = isoweekdate_to_rd((y, w as u8, wd.number_from_monday()));
+        let rd = isoweekdate_to_rd((y, w, wd.number_from_monday()));
         TestResult::from_bool(rd == d.to_julian_day() - 2440588)
     }
 
@@ -100,12 +102,12 @@ quickcheck! {
         let s = s.assume_utc();
         let a = systemtime_to_datetime(s.into()).unwrap();
         let b = (
-            s.year() as i32,
+            s.year(),
             s.month() as u8,
-            s.day() as u8,
-            s.hour() as u8,
-            s.minute() as u8,
-            s.second() as u8,
+            s.day(),
+            s.hour(),
+            s.minute(),
+            s.second(),
             s.nanosecond(),
         );
         TestResult::from_bool(a == b)
@@ -114,12 +116,12 @@ quickcheck! {
     fn quickcheck_datetime_to_systemtime(s: time::PrimitiveDateTime) -> TestResult {
         let s = s.assume_utc();
         let dt = (
-            s.year() as i32,
+            s.year(),
             s.month() as u8,
-            s.day() as u8,
-            s.hour() as u8,
-            s.minute() as u8,
-            s.second() as u8,
+            s.day(),
+            s.hour(),
+            s.minute(),
+            s.second(),
             s.nanosecond(),
         );
         let a = datetime_to_systemtime(dt).unwrap();

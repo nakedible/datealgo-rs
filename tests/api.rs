@@ -1,5 +1,3 @@
-#[rustfmt::skip]
-    
 use datealgo::*;
 use std::time::{Duration, UNIX_EPOCH};
 
@@ -140,17 +138,17 @@ fn test_datetime_to_secs() {
 
 #[test]
 fn test_is_leap_year() {
-    assert_eq!(is_leap_year(0), true);
-    assert_eq!(is_leap_year(1), false);
-    assert_eq!(is_leap_year(4), true);
-    assert_eq!(is_leap_year(100), false);
-    assert_eq!(is_leap_year(400), true);
-    assert_eq!(is_leap_year(-1), false);
-    assert_eq!(is_leap_year(-4), true);
-    assert_eq!(is_leap_year(-100), false);
-    assert_eq!(is_leap_year(-400), true);
-    assert_eq!(is_leap_year(YEAR_MIN), false);
-    assert_eq!(is_leap_year(YEAR_MAX), true);
+    assert!(is_leap_year(0));
+    assert!(!is_leap_year(1));
+    assert!(is_leap_year(4));
+    assert!(!is_leap_year(100));
+    assert!(is_leap_year(400));
+    assert!(!is_leap_year(-1));
+    assert!(is_leap_year(-4));
+    assert!(!is_leap_year(-100));
+    assert!(is_leap_year(-400));
+    assert!(!is_leap_year(YEAR_MIN));
+    assert!(is_leap_year(YEAR_MAX));
 }
 
 #[test]
