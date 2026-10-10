@@ -19,12 +19,28 @@ fi
 features=(--features asmdump,experiments --lib -q)
 
 # cargo-show-asm treats the name as a substring and lists the matches when
-# several functions match, so pick the index of the exact name in that list.
+# several functions match, as `[N] "name" [lines]`. Its INDEX argument is only
+# documented for several functions with the same name, so find the position of
+# the exact name in that list, and check below that the right function was
+# selected rather than trusting the index.
 index_of() {
   local sym=$1
   shift
   { cargo asm "${features[@]}" "$@" "$sym" 2>&1 || true; } |
-    sed -n "s/^ *\([0-9]*\) \"$sym\" .*/\1/p" | head -n 1
+    sed -n 's/^ *\([0-9]* \)\{0,1\}"\([^"]*\)" \[.*/\2/p' |
+    awk -v sym="$sym" '$0 == sym { print NR - 1; exit }'
+}
+
+# Fail unless the selected assembly is for the requested function.
+check_selected() {
+  local sym=$1 idx=$2
+  shift 2
+  local label
+  label=$(cargo asm "${features[@]}" "$@" --simplify "$sym" ${idx:+$idx} 2>&1 | grep -m 1 -v '^\s*$' || true)
+  if [ "$label" != "$sym:" ]; then
+    echo "error: could not select $sym ${*:+($*) }with cargo-show-asm, got: $label" >&2
+    exit 1
+  fi
 }
 
 for sym in "$@"; do
@@ -33,6 +49,7 @@ for sym in "$@"; do
     target=()
     if [ "$arch" = aarch64 ]; then target=(--target=aarch64-unknown-linux-gnu); fi
     idx=$(index_of "$sym" "${target[@]}")
+    check_selected "$sym" "$idx" "${target[@]}"
     out=$(cargo asm "${features[@]}" "${target[@]}" --mca -M=-mcpu="$cpu" -M=-iterations=100 "$sym" ${idx:+$idx} 2>&1)
     insns=$(sed -n 's/^Instructions: *//p' <<<"$out")
     uops=$(sed -n 's/^Total uOps: *//p' <<<"$out")
