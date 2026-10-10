@@ -6,10 +6,11 @@ use std::{
 };
 use zenbench::prelude::*;
 
-// A power of two, so inputs can be indexed with a mask. Indexing with `%` by a
-// runtime length costs a division per iteration, which hides the cheapest
-// functions behind it.
-const INPUT_SET_SIZE: usize = 4096;
+// Large enough that the branch predictor can't learn the input sequence, as
+// in the Criterion helper in util.rs. A power of two, so inputs can be indexed
+// with a mask. Indexing with `%` by a runtime length costs a division per
+// iteration, which hides the cheapest functions behind it.
+const INPUT_SET_SIZE: usize = 262144;
 const _: () = assert!(INPUT_SET_SIZE.is_power_of_two());
 
 fn configure_basic_group(group: &mut BenchGroup) {
