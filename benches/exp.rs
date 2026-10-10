@@ -125,7 +125,37 @@ fn rd_distributions() -> Vec<Distribution<i32>> {
 }
 
 fn exp(suite: &mut Suite) {
-    compare!(suite, "rd_to_date", rd_distributions(), [("datealgo", datealgo::rd_to_date)]);
+    use datealgo::experiments as x;
+    let years: Vec<Distribution<i32>> = vec![
+        ("full", inputs(|_| fastrand::i32(datealgo::YEAR_MIN..=datealgo::YEAR_MAX))),
+        ("modern", inputs(|_| fastrand::i32(1970..=2100))),
+    ];
+    compare!(
+        suite,
+        "is_leap_year",
+        years,
+        [
+            ("datealgo", datealgo::is_leap_year),
+            ("h64", x::is_leap_year_h64),
+            ("abs", x::is_leap_year_abs),
+        ]
+    );
+    compare!(
+        suite,
+        "rd_to_date",
+        rd_distributions(),
+        [("datealgo", datealgo::rd_to_date), ("table", x::rd_to_date_table)]
+    );
+    let dates: Vec<Distribution<(i32, u8, u8)>> = rd_distributions()
+        .into_iter()
+        .map(|(name, rds)| (name, rds.iter().map(|&n| datealgo::rd_to_date(n)).collect::<Vec<_>>().into()))
+        .collect();
+    compare!(
+        suite,
+        "date_to_rd",
+        dates,
+        [("datealgo", datealgo::date_to_rd), ("table", x::date_to_rd_table)]
+    );
 }
 
 zenbench::main!(exp);

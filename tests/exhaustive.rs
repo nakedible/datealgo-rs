@@ -86,3 +86,15 @@ fn isoweekdates_round_trip() {
         isoweekdate_to_rd(iwd) == n && date_to_isoweekdate(rd_to_date(n)) == iwd
     });
 }
+
+#[cfg(feature = "experiments")]
+#[test]
+#[ignore]
+fn tables() {
+    use datealgo::experiments as x;
+    check("tables", RD_MIN as i64, RD_MAX as i64, |n| {
+        let n = n as i32;
+        let d = rd_to_date(n);
+        x::rd_to_date_table(n) == d && x::date_to_rd_table(d) == n
+    });
+}
