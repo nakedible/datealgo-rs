@@ -19,7 +19,7 @@
 //! The string parsing and formatting around the calendar code is the same for
 //! all rows, so library rows compare only the calendar parts of each library.
 
-use std::{sync::Arc, time::Duration};
+use std::{marker::PhantomData, sync::Arc, time::Duration};
 use zenbench::prelude::*;
 
 type Date = (i32, u8, u8);
@@ -664,6 +664,29 @@ impl App {
     }
 }
 
+/// One of several copies of an implementation. Each copy has its own copies of
+/// the event handlers, placed at different addresses, and rows rotate through
+/// them, so that how the code of one row happens to be placed affects its
+/// results less.
+struct Placed<C, const K: usize>(PhantomData<C>);
+impl<C: Calendar, const K: usize> Calendar for Placed<C, K> {
+    fn to_datetime(secs: i64) -> DateTime {
+        C::to_datetime(secs)
+    }
+
+    fn from_datetime(dt: DateTime) -> Option<i64> {
+        C::from_datetime(dt)
+    }
+
+    fn shift(secs: i64, days: i32) -> (Date, u8) {
+        C::shift(secs, days)
+    }
+
+    fn week(secs: i64, out: &mut [Date; 7]) -> u8 {
+        C::week(secs, out)
+    }
+}
+
 fn bench<C: Calendar + 'static>(group: &mut BenchGroup, name: &str, app: &Arc<App>) {
     let app = Arc::clone(app);
     group.bench(name.to_owned(), move |b| {
@@ -671,7 +694,12 @@ fn bench<C: Calendar + 'static>(group: &mut BenchGroup, name: &str, app: &Arc<Ap
         let mut start = 0;
         let mut acc = 0;
         b.iter(move || {
-            acc = app.run::<C>(start, acc);
+            acc = match start / CHUNK % 4 {
+                0 => app.run::<Placed<C, 0>>(start, acc),
+                1 => app.run::<Placed<C, 1>>(start, acc),
+                2 => app.run::<Placed<C, 2>>(start, acc),
+                _ => app.run::<Placed<C, 3>>(start, acc),
+            };
             start = (start + CHUNK) % EVENTS;
             acc
         })
