@@ -86,6 +86,43 @@ trait Calendar {
 struct Datealgo;
 impl Calendar for Datealgo {}
 
+mod candidates {
+    use super::{Calendar, Date};
+    use datealgo::experiments as x;
+
+    pub struct RdTable;
+    impl Calendar for RdTable {
+        fn rd_to_date(n: i32) -> Date {
+            x::rd_to_date_table(n)
+        }
+    }
+
+    pub struct DateTable;
+    impl Calendar for DateTable {
+        fn date_to_rd(d: Date) -> i32 {
+            x::date_to_rd_table(d)
+        }
+    }
+
+    pub struct Copy1;
+    impl Calendar for Copy1 {}
+    pub struct Copy2;
+    impl Calendar for Copy2 {}
+    pub struct Copy3;
+    impl Calendar for Copy3 {}
+
+    pub struct Leap;
+    impl Calendar for Leap {
+        fn days_in_month(y: i32, m: u8) -> u8 {
+            x::days_in_month_h64(y, m)
+        }
+
+        fn next_date(d: Date) -> Date {
+            x::next_date_h64(d)
+        }
+    }
+}
+
 /// No calendar work, as a floor for the other rows
 struct NoCalendar;
 impl Calendar for NoCalendar {
@@ -675,6 +712,12 @@ fn app(suite: &mut Suite) {
             app,
             [
                 ("datealgo", Datealgo, true),
+                ("rd_table", candidates::RdTable, true),
+                ("date_table", candidates::DateTable, true),
+                ("leap_h64", candidates::Leap, true),
+                ("copy1", candidates::Copy1, true),
+                ("copy2", candidates::Copy2, true),
+                ("copy3", candidates::Copy3, true),
                 ("chrono", libs::Chrono, false),
                 ("time", libs::Time, false),
                 ("icu", libs::Icu, false),
