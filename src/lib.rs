@@ -19,7 +19,7 @@
 //! assert_eq!(rd_to_date(19489), (2023, 5, 12));
 //! ```
 //!
-//! For convenience, there is also converters to and from Unix timestamps:
+//! For convenience, there are also converters to and from Unix timestamps:
 //!
 //! ```
 //! use datealgo::{secs_to_datetime, datetime_to_secs};
@@ -41,12 +41,26 @@
 //! assert_eq!(datetime_to_systemtime((2023, 5, 20, 9, 24, 38, 0)), UNIX_EPOCH.checked_add(Duration::from_secs(1684574678)));
 //! ```
 //!
+//! The other functions cover:
+//!
+//! - Day of week: `rd_to_weekday`, `date_to_weekday`
+//! - Adjacent dates: `next_date`, `prev_date`
+//! - ISO week dates: `rd_to_isoweekdate`, `isoweekdate_to_rd`,
+//!   `date_to_isoweekdate`, `isoweekdate_to_date`, `isoweeks_in_year`
+//! - Calendar facts: `is_leap_year`, `days_in_month`
+//! - Time of day: `secs_to_dhms`, `dhms_to_secs`
+//! - `SystemTime` with nanoseconds: `systemtime_to_secs`, `secs_to_systemtime`
+//!
 //! # Features
 //!
 //! The crate works in `no_std` environments and has no allocations. Most of the
 //! functions also work in constant contexts.
 //!
 //! - `std` (default): Include `SystemTime` conversions
+//!
+//! The other features, `asmdump`, `criterion-benches` and `gungraun-bench`, are
+//! only for developing this crate. See
+//! [CONTRIBUTING.md](https://github.com/nakedible/datealgo-rs/blob/master/CONTRIBUTING.md).
 //!
 //! The minimum supported Rust version is 1.57.
 //!
@@ -90,7 +104,9 @@
 //!
 //! The Rata Die values are represented as `i32` for performance reasons. The
 //! needed calculations reduce that to roughly an effective `i30` integer range,
-//! which means a usable range of roughly -1,460,000 to 1,460,000 years.
+//! which means a usable range of roughly -1,460,000 to 1,460,000 years. The
+//! exact limits are given by the `YEAR_MIN`, `YEAR_MAX`, `RD_MIN`, `RD_MAX`,
+//! `RD_SECONDS_MIN` and `RD_SECONDS_MAX` constants.
 //!
 //! # Benchmarks
 //!
@@ -112,9 +128,9 @@
 //!
 //! # Acknowledgements
 //!
-//! This crate is based publicly available algorithms from many sources, but
+//! This crate is based on publicly available algorithms from many sources, but
 //! most notably Cassio Neri. He has directly contributed to this crate with
-//! novel algoritms and has provided valuable feedback and suggestions.
+//! novel algorithms and has provided valuable feedback and suggestions.
 //!
 //! - [Cassio Neri and Lorenz
 //!   Schneider](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172):
