@@ -11,6 +11,7 @@ categories = ["algorithms", "date-and-time", "no-std", "no-std::no-alloc"]
 homepage = "https://github.com/nakedible/datealgo-rs"
 repository = "https://github.com/nakedible/datealgo-rs"
 license = "MIT OR Apache-2.0"
+include = ["/src/", "/README.md", "/CHANGELOG.md", "/LICENSE-APACHE", "/LICENSE-MIT"]
 
 [features]
 default = ["std"]
