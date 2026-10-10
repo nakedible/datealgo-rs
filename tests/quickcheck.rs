@@ -60,7 +60,7 @@ quickcheck! {
         }
         let date = (d.year(), d.month() as u8, d.day());
         let next_date = datealgo::next_date(date);
-        let nd = d + time::Duration::days(1);
+        let nd = d + time::SignedDuration::days(1);
         let expected_date = (nd.year(), nd.month() as u8, nd.day());
         TestResult::from_bool(next_date == expected_date)
     }
@@ -71,7 +71,7 @@ quickcheck! {
         }
         let date = (d.year(), d.month() as u8, d.day());
         let prev_date = datealgo::prev_date(date);
-        let pd = d - time::Duration::days(1);
+        let pd = d - time::SignedDuration::days(1);
         let expected_date = (pd.year(), pd.month() as u8, pd.day());
         TestResult::from_bool(prev_date == expected_date)
     }
@@ -98,7 +98,7 @@ quickcheck! {
         TestResult::from_bool(weeks_a == weeks_b)
     }
 
-    fn quickcheck_systemtime_to_datetime(s: time::PrimitiveDateTime) -> TestResult {
+    fn quickcheck_systemtime_to_datetime(s: time::PlainDateTime) -> TestResult {
         let s = s.assume_utc();
         let a = systemtime_to_datetime(s.into()).unwrap();
         let b = (
@@ -113,7 +113,7 @@ quickcheck! {
         TestResult::from_bool(a == b)
     }
 
-    fn quickcheck_datetime_to_systemtime(s: time::PrimitiveDateTime) -> TestResult {
+    fn quickcheck_datetime_to_systemtime(s: time::PlainDateTime) -> TestResult {
         let s = s.assume_utc();
         let dt = (
             s.year(),
