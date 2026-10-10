@@ -86,3 +86,37 @@ fn isoweekdates_round_trip() {
         isoweekdate_to_rd(iwd) == n && date_to_isoweekdate(rd_to_date(n)) == iwd
     });
 }
+
+fn check_date_to_rd(name: &str, f: fn((i32, u8, u8)) -> i32) {
+    check(name, RD_MIN as i64, RD_MAX as i64, |n| f(rd_to_date(n as i32)) == n as i32);
+}
+
+#[test]
+#[ignore]
+fn date_to_rd_j() {
+    check_date_to_rd("j", datealgo::experiments::date_to_rd_j);
+}
+
+#[test]
+#[ignore]
+fn date_to_rd_s() {
+    check_date_to_rd("s", datealgo::experiments::date_to_rd_s);
+}
+
+#[test]
+#[ignore]
+fn date_to_rd_t() {
+    check_date_to_rd("t", datealgo::experiments::date_to_rd_t);
+}
+
+#[test]
+#[ignore]
+fn date_to_rd_t2() {
+    check_date_to_rd("t2", datealgo::experiments::date_to_rd_t2);
+}
+
+#[test]
+#[ignore]
+fn date_to_rd_t3() {
+    check_date_to_rd("t3", datealgo::experiments::date_to_rd_t3);
+}

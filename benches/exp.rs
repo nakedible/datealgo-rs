@@ -61,12 +61,15 @@ where
         let inputs = Arc::clone(&inputs);
         let mut i = 0usize;
         b.iter(|| {
+            // The inputs are runtime data, so they need no black_box. Leaving
+            // it out lets tuples reach the function field by field, as from a
+            // caller, instead of packed into one register.
             let x = inputs[i & (N - 1)];
             i = i.wrapping_add(1);
             if fields {
-                f(black_box(x)).consume();
+                f(x).consume();
             } else {
-                black_box(f(black_box(x)));
+                black_box(f(x));
             }
         })
     });
@@ -115,7 +118,28 @@ fn rd_distributions() -> Vec<Distribution<i32>> {
     ]
 }
 
+/// Date inputs from the rata die distributions.
+fn date_distributions() -> Vec<Distribution<(i32, u8, u8)>> {
+    rd_distributions()
+        .into_iter()
+        .map(|(name, rds)| (name, rds.iter().map(|&n| datealgo::rd_to_date(n)).collect::<Vec<_>>().into()))
+        .collect()
+}
+
 fn exp(suite: &mut Suite) {
+    compare(
+        suite,
+        "date_to_rd",
+        &date_distributions(),
+        &[
+            ("datealgo", datealgo::date_to_rd as fn((i32, u8, u8)) -> i32),
+            ("j", datealgo::experiments::date_to_rd_j),
+            ("s", datealgo::experiments::date_to_rd_s),
+            ("t", datealgo::experiments::date_to_rd_t),
+            ("t2", datealgo::experiments::date_to_rd_t2),
+            ("t3", datealgo::experiments::date_to_rd_t3),
+        ],
+    );
     compare(
         suite,
         "rd_to_date",
