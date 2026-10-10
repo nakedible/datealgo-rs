@@ -495,7 +495,7 @@ pub const fn date_to_rd((y, m, d): (i32, u8, u8)) -> i32 {
 pub const fn rd_to_weekday(n: i32) -> u8 {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
     const P64_OVER_SEVEN: u64 = ((1 << 63) / 7) << 1; // = (1 << 64) / 7
-    ((((n - RD_MIN) as u64 + 1).wrapping_mul(P64_OVER_SEVEN)) >> 61) as u8
+    ((n.wrapping_sub(RD_MIN - 1) as u32 as u64).wrapping_mul(P64_OVER_SEVEN) >> 61) as u8
 }
 
 /// Convert Gregorian date to day of week
