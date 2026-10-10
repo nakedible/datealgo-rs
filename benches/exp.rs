@@ -14,6 +14,10 @@ use zenbench::prelude::*;
 const N: usize = 262144;
 const _: () = assert!(N.is_power_of_two());
 
+/// Number of calls per timed iteration. Results are reported per call.
+const BATCH: usize = 64;
+const _: () = assert!(N % BATCH == 0);
+
 /// Consume a result field by field, as a caller building its own
 /// representation would, instead of as one packed value.
 trait Consume {
@@ -49,55 +53,57 @@ consume_scalar!(i32, i64, u8, bool);
 /// A named input set.
 type Distribution<I> = (&'static str, Arc<[I]>);
 
-/// A named implementation, the current one or a candidate.
-type Row<I, O> = (&'static str, fn(I) -> O);
-
-fn bench<I, O>(group: &mut BenchGroup, fields: bool, name: &str, inputs: Arc<[I]>, f: fn(I) -> O)
+fn bench<I, O, F>(group: &mut BenchGroup, fields: bool, name: &str, inputs: Arc<[I]>, f: F)
 where
     I: Copy + Send + Sync + 'static,
     O: Consume + 'static,
+    F: Fn(I) -> O + Copy + Send + 'static,
 {
     group.bench(name.to_owned(), move |b| {
         let inputs = Arc::clone(&inputs);
         let mut i = 0usize;
-        b.iter(|| {
-            // The inputs are runtime data, so they need no black_box. Leaving
-            // it out lets tuples reach the function field by field, as from a
-            // caller, instead of packed into one register.
-            let x = inputs[i & (N - 1)];
-            i = i.wrapping_add(1);
-            if fields {
-                f(x).consume();
-            } else {
-                black_box(f(x));
+        b.iter(move || {
+            // The timing loop calls this closure without inlining it, so its
+            // state lives in memory, and updating it on every call would add
+            // a store and a reload to each measurement. A batch per call runs
+            // from registers instead. `f` is a distinct type for each row, so
+            // it is inlined as in a caller. The inputs are runtime data, so
+            // they need no black_box. Leaving it out lets tuples reach the
+            // function field by field instead of packed into one register.
+            let start = i & (N - 1);
+            i = i.wrapping_add(BATCH);
+            for &x in &inputs[start..start + BATCH] {
+                if fields {
+                    f(x).consume();
+                } else {
+                    black_box(f(x));
+                }
             }
         })
     });
 }
 
-/// Register one group per input distribution and consumption mode. The first
-/// row is the baseline the others are compared against.
-fn compare<I, O>(suite: &mut Suite, name: &str, distributions: &[Distribution<I>], rows: &[Row<I, O>])
-where
-    I: Copy + Send + Sync + 'static,
-    O: Consume + 'static,
-{
-    for (dist, inputs) in distributions {
-        for fields in [false, true] {
-            let suffix = if fields { "_fields" } else { "" };
-            suite.group(format!("{name}_{dist}{suffix}"), |group| {
-                group.baseline(rows[0].0);
-                group
-                    .config()
-                    .max_rounds(30)
-                    .max_time(Duration::from_millis(600))
-                    .baseline_only(true);
-                for (row, f) in rows {
-                    bench(group, fields, row, Arc::clone(inputs), *f);
-                }
-            });
+/// Register one group per input distribution and consumption mode, with one
+/// row per implementation. The first row is the baseline the others are
+/// compared against.
+macro_rules! compare {
+    ($suite:expr, $name:expr, $distributions:expr, [$(($row:expr, $f:expr)),+ $(,)?]) => {
+        for (dist, inputs) in $distributions {
+            for fields in [false, true] {
+                let suffix = if fields { "_fields" } else { "" };
+                $suite.group(format!("{}_{dist}{suffix}", $name), |group| {
+                    group.baseline([$($row),+][0]);
+                    group
+                        .config()
+                        .max_rounds(30)
+                        .max_time(Duration::from_millis(600))
+                        .baseline_only(true);
+                    group.throughput(Throughput::Elements(BATCH as u64)).throughput_unit("calls");
+                    $(bench(group, fields, $row, Arc::clone(&inputs), $f);)+
+                });
+            }
         }
-    }
+    };
 }
 
 fn inputs<I>(generate: impl FnMut(usize) -> I) -> Arc<[I]> {
@@ -119,12 +125,7 @@ fn rd_distributions() -> Vec<Distribution<i32>> {
 }
 
 fn exp(suite: &mut Suite) {
-    compare(
-        suite,
-        "rd_to_date",
-        &rd_distributions(),
-        &[("datealgo", datealgo::rd_to_date as fn(i32) -> (i32, u8, u8))],
-    );
+    compare!(suite, "rd_to_date", rd_distributions(), [("datealgo", datealgo::rd_to_date)]);
 }
 
 zenbench::main!(exp);

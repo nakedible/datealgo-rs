@@ -77,9 +77,11 @@ jobs:
 
       # The experiment suite (benches/exp.rs) compares candidates from
       # src/experiments.rs, so it is mostly useful on experiment branches.
+      # Loops are aligned as in scripts/exp_bench.sh.
       - name: Run experiment suite
         if: inputs.harness == 'experiments'
         env:
+          RUSTFLAGS: -C llvm-args=-align-loops=64
           ZENBENCH_NO_BUSY_GATE: "1"
         run: |
           mkdir -p results
