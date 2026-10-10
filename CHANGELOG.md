@@ -6,6 +6,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2](https://github.com/nakedible/datealgo-rs/compare/v0.2.1...v0.2.2) - 2026-10-10
+
+### Added
+
+- Improve performance of date_to_weekday.
+
+### Fixed
+
+- Remove pointless wrapping operations
+- Add stricter debug assert for end of range
+
+### Other
+
+- Add tooling for trying out faster algorithms
+- Add hifitime to the comparison benchmarks
+- Add speedate to the comparison benchmarks
+- Add temporal_rs to the comparison benchmarks
+- Add ICU4X to the comparison benchmarks
+- Fix weekday return type in function docs
+- Update README for the 0.2.2 release
+- Refresh Cargo.lock
+- Update time to 0.3.55
+- Update fasttime to 0.3.0
+- Update fastrand to 2.5.0
+- Update chrono to 0.4.45
+- Migrate iai-callgrind benchmarks to gungraun
+- Fix zenbench harness indexing and update zenbench
+- Limit files in the published crate
+- Declare and test minimum supported Rust version
+- Modernize CI workflows
+- Fix clippy lints in tests and benches
+- Commit Cargo.lock and tidy .gitignore
+- Show asm diffs in pull request comments
+- Add fasttime comparison benchmarks
+- Add asm comparison workflow
+- Add a confirmation time budget for basic benchmarks
+- Pair basic benchmark confirmation runs
+- Show compared commits in benchmark comment
+- Make basic benchmark confirmation more conservative
+- Add basic benchmark verification workflow
+- Fix basic zenbench runner
+- Make zenbench the default benchmark harness
+- Add zenbench compare benchmark target
+- Update dev dependencies and bench compatibility
+- Pin time dev dependency
+- Remove asm snapshots and PR benchmark workflow
+- Add quickcheck that tests full value ranges
+- Add extreme values to all tests
+- Fix doc error caught by clippy
+- Update asm dumps to latest rustc
+- Add inline never to asm methods to ensure they get dumped
+- Rename internal helper
+- Update asm
+- Fix typos in rd_to_weekday documentation.
+
 ## [0.2.1](https://github.com/nakedible/datealgo-rs/compare/v0.2.0...v0.2.1) - 2023-12-20
 
 ### Added
