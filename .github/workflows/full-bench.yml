@@ -91,12 +91,12 @@ jobs:
           cat results/zenbench-exp.md >> "$GITHUB_STEP_SUMMARY"
 
       # The application benchmark comparing datealgo with other libraries
-      # (benches/app_libs.rs).
+      # (benches/app_libs.rs), in each of its domains.
       - name: Run library comparison
         if: inputs.harness == 'libraries'
         env:
           APP_BENCH_CPU: "0"
-          APP_BENCH_SECS: "300"
+          APP_BENCH_SECS: "120"
         run: |
           mkdir -p results
           scripts/app_libs.sh | tee results/app_libs.txt
