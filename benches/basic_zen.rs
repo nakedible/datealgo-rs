@@ -1,25 +1,14 @@
 #![allow(dead_code)]
 
-use std::{
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{sync::Arc, time::Duration};
 use zenbench::prelude::*;
 
-// Large enough that the branch predictor can't learn the input sequence, as
-// in the Criterion helper in util.rs. A power of two, so inputs can be indexed
-// with a mask. Indexing with `%` by a runtime length costs a division per
-// iteration, which hides the cheapest functions behind it.
-const INPUT_SET_SIZE: usize = 262144;
-const _: () = assert!(INPUT_SET_SIZE.is_power_of_two());
+#[path = "basic_inputs.rs"]
+mod inputs;
+use inputs::*;
 
 fn configure_basic_group(group: &mut BenchGroup) {
     group.config().max_rounds(20).max_time(Duration::from_millis(350));
-}
-
-fn seeded_inputs<I>(mut generate: impl FnMut() -> I) -> Arc<[I]> {
-    fastrand::seed(7);
-    (0..INPUT_SET_SIZE).map(|_| generate()).collect::<Vec<_>>().into()
 }
 
 fn bench_from_inputs<I, O>(group: &mut BenchGroup, name: &str, inputs: Arc<[I]>, mut run: impl FnMut(I) -> O + Send + 'static)
@@ -35,70 +24,6 @@ where
             run(black_box(input))
         })
     });
-}
-
-fn rand_year() -> i32 {
-    fastrand::i32(datealgo::YEAR_MIN..=datealgo::YEAR_MAX)
-}
-
-fn rand_rd() -> i32 {
-    fastrand::i32(datealgo::RD_MIN..=datealgo::RD_MAX)
-}
-
-fn rand_date() -> (i32, u8, u8) {
-    let y = rand_year();
-    let m = fastrand::u8(1..=12);
-    let d = fastrand::u8(1..=datealgo::days_in_month(y, m));
-    (y, m, d)
-}
-
-fn rand_secs() -> i64 {
-    fastrand::i64(datealgo::RD_SECONDS_MIN..=datealgo::RD_SECONDS_MAX)
-}
-
-fn rand_hms() -> (u8, u8, u8) {
-    let h = fastrand::u8(0..=23);
-    let m = fastrand::u8(0..=59);
-    let s = fastrand::u8(0..=59);
-    (h, m, s)
-}
-
-fn rand_dhms() -> (i32, u8, u8, u8) {
-    let rd = rand_rd();
-    let (h, m, s) = rand_hms();
-    (rd, h, m, s)
-}
-
-fn rand_dt() -> (i32, u8, u8, u8, u8, u8) {
-    let (y, m, d) = rand_date();
-    let (hh, mm, ss) = rand_hms();
-    (y, m, d, hh, mm, ss)
-}
-
-fn rand_ym() -> (i32, u8) {
-    let y = rand_year();
-    let m = fastrand::u8(1..=12);
-    (y, m)
-}
-
-fn rand_sn() -> (i64, u32) {
-    let s = rand_secs();
-    let n = fastrand::u32(0..=999_999_999);
-    (s, n)
-}
-
-fn rand_st() -> SystemTime {
-    datealgo::secs_to_systemtime(rand_sn()).unwrap()
-}
-
-fn rand_dtn() -> (i32, u8, u8, u8, u8, u8, u32) {
-    let (y, m, d, hh, mm, ss) = rand_dt();
-    let n = fastrand::u32(0..=999_999_999);
-    (y, m, d, hh, mm, ss, n)
-}
-
-fn rand_iwd() -> (i32, u8, u8) {
-    datealgo::rd_to_isoweekdate(rand_rd())
 }
 
 fn bench_basic(suite: &mut Suite) {

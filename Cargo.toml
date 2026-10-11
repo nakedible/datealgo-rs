@@ -39,6 +39,10 @@ name = "app_ab"
 harness = false
 
 [[bench]]
+name = "basic_ab"
+harness = false
+
+[[bench]]
 name = "compare"
 path = "benches/compare_zen.rs"
 harness = false
