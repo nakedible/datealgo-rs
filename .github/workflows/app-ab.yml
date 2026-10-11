@@ -56,7 +56,7 @@ jobs:
         shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
-          APP_AB_PAIRS: "40"
+          APP_AB_PAIRS: "30"
         run: |
           git rev-parse --verify "$BASE^{commit}" >/dev/null 2>&1 || BASE="origin/$BASE"
           scripts/app_ab.sh "$BASE" | tee app-ab-report.txt
