@@ -109,9 +109,11 @@ x86-64 and AArch64:
    would run in software using the library: replace the function in
    `src/lib.rs` and run `scripts/app_ab.sh`, which compares the working tree
    with `origin/master`, or with a given git ref. It prints how much the time
-   spent in calendar code per event changed, with a 95% confidence interval,
-   and pull requests run it on GitHub's x86-64 and AArch64 runners. A change is
-   better if it is better on both architectures.
+   spent in calendar code changed overall and in each domain of the
+   application, such as logging, databases or scheduling (see
+   `benches/app/README.md`), with confidence intervals, and pull requests run
+   it on GitHub's x86-64 and AArch64 runners. A change is better if it is
+   better on both architectures.
 6. Open a pull request with the winner and without the experiment code. The
    pull request checks run the application benchmark, verify the basic
    benchmark, compare assembly and count instructions on both architectures.
