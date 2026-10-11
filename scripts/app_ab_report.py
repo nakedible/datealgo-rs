@@ -3,10 +3,23 @@
 
 The change of each domain is the change of its time per event, as a share of
 the time it spends in calendar code: the difference to the same domain without
-calendar work. The overall change is the mean of the domains' changes,
-weighted by their weights, computed for each pair of runs and compared over
-the pairs like the domains. A domain's change is reported at a level that
-keeps the chance of reporting any domain falsely at 5%.
+calendar work. Calendar code is a small part of each event, so the noise of the
+whole event is large next to it. Much of that noise is shared with the domain
+without calendar work, which runs the same code around the calendar code, in
+the same layout and run, so the change of a domain in each pair of runs is
+adjusted by the change without calendar work in that pair, scaled by the
+regression of one on the other over the pairs. The code without calendar work
+is the same in both builds, so its change has no true part, and the adjustment
+removes noise without moving the result. Now and then a machine is slowed for
+the whole of a benchmark in a run, but not for the same domain without calendar
+work, so the changes are compared over the pairs by their mean without the
+fifth of the pairs at each end, with Yuen's test. The overall change is the
+mean of the domains' changes, weighted by their weights, computed for each pair
+of runs and compared over the pairs like the domains. A pull request that
+changes nothing should rarely be called faster or slower on either
+architecture, so the overall change is reported at the 99% level, and a
+domain's change at a level that keeps the chance of reporting any domain
+falsely at 1%.
 """
 
 import glob
@@ -38,36 +51,39 @@ cal_head = {d: ab_stats.head_mean(obs[d]) - ab_stats.head_mean(obs[d + "_none"])
 def per_pair(bench, domain):
     """Change of a benchmark in each pair, as percent of the domain's
     calendar time"""
-    return [statistics.fmean(h - b for b, h in obs[bench][p]) / cal[domain] * 100 for p in pair_ids]
+    return [d / cal[domain] * 100 for d in ab_stats.diffs(obs[bench])]
 
 
-def interval(values, confidence):
-    return ab_stats.change({i: [(0, v)] for i, v in enumerate(values)}, confidence)
+def adjusted(x, y):
+    """Changes x adjusted by the changes y of the control in the same pairs"""
+    mx, my = statistics.fmean(x), statistics.fmean(y)
+    slope = sum((a - mx) * (b - my) for a, b in zip(x, y)) / sum((b - my) ** 2 for b in y)
+    return [a - slope * b for a, b in zip(x, y)]
 
 
 def verdict(lo, hi):
     return "faster" if hi < 0 else "slower" if lo > 0 else ""
 
 
-changes = {d: per_pair(d, d) for d in domains}
 controls = {d: per_pair(d + "_none", d) for d in domains}
+changes = {d: adjusted(per_pair(d, d), controls[d]) for d in domains}
 overall = [sum(weights[d] * changes[d][i] for d in domains) / total for i in range(len(pair_ids))]
 control = [sum(weights[d] * controls[d][i] for d in domains) / total for i in range(len(pair_ids))]
 
-m, lo, hi = interval(overall, 0.95)
+m, lo, hi = ab_stats.trimmed_interval(overall, 0.99, 1)
 v = verdict(lo, hi)
 print(f"The candidate is {v}." if v else "No significant change.")
-cm, clo, chi = interval(control, 0.95)
+cm, clo, chi = ab_stats.trimmed_interval(control, 0.99)
 if clo > 0 or chi < 0:
     print("But the application without calendar work changed too, so the result may be unreliable.")
 print()
-print(f"Overall change of calendar time: {m:+.1f}% (95% CI {lo:+.1f}% to {hi:+.1f}%)")
-print(f"Change without calendar work, which should be none: {cm:+.1f}% (95% CI {clo:+.1f}% to {chi:+.1f}%)")
+print(f"Overall change of calendar time: {m:+.1f}% (99% CI {lo:+.1f}% to {hi:+.1f}%)")
+print(f"Change without calendar work, which should be none: {cm:+.1f}% (99% CI {clo:+.1f}% to {chi:+.1f}%)")
 print()
-level = 1 - 0.05 / len(domains)
+level = 1 - 0.01 / len(domains)
 print(f"{'domain':10} {'weight':>6} {'base ns':>8} {'head ns':>8}   change ({level * 100:.1f}% CI)")
 for d in domains:
-    m, lo, hi = interval(changes[d], level)
+    m, lo, hi = ab_stats.trimmed_interval(changes[d], level, 1)
     print(f"{d:10} {weights[d]:5}% {cal[d]:8.2f} {cal_head[d]:8.2f}   {m:+6.1f}% [{lo:+6.1f}% {hi:+6.1f}%]  {verdict(lo, hi)}")
 print()
 print(f"Baseline {ref}, candidate the working tree, {pairs} pairs of runs of {secs} s per benchmark on CPUs {cpus},")
