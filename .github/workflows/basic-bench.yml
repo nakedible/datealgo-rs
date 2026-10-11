@@ -44,6 +44,7 @@ jobs:
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          AB_ISOLATE: "1"
         run: |
           scripts/basic_ab.sh "$BASE_SHA" | tee basic-bench-report.txt
           {

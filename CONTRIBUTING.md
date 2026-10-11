@@ -113,7 +113,9 @@ x86-64 and AArch64:
    application, such as logging, databases or scheduling (see
    `benches/app/README.md`), with confidence intervals, and pull requests run
    it on GitHub's x86-64 and AArch64 runners. A change is better if it is
-   better on both architectures.
+   better on both architectures. The runners are of several CPU models, which
+   can take a change differently, so each report names its CPU, and its
+   result holds for that CPU.
 6. Open a pull request with the winner and without the experiment code. The
    pull request checks run the application benchmark, verify the basic
    benchmark, compare assembly and count instructions on both architectures.

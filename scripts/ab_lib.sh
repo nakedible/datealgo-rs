@@ -18,8 +18,11 @@
 # the comparison is over the pairs, and samples within a run are not
 # independent observations.
 #
-# AB_CPUS sets the two CPUs to run the builds on, by default the first two that
-# are not on the same physical core.
+# AB_CPUS sets the two CPUs to run the builds on, by default the last two that
+# are not on the same physical core, as the first CPU often serves more of the
+# system. With AB_ISOLATE set, every other process and every interrupt is moved
+# off the two CPUs with sudo before the runs, and left so, which is meant for
+# machines that only run the comparison, such as those of CI.
 
 # Prepare to compare with the given git ref, in target/NAME
 ab_setup() {
@@ -40,7 +43,24 @@ ab_setup() {
   tar -cf - src | tar -xf - -C "$ab_work/src/head"
   git archive "$ref" src | tar -xf - -C "$ab_work/src/base"
   ab_side=
-  ab_cpus=${AB_CPUS:-$(lscpu -p=cpu,core | awk -F, '!/^#/ && !seen[$2]++ { c = c (c ? "," : "") $1 } END { split(c, a, ","); print a[1] "," a[2] }')}
+  ab_isolated=
+  ab_cpus=${AB_CPUS:-$(lscpu -p=cpu,core | awk -F, '!/^#/ && !seen[$2]++ { c = c (c ? "," : "") $1 } END { n = split(c, a, ","); print a[n - 1] "," a[n] }')}
+}
+
+# Move every other process and every interrupt off the CPUs of the runs, if
+# AB_ISOLATE is set, once
+ab_isolate() {
+  [ -n "${AB_ISOLATE:-}" ] && [ -z "$ab_isolated" ] || return 0
+  local other pid irq
+  other=$(lscpu -p=cpu | awk -F, -v cpus=",$ab_cpus," '!/^#/ && !index(cpus, "," $1 ",") { c = c (c ? "," : "") $1 } END { print c }')
+  # Some kernel threads and interrupts cannot move, which is fine
+  for pid in $(ps -e -o pid=); do
+    sudo taskset -a -p -c "$other" "$pid" >/dev/null 2>&1 || true
+  done
+  for irq in /proc/irq/*/smp_affinity_list; do
+    echo "$other" | sudo tee "$irq" >/dev/null 2>&1 || true
+  done
+  ab_isolated=1
 }
 
 # Link the given benchmark of the given side, head or base, with each of the
@@ -112,6 +132,7 @@ ab_pairs() {
   ab_link "$bench" base "${base_seeds[@]}"
   filter="{$(echo "$benches" | tr ' ' ',')}"
   local cpu_a=${ab_cpus%,*} cpu_b=${ab_cpus#*,} head base candidate
+  ab_isolate
   for i in $(seq 1 "$pairs"); do
     head=$ab_work/bin/$bench-head-${head_seeds[$((i - 1))]}
     base=$ab_work/bin/$bench-base-${base_seeds[$((i - 1))]}
