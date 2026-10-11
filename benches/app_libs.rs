@@ -22,7 +22,7 @@ use app::*;
 mod libs {
     //! Adapters for other libraries
     use super::app::{Calendar, Date, DateTime, DateTimeNanos, IsoWeekDate};
-    use std::time::SystemTime;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     /// Days from 0001-01-01, counted from 1, to 1970-01-01
     const RD_UNIX_EPOCH: i32 = 719_163;
@@ -343,6 +343,186 @@ mod libs {
         }
     }
 
+    /// jiff-core, the low-level date primitives of jiff, with i16 years and
+    /// validating constructors. Its timestamps end before the last day of 9999,
+    /// so seconds go through days and the second of the day, as jiff does.
+    pub struct JiffCore;
+    impl JiffCore {
+        fn date((y, m, d): Date) -> jiff_core::civil::Date {
+            jiff_core::civil::Date::new(y as i16, m as i8, d as i8).unwrap()
+        }
+        fn fields(d: jiff_core::civil::Date) -> Date {
+            (d.year() as i32, d.month() as u8, d.day() as u8)
+        }
+        fn iso(w: jiff_core::civil::ISOWeekDate) -> IsoWeekDate {
+            (w.year() as i32, w.week() as u8, w.weekday().to_monday_one_offset() as u8)
+        }
+        fn weekday(d: u8) -> jiff_core::civil::Weekday {
+            jiff_core::civil::Weekday::from_monday_one_offset(d as i8).unwrap()
+        }
+    }
+    impl Calendar for JiffCore {
+        fn rd_to_date(n: i32) -> Date {
+            Self::fields(jiff_core::civil::UnixEpochDay::new(n).unwrap().to_date())
+        }
+        fn date_to_rd(d: Date) -> i32 {
+            Self::date(d).to_unix_epoch_day().day()
+        }
+        fn days_in_month(y: i32, m: u8) -> u8 {
+            Self::date((y, m, 1)).days_in_month() as u8
+        }
+        fn rd_to_weekday(n: i32) -> u8 {
+            jiff_core::civil::UnixEpochDay::new(n).unwrap().weekday().to_monday_one_offset() as u8
+        }
+        fn date_to_weekday(d: Date) -> u8 {
+            Self::date(d).weekday().to_monday_one_offset() as u8
+        }
+        fn next_date(d: Date) -> Date {
+            Self::fields(Self::date(d).tomorrow().unwrap())
+        }
+        fn prev_date(d: Date) -> Date {
+            Self::fields(Self::date(d).yesterday().unwrap())
+        }
+        fn secs_to_datetime(secs: i64) -> DateTime {
+            let d = jiff_core::civil::UnixEpochDay::new(secs.div_euclid(86400) as i32)
+                .unwrap()
+                .to_date();
+            let t = jiff_core::civil::TimeSecond::new(secs.rem_euclid(86400) as i32).unwrap().to_time();
+            (
+                d.year() as i32,
+                d.month() as u8,
+                d.day() as u8,
+                t.hour() as u8,
+                t.minute() as u8,
+                t.second() as u8,
+            )
+        }
+        fn datetime_to_secs((y, m, d, hh, mm, ss): DateTime) -> i64 {
+            let t = jiff_core::civil::Time::new(hh as i8, mm as i8, ss as i8, 0).unwrap();
+            Self::date((y, m, d)).to_unix_epoch_day().day() as i64 * 86400 + t.to_second().second() as i64
+        }
+        fn is_leap_year(y: i32) -> bool {
+            Self::date((y, 1, 1)).in_leap_year()
+        }
+        fn date_to_isoweekdate(d: Date) -> IsoWeekDate {
+            Self::iso(Self::date(d).to_iso_week_date())
+        }
+        fn rd_to_isoweekdate(n: i32) -> IsoWeekDate {
+            Self::iso(jiff_core::civil::UnixEpochDay::new(n).unwrap().to_date().to_iso_week_date())
+        }
+        fn isoweekdate_to_date((y, w, d): IsoWeekDate) -> Date {
+            Self::fields(
+                jiff_core::civil::ISOWeekDate::new(y as i16, w as i8, Self::weekday(d))
+                    .unwrap()
+                    .to_date(),
+            )
+        }
+        fn isoweekdate_to_rd((y, w, d): IsoWeekDate) -> i32 {
+            jiff_core::civil::ISOWeekDate::new(y as i16, w as i8, Self::weekday(d))
+                .unwrap()
+                .to_unix_epoch_day()
+                .day()
+        }
+        fn isoweeks_in_year(y: i32) -> u8 {
+            jiff_core::civil::ISOWeekDate::new(y as i16, 1, Self::weekday(1))
+                .unwrap()
+                .weeks_in_year() as u8
+        }
+    }
+
+    /// jiff, used as its users would. Its timestamps end before the last day
+    /// of 9999 and it has no days since the epoch, so this counts from the
+    /// epoch with civil dates and datetimes.
+    pub struct Jiff;
+    impl Jiff {
+        const EPOCH: jiff::civil::DateTime = jiff::civil::DateTime::constant(1970, 1, 1, 0, 0, 0, 0);
+        fn date((y, m, d): Date) -> jiff::civil::Date {
+            jiff::civil::Date::new(y as i16, m as i8, d as i8).unwrap()
+        }
+        fn fields(d: jiff::civil::Date) -> Date {
+            (d.year() as i32, d.month() as u8, d.day() as u8)
+        }
+        fn from_rd(n: i32) -> jiff::civil::Date {
+            Self::EPOCH.date().checked_add(jiff::Span::new().days(n)).unwrap()
+        }
+        fn iso(w: jiff::civil::ISOWeekDate) -> IsoWeekDate {
+            (w.year() as i32, w.week() as u8, w.weekday().to_monday_one_offset() as u8)
+        }
+    }
+    impl Calendar for Jiff {
+        fn rd_to_date(n: i32) -> Date {
+            Self::fields(Self::from_rd(n))
+        }
+        fn date_to_rd(d: Date) -> i32 {
+            (Self::date(d).duration_since(Self::EPOCH.date()).as_secs() / 86400) as i32
+        }
+        fn days_in_month(y: i32, m: u8) -> u8 {
+            Self::date((y, m, 1)).days_in_month() as u8
+        }
+        fn rd_to_weekday(n: i32) -> u8 {
+            Self::from_rd(n).weekday().to_monday_one_offset() as u8
+        }
+        fn date_to_weekday(d: Date) -> u8 {
+            Self::date(d).weekday().to_monday_one_offset() as u8
+        }
+        fn next_date(d: Date) -> Date {
+            Self::fields(Self::date(d).tomorrow().unwrap())
+        }
+        fn prev_date(d: Date) -> Date {
+            Self::fields(Self::date(d).yesterday().unwrap())
+        }
+        fn secs_to_datetime(secs: i64) -> DateTime {
+            let dt = Self::EPOCH.checked_add(jiff::SignedDuration::from_secs(secs)).unwrap();
+            (
+                dt.year() as i32,
+                dt.month() as u8,
+                dt.day() as u8,
+                dt.hour() as u8,
+                dt.minute() as u8,
+                dt.second() as u8,
+            )
+        }
+        fn datetime_to_secs((y, m, d, hh, mm, ss): DateTime) -> i64 {
+            let dt = jiff::civil::DateTime::new(y as i16, m as i8, d as i8, hh as i8, mm as i8, ss as i8, 0).unwrap();
+            dt.duration_since(Self::EPOCH).as_secs()
+        }
+        fn is_leap_year(y: i32) -> bool {
+            Self::date((y, 1, 1)).in_leap_year()
+        }
+        fn date_to_isoweekdate(d: Date) -> IsoWeekDate {
+            Self::iso(Self::date(d).iso_week_date())
+        }
+        fn rd_to_isoweekdate(n: i32) -> IsoWeekDate {
+            Self::iso(Self::from_rd(n).iso_week_date())
+        }
+        fn isoweekdate_to_date((y, w, d): IsoWeekDate) -> Date {
+            let wd = jiff::civil::Weekday::from_monday_one_offset(d as i8).unwrap();
+            Self::fields(jiff::civil::ISOWeekDate::new(y as i16, w as i8, wd).unwrap().date())
+        }
+        fn systemtime_to_datetime(st: SystemTime) -> Option<DateTimeNanos> {
+            let since = jiff::SignedDuration::system_until(UNIX_EPOCH, st).ok()?;
+            let dt = Self::EPOCH.checked_add(since).ok()?;
+            Some((
+                dt.year() as i32,
+                dt.month() as u8,
+                dt.day() as u8,
+                dt.hour() as u8,
+                dt.minute() as u8,
+                dt.second() as u8,
+                dt.subsec_nanosecond() as u32,
+            ))
+        }
+        fn datetime_to_systemtime((y, m, d, hh, mm, ss, ns): DateTimeNanos) -> Option<SystemTime> {
+            let dt = jiff::civil::DateTime::new(y as i16, m as i8, d as i8, hh as i8, mm as i8, ss as i8, ns as i32).ok()?;
+            let since = dt.duration_since(Self::EPOCH);
+            if since.is_negative() {
+                UNIX_EPOCH.checked_sub(since.unsigned_abs())
+            } else {
+                UNIX_EPOCH.checked_add(since.unsigned_abs())
+            }
+        }
+    }
+
     /// temporal_rs, which only provides the date conversions, so the rest is
     /// built from them
     pub struct Temporal;
@@ -403,6 +583,8 @@ fn domain<W: Workload>(suite: &mut Suite) {
         bench::<Datealgo, W>(group, "datealgo");
         row!("chrono", libs::Chrono);
         row!("time", libs::Time);
+        row!("jiff", libs::Jiff);
+        row!("jiff_core", libs::JiffCore);
         row!("icu", libs::Icu);
         row!("fasttime", libs::Fasttime);
         row!("hifitime", libs::Hifitime);

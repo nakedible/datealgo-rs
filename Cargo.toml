@@ -78,6 +78,8 @@ fasttime = "0.3.0"
 gungraun = "0.20.0"
 hifitime = "4.3.1"
 icu_calendar = { version = "2.3.0", default-features = false }
+jiff = "0.2.38"
+jiff-core = "0.1.1"
 libc = "0.2.190"
 quickcheck = "1.1.0"
 speedate = "0.17.0"

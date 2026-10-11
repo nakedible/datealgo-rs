@@ -48,6 +48,8 @@ fn bench_rd_to_date(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_rd);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::rd_to_date);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::rd_to_date);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::rd_to_date);
         bench_from_inputs(group, "hinnant_unsigned", Arc::clone(&inputs), hinnant::civil_from_days_u);
         bench_from_inputs(group, "hinnant", Arc::clone(&inputs), hinnant::civil_from_days);
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::rd_to_date);
@@ -68,6 +70,8 @@ fn bench_date_to_rd(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_date);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::date_to_rd);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::date_to_rd);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::date_to_rd);
         bench_from_inputs(group, "hinnant_unsigned", Arc::clone(&inputs), hinnant::days_from_civil_u);
         bench_from_inputs(group, "hinnant", Arc::clone(&inputs), hinnant::days_from_civil);
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::date_to_rd);
@@ -100,6 +104,11 @@ fn bench_next_date(suite: &mut Suite) {
         bench_from_inputs(group, "time", time_inputs, time::next_date);
         let icu_inputs = seeded_inputs(icu::rand_date);
         bench_from_inputs(group, "icu", icu_inputs, icu::next_date);
+
+        let jiff_inputs = seeded_inputs(jiff::rand_date);
+        bench_from_inputs(group, "jiff", jiff_inputs, jiff::next_date);
+        let jiff_core_inputs = seeded_inputs(jiff_core::rand_date);
+        bench_from_inputs(group, "jiff_core", jiff_core_inputs, jiff_core::next_date);
     });
 }
 
@@ -121,6 +130,11 @@ fn bench_prev_date(suite: &mut Suite) {
         bench_from_inputs(group, "time", time_inputs, time::prev_date);
         let icu_inputs = seeded_inputs(icu::rand_date);
         bench_from_inputs(group, "icu", icu_inputs, icu::prev_date);
+
+        let jiff_inputs = seeded_inputs(jiff::rand_date);
+        bench_from_inputs(group, "jiff", jiff_inputs, jiff::prev_date);
+        let jiff_core_inputs = seeded_inputs(jiff_core::rand_date);
+        bench_from_inputs(group, "jiff_core", jiff_core_inputs, jiff_core::prev_date);
     });
 }
 
@@ -130,6 +144,8 @@ fn bench_date_to_weekday(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_date);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::date_to_weekday);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::date_to_weekday);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::date_to_weekday);
         bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), datealgo_alt::date_to_weekday);
         bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), datealgo_alt::date_to_weekday2);
         bench_from_inputs(group, "fasttime", Arc::clone(&inputs), fasttime::date_to_weekday);
@@ -144,6 +160,8 @@ fn bench_is_leap_year(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_year);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::is_leap_year);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::is_leap_year);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::is_leap_year);
         bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), datealgo_alt::is_leap_year);
         bench_from_inputs(group, "datealgo_alt2", Arc::clone(&inputs), datealgo_alt::is_leap_year2);
         bench_from_inputs(group, "datealgo_alt3", Arc::clone(&inputs), datealgo_alt::is_leap_year3);
@@ -158,6 +176,8 @@ fn bench_days_in_month(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_ym);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), |(y, m)| datealgo::days_in_month(y, m));
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::days_in_month);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::days_in_month);
         bench_from_inputs(group, "datealgo_alt", Arc::clone(&inputs), |(y, m)| {
             datealgo_alt::days_in_month(y, m)
         });
@@ -175,6 +195,8 @@ fn bench_secs_to_datetime(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_secs);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::secs_to_datetime);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::secs_to_datetime);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::secs_to_datetime);
         bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::secs_to_datetime);
         bench_from_inputs(group, "speedate", inputs, speedate::secs_to_datetime);
     });
@@ -186,6 +208,8 @@ fn bench_datetime_to_secs(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_dt);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::datetime_to_secs);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::datetime_to_secs);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::datetime_to_secs);
         bench_from_inputs(group, "hifitime", Arc::clone(&inputs), hifitime::datetime_to_secs);
         bench_from_inputs(group, "speedate", inputs, speedate::datetime_to_secs);
     });
@@ -197,6 +221,8 @@ fn bench_date_to_isoweekdate(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_date);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::date_to_isoweekdate);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::date_to_isoweekdate);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::date_to_isoweekdate);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::date_to_isoweekdate);
         bench_from_inputs(group, "icu", Arc::clone(&inputs), icu::date_to_isoweekdate);
         bench_from_inputs(group, "time", inputs, time::date_to_isoweekdate);
@@ -209,6 +235,8 @@ fn bench_isoweekdate_to_date(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_iwd);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::isoweekdate_to_date);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::isoweekdate_to_date);
+        bench_from_inputs(group, "jiff_core", Arc::clone(&inputs), jiff_core::isoweekdate_to_date);
         bench_from_inputs(group, "chrono", Arc::clone(&inputs), chrono::isoweekdate_to_date);
         bench_from_inputs(group, "time", inputs, time::isoweekdate_to_date);
     });
@@ -220,6 +248,7 @@ fn bench_systemtime_to_datetime(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_st);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::systemtime_to_datetime);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::systemtime_to_datetime);
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::systemtime_to_datetime);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::systemtime_to_datetime);
         bench_from_inputs(group, "time", Arc::clone(&inputs), time::systemtime_to_datetime);
@@ -234,6 +263,7 @@ fn bench_datetime_to_systemtime(suite: &mut Suite) {
 
         let inputs = seeded_inputs(rand_dtn);
         bench_from_inputs(group, "datealgo", Arc::clone(&inputs), datealgo::datetime_to_systemtime);
+        bench_from_inputs(group, "jiff", Arc::clone(&inputs), jiff::datetime_to_systemtime);
         bench_from_inputs(group, "httpdate", Arc::clone(&inputs), httpdate::datetime_to_systemtime);
         bench_from_inputs(group, "humantime", Arc::clone(&inputs), humantime::datetime_to_systemtime);
         bench_from_inputs(group, "time", Arc::clone(&inputs), time::datetime_to_systemtime);
