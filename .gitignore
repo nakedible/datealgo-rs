@@ -8,5 +8,5 @@
 *.pdb
 
 /asm/*.asm
-/scripts/__pycache__/
+__pycache__/
 /.zenbench/
