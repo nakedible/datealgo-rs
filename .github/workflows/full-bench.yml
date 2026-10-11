@@ -77,9 +77,11 @@ jobs:
 
       # The experiment suite (benches/exp.rs) compares candidates from
       # src/experiments.rs, so it is mostly useful on experiment branches.
+      # Loops are aligned as in scripts/exp_bench.sh.
       - name: Run experiment suite
         if: inputs.harness == 'experiments'
         env:
+          RUSTFLAGS: -C llvm-args=-align-loops=64
           ZENBENCH_NO_BUSY_GATE: "1"
         run: |
           mkdir -p results
@@ -89,12 +91,12 @@ jobs:
           cat results/zenbench-exp.md >> "$GITHUB_STEP_SUMMARY"
 
       # The application benchmark comparing datealgo with other libraries
-      # (benches/app_libs.rs).
+      # (benches/app_libs.rs), in each of its domains.
       - name: Run library comparison
         if: inputs.harness == 'libraries'
         env:
           APP_BENCH_CPU: "0"
-          APP_BENCH_SECS: "300"
+          APP_BENCH_SECS: "120"
         run: |
           mkdir -p results
           scripts/app_libs.sh | tee results/app_libs.txt

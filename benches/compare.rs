@@ -44,6 +44,10 @@ fn bench_rd_to_date(c: &mut Criterion) {
     group.bench_function("speedate", |b| {
         b.iter_custom(bencher(rand_rd, |x| speedate::rd_to_date(black_box(x))))
     });
+    group.bench_function("jiff", |b| b.iter_custom(bencher(rand_rd, |x| jiff::rd_to_date(black_box(x)))));
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_rd, |x| jiff_core::rd_to_date(black_box(x))))
+    });
     group.finish();
 }
 
@@ -80,6 +84,10 @@ fn bench_date_to_rd(c: &mut Criterion) {
     });
     group.bench_function("speedate", |b| {
         b.iter_custom(bencher(rand_date, |x| speedate::date_to_rd(black_box(x))))
+    });
+    group.bench_function("jiff", |b| b.iter_custom(bencher(rand_date, |x| jiff::date_to_rd(black_box(x)))));
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_date, |x| jiff_core::date_to_rd(black_box(x))))
     });
     group.finish();
 }
@@ -119,6 +127,12 @@ fn bench_date_to_weekday(c: &mut Criterion) {
     group.bench_function("hifitime", |b| {
         b.iter_custom(bencher(rand_date, |x| hifitime::date_to_weekday(black_box(x))))
     });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_date, |x| jiff::date_to_weekday(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_date, |x| jiff_core::date_to_weekday(black_box(x))))
+    });
     group.finish();
 }
 
@@ -140,6 +154,12 @@ fn bench_next_date(c: &mut Criterion) {
         b.iter_custom(bencher(time::rand_date, |d| time::next_date(black_box(d))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(icu::rand_date, |x| icu::next_date(black_box(x)))));
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(jiff::rand_date, |x| jiff::next_date(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(jiff_core::rand_date, |x| jiff_core::next_date(black_box(x))))
+    });
     group.finish();
 }
 
@@ -161,6 +181,12 @@ fn bench_prev_date(c: &mut Criterion) {
         b.iter_custom(bencher(time::rand_date, |d| time::prev_date(black_box(d))))
     });
     group.bench_function("icu", |b| b.iter_custom(bencher(icu::rand_date, |x| icu::prev_date(black_box(x)))));
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(jiff::rand_date, |x| jiff::prev_date(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(jiff_core::rand_date, |x| jiff_core::prev_date(black_box(x))))
+    });
     group.finish();
 }
 
@@ -197,6 +223,12 @@ fn bench_secs_to_datetime(c: &mut Criterion) {
     group.bench_function("hifitime", |b| {
         b.iter_custom(bencher(rand_secs, |x| hifitime::secs_to_datetime(black_box(x))))
     });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_secs, |x| jiff::secs_to_datetime(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_secs, |x| jiff_core::secs_to_datetime(black_box(x))))
+    });
     group.finish();
 }
 
@@ -210,6 +242,12 @@ fn bench_datetime_to_secs(c: &mut Criterion) {
     });
     group.bench_function("hifitime", |b| {
         b.iter_custom(bencher(rand_dt, |x| hifitime::datetime_to_secs(black_box(x))))
+    });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_dt, |x| jiff::datetime_to_secs(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_dt, |x| jiff_core::datetime_to_secs(black_box(x))))
     });
     group.finish();
 }
@@ -234,6 +272,10 @@ fn bench_is_leap_year(c: &mut Criterion) {
     group.bench_function("icu_calc", |b| {
         b.iter_custom(bencher(rand_year, |x| icu_calc::is_leap_year(black_box(x))))
     });
+    group.bench_function("jiff", |b| b.iter_custom(bencher(rand_year, |x| jiff::is_leap_year(black_box(x)))));
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_year, |x| jiff_core::is_leap_year(black_box(x))))
+    });
     group.finish();
 }
 
@@ -252,6 +294,10 @@ fn bench_days_in_month(c: &mut Criterion) {
     group.bench_function("temporal", |b| {
         b.iter_custom(bencher(rand_ym, |x| temporal::days_in_month(black_box(x))))
     });
+    group.bench_function("jiff", |b| b.iter_custom(bencher(rand_ym, |x| jiff::days_in_month(black_box(x)))));
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_ym, |x| jiff_core::days_in_month(black_box(x))))
+    });
     group.finish();
 }
 
@@ -269,6 +315,12 @@ fn bench_date_to_isoweekdate(c: &mut Criterion) {
     group.bench_function("icu", |b| {
         b.iter_custom(bencher(rand_date, |x| icu::date_to_isoweekdate(black_box(x))))
     });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_date, |x| jiff::date_to_isoweekdate(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_date, |x| jiff_core::date_to_isoweekdate(black_box(x))))
+    });
     group.finish();
 }
 
@@ -282,6 +334,12 @@ fn bench_isoweekdate_to_date(c: &mut Criterion) {
     });
     group.bench_function("time", |b| {
         b.iter_custom(bencher(rand_iwd, |iwd| time::isoweekdate_to_date(black_box(iwd))))
+    });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_iwd, |x| jiff::isoweekdate_to_date(black_box(x))))
+    });
+    group.bench_function("jiff_core", |b| {
+        b.iter_custom(bencher(rand_iwd, |x| jiff_core::isoweekdate_to_date(black_box(x))))
     });
     group.finish();
 }
@@ -325,6 +383,9 @@ fn bench_systemtime_to_datetime(c: &mut Criterion) {
     group.bench_function("hifitime", |b| {
         b.iter_custom(bencher(rand_st, |x| hifitime::systemtime_to_datetime(black_box(x))))
     });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_st, |x| jiff::systemtime_to_datetime(black_box(x))))
+    });
     group.finish();
 }
 
@@ -347,6 +408,9 @@ fn bench_datetime_to_systemtime(c: &mut Criterion) {
     });
     group.bench_function("hifitime", |b| {
         b.iter_custom(bencher(rand_dtn, |x| hifitime::datetime_to_systemtime(black_box(x))))
+    });
+    group.bench_function("jiff", |b| {
+        b.iter_custom(bencher(rand_dtn, |x| jiff::datetime_to_systemtime(black_box(x))))
     });
     group.finish();
 }

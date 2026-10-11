@@ -798,6 +798,200 @@ mod temporal {
     }
 }
 
+// jiff-core, the low-level date primitives of jiff, at the same level as
+// datealgo: const functions without time zones, with i16 years and validating
+// constructors, which the adapters go through as a caller would. Its timestamps
+// end before the last day of 9999, so seconds go through days and the second
+// of the day, as jiff does internally.
+mod jiff_core {
+    use jiff_core::{
+        civil::{Date, ISOWeekDate, Time, TimeSecond, UnixEpochDay, Weekday},
+    };
+
+    pub fn rand_date() -> Date {
+        let (y, m, d) = super::rand_date();
+        Date::new(y as i16, m as i8, d as i8).unwrap()
+    }
+
+    fn date((y, m, d): (i32, u8, u8)) -> Date {
+        Date::new(y as i16, m as i8, d as i8).unwrap()
+    }
+
+    fn fields(d: Date) -> (i32, u8, u8) {
+        (d.year() as i32, d.month() as u8, d.day() as u8)
+    }
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        fields(UnixEpochDay::new(n).unwrap().to_date())
+    }
+
+    #[inline]
+    pub fn date_to_rd(d: (i32, u8, u8)) -> i32 {
+        date(d).to_unix_epoch_day().day()
+    }
+
+    #[inline]
+    pub fn date_to_weekday(d: (i32, u8, u8)) -> u8 {
+        date(d).weekday().to_monday_one_offset() as u8
+    }
+
+    #[inline]
+    pub fn next_date(d: Date) -> Date {
+        d.tomorrow().unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: Date) -> Date {
+        d.yesterday().unwrap()
+    }
+
+    #[inline]
+    pub fn is_leap_year(y: i32) -> bool {
+        Date::new(y as i16, 1, 1).unwrap().in_leap_year()
+    }
+
+    #[inline]
+    pub fn days_in_month((y, m): (i32, u8)) -> u8 {
+        Date::new(y as i16, m as i8, 1).unwrap().days_in_month() as u8
+    }
+
+    #[inline]
+    pub fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+        let d = UnixEpochDay::new(secs.div_euclid(86400) as i32).unwrap().to_date();
+        let t = TimeSecond::new(secs.rem_euclid(86400) as i32).unwrap().to_time();
+        (d.year() as i32, d.month() as u8, d.day() as u8, t.hour() as u8, t.minute() as u8, t.second() as u8)
+    }
+
+    #[inline]
+    pub fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+        let t = Time::new(hh as i8, mm as i8, ss as i8, 0).unwrap();
+        date((y, m, d)).to_unix_epoch_day().day() as i64 * 86400 + t.to_second().second() as i64
+    }
+
+    #[inline]
+    pub fn date_to_isoweekdate(d: (i32, u8, u8)) -> (i32, u8, u8) {
+        let w = date(d).to_iso_week_date();
+        (w.year() as i32, w.week() as u8, w.weekday().to_monday_one_offset() as u8)
+    }
+
+    #[inline]
+    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
+        let wd = Weekday::from_monday_one_offset(wd as i8).unwrap();
+        fields(ISOWeekDate::new(y as i16, w as i8, wd).unwrap().to_date())
+    }
+}
+
+// jiff, the datetime library, used as its users would. Its timestamps end
+// before the last day of 9999 and it has no days since the epoch, so the
+// adapters count from the epoch with civil dates and datetimes.
+mod jiff {
+    use jiff::{
+        civil::{Date, DateTime, ISOWeekDate, Weekday},
+        SignedDuration, Span,
+    };
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    const EPOCH: DateTime = DateTime::constant(1970, 1, 1, 0, 0, 0, 0);
+
+    pub fn rand_date() -> Date {
+        let (y, m, d) = super::rand_date();
+        Date::new(y as i16, m as i8, d as i8).unwrap()
+    }
+
+    fn date((y, m, d): (i32, u8, u8)) -> Date {
+        Date::new(y as i16, m as i8, d as i8).unwrap()
+    }
+
+    fn fields(d: Date) -> (i32, u8, u8) {
+        (d.year() as i32, d.month() as u8, d.day() as u8)
+    }
+
+    #[inline]
+    pub fn rd_to_date(n: i32) -> (i32, u8, u8) {
+        fields(EPOCH.date().checked_add(Span::new().days(n)).unwrap())
+    }
+
+    #[inline]
+    pub fn date_to_rd(d: (i32, u8, u8)) -> i32 {
+        (date(d).duration_since(EPOCH.date()).as_secs() / 86400) as i32
+    }
+
+    #[inline]
+    pub fn date_to_weekday(d: (i32, u8, u8)) -> u8 {
+        date(d).weekday().to_monday_one_offset() as u8
+    }
+
+    #[inline]
+    pub fn next_date(d: Date) -> Date {
+        d.tomorrow().unwrap()
+    }
+
+    #[inline]
+    pub fn prev_date(d: Date) -> Date {
+        d.yesterday().unwrap()
+    }
+
+    #[inline]
+    pub fn is_leap_year(y: i32) -> bool {
+        Date::new(y as i16, 1, 1).unwrap().in_leap_year()
+    }
+
+    #[inline]
+    pub fn days_in_month((y, m): (i32, u8)) -> u8 {
+        Date::new(y as i16, m as i8, 1).unwrap().days_in_month() as u8
+    }
+
+    #[inline]
+    pub fn secs_to_datetime(secs: i64) -> (i32, u8, u8, u8, u8, u8) {
+        let dt = EPOCH.checked_add(SignedDuration::from_secs(secs)).unwrap();
+        (dt.year() as i32, dt.month() as u8, dt.day() as u8, dt.hour() as u8, dt.minute() as u8, dt.second() as u8)
+    }
+
+    #[inline]
+    pub fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) -> i64 {
+        let dt = DateTime::new(y as i16, m as i8, d as i8, hh as i8, mm as i8, ss as i8, 0).unwrap();
+        dt.duration_since(EPOCH).as_secs()
+    }
+
+    #[inline]
+    pub fn date_to_isoweekdate(d: (i32, u8, u8)) -> (i32, u8, u8) {
+        let w = date(d).iso_week_date();
+        (w.year() as i32, w.week() as u8, w.weekday().to_monday_one_offset() as u8)
+    }
+
+    #[inline]
+    pub fn isoweekdate_to_date((y, w, wd): (i32, u8, u8)) -> (i32, u8, u8) {
+        let wd = Weekday::from_monday_one_offset(wd as i8).unwrap();
+        fields(ISOWeekDate::new(y as i16, w as i8, wd).unwrap().date())
+    }
+
+    #[inline]
+    pub fn systemtime_to_datetime(v: SystemTime) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let dt = EPOCH.checked_add(SignedDuration::system_until(UNIX_EPOCH, v).unwrap()).unwrap();
+        (
+            dt.year() as i32,
+            dt.month() as u8,
+            dt.day() as u8,
+            dt.hour() as u8,
+            dt.minute() as u8,
+            dt.second() as u8,
+            dt.subsec_nanosecond() as u32,
+        )
+    }
+
+    #[inline]
+    pub fn datetime_to_systemtime((y, m, d, hh, mm, ss, ns): (i32, u8, u8, u8, u8, u8, u32)) -> SystemTime {
+        let dt = DateTime::new(y as i16, m as i8, d as i8, hh as i8, mm as i8, ss as i8, ns as i32).unwrap();
+        let since = dt.duration_since(EPOCH);
+        if since.is_negative() {
+            UNIX_EPOCH - since.unsigned_abs()
+        } else {
+            UNIX_EPOCH + since.unsigned_abs()
+        }
+    }
+}
+
 // speedate, the date and time parser of pydantic. Its timestamps default to
 // inferring seconds or milliseconds from their size, so the adapters set the
 // unit to seconds explicitly.
