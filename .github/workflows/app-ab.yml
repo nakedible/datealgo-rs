@@ -52,6 +52,8 @@ jobs:
 
       - name: Run application benchmark
         id: run
+        # Fail if the script fails, not only if the last command of a pipe does
+        shell: bash
         env:
           BASE: ${{ github.event.pull_request.base.sha || inputs.base }}
           APP_AB_PAIRS: "40"

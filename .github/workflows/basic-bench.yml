@@ -32,36 +32,39 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v2
 
+      # The x86-64 Linux target links with LLD already, and scripts/ab_lib.sh
+      # needs it to shuffle the functions elsewhere
+      - name: Install LLD
+        if: runner.arch != 'X64'
+        run: sudo apt-get install -y lld
+
       - name: Run benchmark verification
         id: verify
+        # Fail if the script fails, not only if the last command of a pipe does
+        shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          set +e
-          # CI gets a heavier confirmation pass than local use so that a
-          # reported change is backed by a more stable median on noisy runners.
-          python3 scripts/verify_basic_bench.py \
-            --git-ref "$BASE_SHA" \
-            --confirm-runs 11 \
-            --confirm-seconds 300 \
-            > basic-bench-report.txt
-          status=$?
-          set -e
-
-          cat basic-bench-report.txt
-
-          case "$status" in
-            0|1) ;;
-            *) exit "$status" ;;
-          esac
-
-          echo "status=$status" >> "$GITHUB_OUTPUT"
+          scripts/basic_ab.sh "$BASE_SHA" | tee basic-bench-report.txt
+          {
+            echo '```text'
+            cat basic-bench-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           echo "cpu=$(lscpu | sed -n 's/^Model name: *//p' | head -n 1)" >> "$GITHUB_OUTPUT"
 
+      - name: Upload measurements
+        uses: actions/upload-artifact@v7
+        with:
+          name: basic-bench-${{ matrix.arch }}
+          path: target/basic-ab/dump
+
+      # Pull requests from forks get a token that cannot comment, so their
+      # report is only in the job summary
       - name: Add pull request comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v9
         env:
-          VERIFY_STATUS: ${{ steps.verify.outputs.status }}
           ARCH: ${{ matrix.arch }}
           CPU: ${{ steps.verify.outputs.cpu }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -73,20 +76,14 @@ jobs:
             const arch = process.env.ARCH;
             const marker = `<!-- verify-basic-bench ${arch} -->`;
             const report = fs.readFileSync("basic-bench-report.txt", "utf8").trimEnd();
-            const status = process.env.VERIFY_STATUS;
             const baseSha = process.env.BASE_SHA;
             const headSha = process.env.HEAD_SHA;
-            const headline = status === "0"
-              ? "No meaningful `basic` benchmark changes detected."
-              : "Meaningful `basic` benchmark changes detected.";
 
             const body = [
               marker,
               `## Basic benchmark verification (${arch})`,
               "",
-              headline,
-              "",
-              "Compared this pull request branch head against its base commit with `./scripts/verify_basic_bench.py`.",
+              "Compared each function of this pull request with its base in the basic benchmarks with `./scripts/basic_ab.sh`.",
               `Compared commits: ${baseSha} -> ${headSha}`,
               `Runner CPU: ${process.env.CPU}`,
               "",
