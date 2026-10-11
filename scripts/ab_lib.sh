@@ -37,7 +37,7 @@ ab_setup() {
     command -v ld.lld >/dev/null || { echo "error: needs LLD (ld.lld) to link" >&2; exit 1; }
     RUSTFLAGS="$RUSTFLAGS -C link-arg=-fuse-ld=lld"
   fi
-  rm -rf "$ab_work/build" "$ab_work/src" "$ab_work/bin" "$ab_work/dump" "$ab_work/tango.log"
+  rm -rf "$ab_work/build" "$ab_work/src" "$ab_work/bin" "$ab_work/dump" "$ab_work/tango.log" "$ab_work"/link-*
   mkdir -p "$ab_work/build" "$ab_work/src/head" "$ab_work/src/base" "$ab_work/bin" "$ab_work/dump"
   tar --exclude=./target --exclude=./.git -cf - . | tar -xf - -C "$ab_work/build"
   tar -cf - src | tar -xf - -C "$ab_work/src/head"
@@ -66,27 +66,29 @@ ab_isolate() {
 # Link the given benchmark of the given side, head or base, with each of the
 # given seeds for the order of functions, as bin/BENCH-SIDE-SEED
 ab_link() {
-  local bench=$1 side=$2 seed exe
+  local bench=$1 side=$2 seed link
   shift 2
   if [ "$ab_side" != "$side" ]; then
-    rm -rf "$ab_work/build/src"
+    rm -rf "$ab_work/build/src" "$ab_work"/link-*
     cp -r "$ab_work/src/$side/src" "$ab_work/build/src"
     # Cargo decides whether to rebuild by the times of the files, which come
     # from the working tree or from git, so they are set to now to always
-    # rebuild the library sources just copied.
-    find "$ab_work/build/src" -exec touch {} +
+    # rebuild the sources just copied, and the benchmarks with them.
+    find "$ab_work/build/src" "$ab_work/build/benches" -exec touch {} +
     ab_side=$side
   fi
+  # Another order of functions changes the arguments of the compiler, which
+  # would make Cargo compile the benchmark again, so it is compiled once,
+  # keeping the object files, and the command that links them, which the
+  # compiler prints, is run again with each seed.
+  if [ ! -f "$ab_work/link-$bench" ]; then
+    (cd "$ab_work/build" && cargo rustc -q --locked --profile bench --bench "$bench" -- \
+      -C save-temps --print link-args -C link-arg=-Wl,--shuffle-sections='*=0') >"$ab_work/link-$bench"
+    [ -s "$ab_work/link-$bench" ] || { echo "error: no link command for $bench" >&2; exit 1; }
+  fi
+  link=$(cat "$ab_work/link-$bench")
   for seed in "$@"; do
-    exe=$(cd "$ab_work/build" && cargo rustc -q --locked --profile bench --bench "$bench" \
-      --message-format=json-render-diagnostics -- -C link-arg=-Wl,--shuffle-sections="*=$seed" |
-      python3 -c '
-import json, sys
-for line in sys.stdin:
-    m = json.loads(line)
-    if m.get("reason") == "compiler-artifact" and m["target"]["name"] == sys.argv[1] and m.get("executable"):
-        print(m["executable"])' "$bench")
-    cp "$exe" "$ab_work/bin/$bench-$side-$seed"
+    eval "$(printf '%s' "$link" | sed -E "s|\"-o\" \"[^\"]*\"|\"-o\" \"$ab_work/bin/$bench-$side-$seed\"|; s|--shuffle-sections=\\*=0\"|--shuffle-sections=*=$seed\"|")"
   done
 }
 
