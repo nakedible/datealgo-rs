@@ -330,35 +330,43 @@ pub mod consts {
 ///
 /// # Algorithm
 ///
-/// Algorithm currently used is the Neri-Schneider algorithm using Euclidean
-/// Affine Functions:
+/// Algorithm currently used is Ben Joffe's fast 32-bit algorithm, which counts
+/// days backwards from a date after the supported range, so that the 100 and
+/// 400 year rules become a correction to a Julian day count, and finds the
+/// year, month and day with fixed point multiplications:
 ///
-/// > Neri C, Schneider L. "*Euclidean affine functions and their application to
-/// > calendar algorithms*". Softw Pract Exper. 2022;1-34. doi:
-/// > [10.1002/spe.3172](https://onlinelibrary.wiley.com/doi/full/10.1002/spe.3172).
+/// > Joffe B. "*A Very Fast 64-Bit Date Algorithm*". 2025.
+/// > <https://www.benjoffe.com/fast-date-64>, with the 32-bit version
+/// > `benjoffe_fast32_v2` of <https://github.com/benjoffe/fast-date-benchmarks>.
 #[inline]
 pub const fn rd_to_date(n: i32) -> (i32, u8, u8) {
     debug_assert!(n >= RD_MIN && n <= RD_MAX, "given rata die is out of range");
-    let n = (n + DAY_OFFSET) as u32;
+    // Months are fixed point numbers with SCALE fraction bits, and days are
+    // counted backwards from ERAS eras after 0000-03-01
+    const SCALE: u32 = 16;
+    const ERAS: u32 = 3991;
+    const MONTH: u32 = 1 << SCALE;
+    const D_SHIFT: u32 = DAYS_IN_ERA as u32 * ERAS - DAYS_TO_UNIX_EPOCH as u32 - 1;
+    const Y_SHIFT: u32 = YEARS_IN_ERA as u32 * ERAS;
+    const JAN_FEB: u32 = ((590680 * MONTH as u64 / 65536) as u32).wrapping_neg();
+    const MAR_DEC: u32 = JAN_FEB.wrapping_add(12 * MONTH);
     // century
-    let n = 4 * n + 3;
-    let c = n / 146097;
-    let r = n % 146097;
-    // year
-    let n = r | 3;
-    let p = 2939745 * n as u64;
-    let z = (p / 2u64.pow(32)) as u32;
-    let n = (p % 2u64.pow(32)) as u32 / 2939745 / 4;
-    let j = n >= 306;
-    let y = 100 * c + z + j as u32;
-    // month and day
-    let n = 2141 * n + 197913;
-    let m = n / 2u32.pow(16);
-    let d = n % 2u32.pow(16) / 2141;
+    let n = D_SHIFT.wrapping_sub(n as u32);
+    let c = ((n as u64 * ((1 << 49) / 146097)) >> 47) as u32;
+    // year, of the Julian day count
+    let n = n.wrapping_sub(c / 4).wrapping_add(c);
+    let p = (n as i64 * -((1 << 39) / 1461 + 1)) >> 5;
+    let y = (p >> 32) as u32;
+    // month and day, from the fraction of the year
+    let n = ((p as u32 as u64 * (MONTH as u64 * 2435 / 204 + 1)) >> 32) as u32;
+    let j = n > 10 * MONTH;
+    let n = ((y & 3) * (MONTH / 128))
+        .wrapping_add(if j { JAN_FEB } else { MAR_DEC })
+        .wrapping_add(n);
+    let m = n / MONTH;
+    let d = (((n % MONTH) as u64 * ((1 << 32) * 153 / (5 * MONTH as u64))) >> 32) as u32 + 1;
     // map
-    let y = (y as i32) - YEAR_OFFSET;
-    let m = if j { m - 12 } else { m };
-    let d = d + 1;
+    let y = Y_SHIFT.wrapping_add(y).wrapping_add(j as u32) as i32;
     (y, m as u8, d as u8)
 }
 
