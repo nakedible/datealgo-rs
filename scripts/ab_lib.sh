@@ -18,8 +18,11 @@
 # the comparison is over the pairs, and samples within a run are not
 # independent observations.
 #
-# AB_CPUS sets the two CPUs to run the builds on, by default the first two that
-# are not on the same physical core.
+# AB_CPUS sets the two CPUs to run the builds on, by default the last two that
+# are not on the same physical core, as the first CPU often serves more of the
+# system. With AB_ISOLATE set, every other process and every interrupt is moved
+# off the two CPUs with sudo before the runs, and left so, which is meant for
+# machines that only run the comparison, such as those of CI.
 
 # Prepare to compare with the given git ref, in target/NAME
 ab_setup() {
@@ -34,39 +37,58 @@ ab_setup() {
     command -v ld.lld >/dev/null || { echo "error: needs LLD (ld.lld) to link" >&2; exit 1; }
     RUSTFLAGS="$RUSTFLAGS -C link-arg=-fuse-ld=lld"
   fi
-  rm -rf "$ab_work/build" "$ab_work/src" "$ab_work/bin" "$ab_work/dump" "$ab_work/tango.log"
+  rm -rf "$ab_work/build" "$ab_work/src" "$ab_work/bin" "$ab_work/dump" "$ab_work/tango.log" "$ab_work"/link-*
   mkdir -p "$ab_work/build" "$ab_work/src/head" "$ab_work/src/base" "$ab_work/bin" "$ab_work/dump"
   tar --exclude=./target --exclude=./.git -cf - . | tar -xf - -C "$ab_work/build"
   tar -cf - src | tar -xf - -C "$ab_work/src/head"
   git archive "$ref" src | tar -xf - -C "$ab_work/src/base"
   ab_side=
-  ab_cpus=${AB_CPUS:-$(lscpu -p=cpu,core | awk -F, '!/^#/ && !seen[$2]++ { c = c (c ? "," : "") $1 } END { split(c, a, ","); print a[1] "," a[2] }')}
+  ab_isolated=
+  ab_cpus=${AB_CPUS:-$(lscpu -p=cpu,core | awk -F, '!/^#/ && !seen[$2]++ { c = c (c ? "," : "") $1 } END { n = split(c, a, ","); print a[n - 1] "," a[n] }')}
+}
+
+# Move every other process and every interrupt off the CPUs of the runs, if
+# AB_ISOLATE is set, once
+ab_isolate() {
+  [ -n "${AB_ISOLATE:-}" ] && [ -z "$ab_isolated" ] || return 0
+  local other pid irq
+  other=$(lscpu -p=cpu | awk -F, -v cpus=",$ab_cpus," '!/^#/ && !index(cpus, "," $1 ",") { c = c (c ? "," : "") $1 } END { print c }')
+  # Some kernel threads and interrupts cannot move, which is fine
+  for pid in $(ps -e -o pid=); do
+    sudo taskset -a -p -c "$other" "$pid" >/dev/null 2>&1 || true
+  done
+  for irq in /proc/irq/*/smp_affinity_list; do
+    echo "$other" | sudo tee "$irq" >/dev/null 2>&1 || true
+  done
+  ab_isolated=1
 }
 
 # Link the given benchmark of the given side, head or base, with each of the
 # given seeds for the order of functions, as bin/BENCH-SIDE-SEED
 ab_link() {
-  local bench=$1 side=$2 seed exe
+  local bench=$1 side=$2 seed link
   shift 2
   if [ "$ab_side" != "$side" ]; then
-    rm -rf "$ab_work/build/src"
+    rm -rf "$ab_work/build/src" "$ab_work"/link-*
     cp -r "$ab_work/src/$side/src" "$ab_work/build/src"
     # Cargo decides whether to rebuild by the times of the files, which come
     # from the working tree or from git, so they are set to now to always
-    # rebuild the library sources just copied.
-    find "$ab_work/build/src" -exec touch {} +
+    # rebuild the sources just copied, and the benchmarks with them.
+    find "$ab_work/build/src" "$ab_work/build/benches" -exec touch {} +
     ab_side=$side
   fi
+  # Another order of functions changes the arguments of the compiler, which
+  # would make Cargo compile the benchmark again, so it is compiled once,
+  # keeping the object files, and the command that links them, which the
+  # compiler prints, is run again with each seed.
+  if [ ! -f "$ab_work/link-$bench" ]; then
+    (cd "$ab_work/build" && cargo rustc -q --locked --profile bench --bench "$bench" -- \
+      -C save-temps --print link-args -C link-arg=-Wl,--shuffle-sections='*=0') >"$ab_work/link-$bench"
+    [ -s "$ab_work/link-$bench" ] || { echo "error: no link command for $bench" >&2; exit 1; }
+  fi
+  link=$(cat "$ab_work/link-$bench")
   for seed in "$@"; do
-    exe=$(cd "$ab_work/build" && cargo rustc -q --locked --profile bench --bench "$bench" \
-      --message-format=json-render-diagnostics -- -C link-arg=-Wl,--shuffle-sections="*=$seed" |
-      python3 -c '
-import json, sys
-for line in sys.stdin:
-    m = json.loads(line)
-    if m.get("reason") == "compiler-artifact" and m["target"]["name"] == sys.argv[1] and m.get("executable"):
-        print(m["executable"])' "$bench")
-    cp "$exe" "$ab_work/bin/$bench-$side-$seed"
+    eval "$(printf '%s' "$link" | sed -E "s|\"-o\" \"[^\"]*\"|\"-o\" \"$ab_work/bin/$bench-$side-$seed\"|; s|--shuffle-sections=\\*=0\"|--shuffle-sections=*=$seed\"|")"
   done
 }
 
@@ -112,6 +134,7 @@ ab_pairs() {
   ab_link "$bench" base "${base_seeds[@]}"
   filter="{$(echo "$benches" | tr ' ' ',')}"
   local cpu_a=${ab_cpus%,*} cpu_b=${ab_cpus#*,} head base candidate
+  ab_isolate
   for i in $(seq 1 "$pairs"); do
     head=$ab_work/bin/$bench-head-${head_seeds[$((i - 1))]}
     base=$ab_work/bin/$bench-base-${base_seeds[$((i - 1))]}
