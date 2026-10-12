@@ -831,22 +831,20 @@ pub const fn datetime_to_secs((y, m, d, hh, mm, ss): (i32, u8, u8, u8, u8, u8)) 
 ///
 /// # Algorithm
 ///
-/// Algorithm is Neri-Schneider from C++now 2023 conference:
-/// > <https://github.com/boostcon/cppnow_presentations_2023/blob/main/cppnow_slides/Speeding_Date_Implementing_Fast_Calendar_Algorithms.pdf>
+/// Algorithm is Falk Hüffner's multiply, mask and compare check, using the
+/// 64-bit constants that are correct for all years from 0 to 5965232499:
+/// > <https://hueffner.de/falk/blog/a-leap-year-check-in-three-instructions.html>
+///
+/// The year is first offset by a multiple of 400 years to make it
+/// non-negative, which does not change whether it is a leap year.
 #[inline]
 pub const fn is_leap_year(y: i32) -> bool {
     debug_assert!(y >= YEAR_MIN && y <= YEAR_MAX, "given year is out of range");
-    // Using `%` instead of `&` causes compiler to emit branches instead. This
-    // is faster in a tight loop due to good branch prediction, but probably
-    // slower in a real program so we use `&`. Also `% 25` is functionally
-    // equivalent to `% 100` here, but a little cheaper to compute. If branches
-    // were to be emitted, using `% 100` would be most likely faster due to
-    // better branch prediction.
-    if (y % 25) != 0 {
-        y & 3 == 0
-    } else {
-        y & 15 == 0
-    }
+    const F: u64 = 0x4000_0000_28F5_C28F;
+    const M: u64 = 0xC000_000F_8000_000F;
+    const T: u64 = 0x0000_000F_8000_0000;
+    let y = (y + YEAR_OFFSET) as u32 as u64;
+    y.wrapping_mul(F) & M <= T
 }
 
 /// Determine the number of days in the given month in the given year
